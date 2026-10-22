@@ -506,6 +506,9 @@ tr.pt td{color:var(--muted)}
 .jrn-kpi .s-stat{padding:10px 12px}
 .jrn-kpi .s-stat span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jrn-kpi .s-stat b{font-size:17px;white-space:nowrap}
+.per-bar .per-sep{width:1px;height:22px;background:var(--line);margin:0 6px}
+.per-bar .per-fm{margin-left:auto;padding:6px 12px;font-size:13px}
+.d-saut{page-break-before:always;break-before:page;margin-top:14px}
 .per-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
 .per-bar .chip-btn{padding:6px 12px;font-size:13px;cursor:pointer}
 .per-bar .chip-btn.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
@@ -1128,6 +1131,25 @@ select.inp{appearance:auto}
     </section>
   </div>
 </main>
+
+<div class="overlay" id="dlgFm" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fmTitle" style="width:min(460px,100%)">
+    <header><h2 id="fmTitle">Dossier de fin de mois</h2><button class="x" type="button" data-close-fm aria-label="Fermer">×</button></header>
+    <div style="display:grid;gap:12px">
+      <p class="sub" style="margin:0">Tous les journaux du mois en un seul document : une synthèse, puis pour chaque journal la vue globale et, si coché, le détail. Pour le magasin sélectionné en haut de l'écran.</p>
+      <div class="f"><label for="fmMois">Mois</label><input class="inp" type="month" id="fmMois"></div>
+      <div style="display:grid;gap:6px">
+        <label class="check" style="margin:0"><input type="checkbox" data-fmj="jfa" checked> Journal des factures</label>
+        <label class="check" style="margin:0"><input type="checkbox" data-fmj="jcl" checked> Journal clients</label>
+        <label class="check" style="margin:0"><input type="checkbox" data-fmj="jas" checked> Journal des PEC</label>
+        <label class="check" style="margin:0"><input type="checkbox" data-fmj="jca" checked> Journal de caisse</label>
+      </div>
+      <label class="check" style="margin:0"><input type="checkbox" id="fmDet" checked> Inclure le détail de chaque journal</label>
+      <p class="muted" id="fmSt" style="margin:0;font-size:13px"></p>
+    </div>
+      <div class="st-foot"><span></span><span><button class="ghost" type="button" id="fmXl">Exporter Excel</button> <button class="save" type="button" id="fmPrint">Imprimer / PDF</button></span></div>
+  </div>
+</div>
 
 <div class="overlay" id="dlgBrPay" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bpTitle" style="width:min(720px,100%)">
@@ -3852,26 +3874,40 @@ select.inp{appearance:auto}
   const barTable = (rows, total) => !rows.length ? '<p class="muted" style="margin:0">Aucune donnée sur la période.</p>' : `<div class="bars">${rows.map(([k, v, n]) => `<div class="bar-row"><span class="bl">${esc(k)}</span>
     <span class="bt"><span style="width:${total ? Math.max(2, v / total * 100) : 0}%"></span></span><b>${money(v)}</b><small>${n != null ? n + ' vente' + (n > 1 ? 's' : '') : ''}</small></div>`).join('')}</div>`;
 
-  // --- Journaux comptables (factures, clients, assurances)
+  // --- Journaux comptables (factures, clients, PEC, caisse) — vue détaillée ou globale
   const jNomCli = (v, c) => c ? `${c.nom} ${c.prenom}` : (v.client || 'Client de passage');
   const jPartPec = v => v.pec ? v.pec.montant || 0 : 0;
   const jPartCli = v => v.resteAcharge != null ? v.resteAcharge : (v.net || 0) - jPartPec(v);
   const jEncaisse = v => (v.paiements || []).reduce((a, p) => a + (p.montant || 0), 0);
-  const perTxt = () => { const [a, b] = periode(); return `du ${fmtDate(a.toISOString())} au ${fmtDate(b.toISOString())}`; };
-  // Chaque journal produit : titre, en-têtes, lignes (avec type : normal / grp / st / tt), indicateurs
-  function journal(k){
-    const per = periode(), V = toutesVentes().filter(({ v }) => enMagasin(v));
-    const tous = boutiqueCour() === 'Toutes les boutiques';
+  const perTxt = (per = periode()) => `du ${fmtDate(per[0].toISOString())} au ${fmtDate(per[1].toISOString())}`;
+  const jourLong = j => { const t = new Date(j + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  let jrnGlobal = false;
+  const JRN = { jfa: 'Journal des factures', jcl: 'Journal clients', jas: 'Journal des PEC', jca: 'Journal de caisse' };
+  // Chaque journal produit : titre, en-têtes, lignes (type : normal / grp / st / tt), colonnes numériques, indicateurs
+  function journal(k, o = {}){
+    const per = o.per || periode(), glob = o.glob != null ? o.glob : jrnGlobal;
+    const V = toutesVentes().filter(({ v }) => enMagasin(v)), tous = boutiqueCour() === 'Toutes les boutiques';
+    const titre = JRN[k] + (glob ? ' · global' : ''), mag = tous ? ['Magasin'] : [];
     if (k === 'jfa') {
       const L = V.filter(({ v }) => dans(v.date, per)).sort((a, b) => a.v.date.localeCompare(b.v.date)).map(({ v, c }) => ({ v, c, T: calculTaxes(v) }));
       const noms = []; L.forEach(x => x.T.taxes.forEach(t => { const n = `${t.nom} ${fmtTaux(t.taux)}`; if (!noms.includes(n)) noms.push(n); }));
-      const H = ['Date', 'N° facture', 'Client', ...(tous ? ['Magasin'] : []), 'Total HT', ...noms, 'Total TTC', 'Part assurance', 'Part client', 'Encaissé', 'Reste dû'];
       const tx = (T, n) => T.taxes.filter(t => `${t.nom} ${fmtTaux(t.taux)}` === n).reduce((a, t) => a + t.mt, 0);
-      const rows = L.map(({ v, c, T }) => ({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), ...(tous ? [v.boutique || ''] : []), T.ht, ...noms.map(n => tx(T, n)), T.ttc, jPartPec(v), jPartCli(v), jEncaisse(v), v.solde || 0] }));
-      const s = f => L.reduce((a, x) => a + f(x), 0);
-      const tot = [s(x => x.T.ht), ...noms.map(n => s(x => tx(x.T, n))), s(x => x.T.ttc), s(x => jPartPec(x.v)), s(x => jPartCli(x.v)), s(x => jEncaisse(x.v)), s(x => x.v.solde || 0)];
-      rows.push({ type: 'tt', cells: ['Total', `${L.length} facture${L.length > 1 ? 's' : ''}`, '', ...(tous ? [''] : []), ...tot] });
-      return { titre: 'Journal des factures', H, num: H.length - (6 + noms.length), rows,
+      const val = X => { const s = f => X.reduce((a, x) => a + f(x), 0);
+        return [s(x => x.T.ht), ...noms.map(n => s(x => tx(x.T, n))), s(x => x.T.ttc), s(x => jPartPec(x.v)), s(x => jPartCli(x.v)), s(x => jEncaisse(x.v)), s(x => x.v.solde || 0)]; };
+      const fin = ['Total HT', ...noms, 'Total TTC', 'Part assurance', 'Part client', 'Encaissé', 'Reste dû'];
+      const tot = val(L), nbTxt = n => `${n} facture${n > 1 ? 's' : ''}`;
+      let H, rows;
+      if (glob) {
+        H = ['Date', ...mag, 'Factures', ...fin];
+        const G = new Map(); L.forEach(x => { const kk = dayKey(x.v.date) + '\u0000' + (tous ? x.v.boutique || '' : ''); if (!G.has(kk)) G.set(kk, []); G.get(kk).push(x); });
+        rows = [...G.entries()].map(([kk, X]) => { const [j, b] = kk.split('\u0000'); return { cells: [fmtDate(j + 'T12:00'), ...(tous ? [b] : []), String(X.length), ...val(X)] }; });
+        rows.push({ type: 'tt', cells: ['Total', ...(tous ? [''] : []), String(L.length), ...tot] });
+      } else {
+        H = ['Date', 'N° facture', 'Client', ...mag, ...fin];
+        rows = L.map(({ v, c, T }) => ({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), ...(tous ? [v.boutique || ''] : []), ...val([{ v, T }])] }));
+        rows.push({ type: 'tt', cells: ['Total', nbTxt(L.length), '', ...(tous ? [''] : []), ...tot] });
+      }
+      return { k, titre, per, H, num: H.length - fin.length, rows,
         kpi: [['Factures', String(L.length)], ['Total HT', money(tot[0])], ['Taxes', money(tot.slice(1, 1 + noms.length).reduce((a, x) => a + x, 0))], ['Total TTC', money(tot[1 + noms.length])], ['Reste dû clients', money(tot[tot.length - 1])]] };
     }
     if (k === 'jcl') {
@@ -3886,20 +3922,22 @@ select.inp{appearance:auto}
       const G = new Map();
       M.forEach(m => { if (!G.has(m.cle)) G.set(m.cle, { nom: m.nom, avant: 0, L: [] }); const g = G.get(m.cle);
         if (new Date(m.date) < per[0]) g.avant += m.d - m.c; else if (dans(m.date, per)) g.L.push(m); });
-      const H = ['Date', 'Pièce', 'Libellé', 'Débit', 'Crédit', 'Solde'];
-      const rows = []; let TD = 0, TC = 0, TS = 0, nb = 0;
-      [...G.values()].filter(g => g.L.length || Math.abs(g.avant) > 0.5).sort((a, b) => a.nom === 'Clients de passage' ? 1 : b.nom === 'Clients de passage' ? -1 : a.nom.localeCompare(b.nom)).forEach(g => {
-        nb++; rows.push({ type: 'grp', cells: [g.nom, '', '', '', '', ''] });
+      const groupes = [...G.values()].filter(g => g.L.length || Math.abs(g.avant) > 0.5)
+        .sort((a, b) => a.nom === 'Clients de passage' ? 1 : b.nom === 'Clients de passage' ? -1 : a.nom.localeCompare(b.nom));
+      let TD = 0, TC = 0, TS = 0, TO = 0; const rows = [];
+      const H = glob ? ['Client', 'Solde d\'ouverture', 'Débit', 'Crédit', 'Solde'] : ['Date', 'Pièce', 'Libellé', 'Débit', 'Crédit', 'Solde'];
+      groupes.forEach(g => {
         let sol = g.avant, d = 0, cr = 0;
-        if (Math.abs(g.avant) > 0.5) rows.push({ cells: [fmtDate(per[0].toISOString()), '', 'Solde d\'ouverture', '', '', sol] });
         // par jour, la facture avant ses règlements
-        g.L.sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)) || (b.d > 0) - (a.d > 0) || String(a.date).localeCompare(String(b.date))).forEach(m => { sol += m.d - m.c; d += m.d; cr += m.c; rows.push({ cells: [fmtDate(m.date), m.piece, m.lib, m.d || '', m.c || '', sol] }); });
-        rows.push({ type: 'st', cells: ['', '', `Total ${g.nom}`, d, cr, sol] });
-        TD += d; TC += cr; TS += sol;
+        const L = g.L.sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)) || (b.d > 0) - (a.d > 0) || String(a.date).localeCompare(String(b.date)));
+        if (!glob) { rows.push({ type: 'grp', cells: [g.nom] }); if (Math.abs(g.avant) > 0.5) rows.push({ cells: [fmtDate(per[0].toISOString()), '', 'Solde d\'ouverture', '', '', sol] }); }
+        L.forEach(m => { sol += m.d - m.c; d += m.d; cr += m.c; if (!glob) rows.push({ cells: [fmtDate(m.date), m.piece, m.lib, m.d || '', m.c || '', sol] }); });
+        rows.push(glob ? { cells: [g.nom, g.avant, d, cr, sol] } : { type: 'st', cells: ['', '', `Total ${g.nom}`, d, cr, sol] });
+        TD += d; TC += cr; TS += sol; TO += g.avant;
       });
-      rows.push({ type: 'tt', cells: ['', '', 'Total général', TD, TC, TS] });
-      return { titre: 'Journal clients', H, num: 3, rows,
-        kpi: [['Clients mouvementés', String(nb)], ['Débit · facturé', money(TD)], ['Crédit · réglé', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
+      rows.push({ type: 'tt', cells: glob ? ['Total général', TO, TD, TC, TS] : ['', '', 'Total général', TD, TC, TS] });
+      return { k, titre, per, H, num: glob ? 1 : 3, rows,
+        kpi: [['Clients mouvementés', String(groupes.length)], ['Débit · facturé', money(TD)], ['Crédit · réglé', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
     }
     if (k === 'jca') {
       // encaissements (par magasin de la vente), sorties d'espèces et clôtures Z, regroupés par magasin et par jour
@@ -3912,59 +3950,70 @@ select.inp{appearance:auto}
       clotures.filter(z => (tous || z.boutique === boutiqueCour()) && dans(z.date, per)).forEach(z => E.push({ b: z.boutique, date: z.date, piece: z.numero, z }));
       const G = new Map();
       E.forEach(e => { const kk = e.b + '\u0000' + dayKey(e.date); if (!G.has(kk)) G.set(kk, { b: e.b, j: dayKey(e.date), L: [] }); G.get(kk).L.push(e); });
-      const H = ['Heure', 'Pièce', 'Libellé', 'Moyen', 'Entrée', 'Sortie', 'Solde espèces'];
+      const MODES = [...MODE_KEYS]; E.forEach(e => { if (!e.z && e.entree && !MODES.includes(e.mode)) MODES.push(e.mode); });
+      const H = glob ? ['Date', ...mag, ...MODES, 'Total encaissé', 'Sorties', 'Solde espèces', 'Écart Z'] : ['Heure', 'Pièce', 'Libellé', 'Moyen', 'Entrée', 'Sortie', 'Solde espèces'];
       const rows = [], TM = {}; let TE = 0, TS = 0, ecarts = 0, nbZ = 0;
       [...G.values()].sort((a, b) => a.j.localeCompare(b.j) || a.b.localeCompare(b.b)).forEach(g => {
-        const jour = new Date(g.j + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-        rows.push({ type: 'grp', cells: [`${jour.charAt(0).toUpperCase() + jour.slice(1)}${tous ? ' · ' + g.b : ''}`] });
-        let sol = 0, en = 0, so = 0; const pm = {};
+        if (!glob) rows.push({ type: 'grp', cells: [`${jourLong(g.j)}${tous ? ' · ' + g.b : ''}`] });
+        let sol = 0, en = 0, so = 0, ecJ = null; const pm = {};
         g.L.sort((a, b) => String(a.date).localeCompare(String(b.date))).forEach(e => {
-          if (e.z) { nbZ++; if (!e.z.rouverte) ecarts += e.z.ecart || 0;
-            rows.push({ cells: [hhmm(e.date), e.piece, `Clôture Z · théorique ${money(e.z.especesTheo)} · compté ${money(e.z.especesComptees)} · écart ${e.z.ecart > 0 ? '+' : ''}${money(e.z.ecart)}${e.z.rouverte ? ' (rouverte)' : ''}`, '', '', '', sol] }); return; }
+          if (e.z) { nbZ++; if (!e.z.rouverte) { ecarts += e.z.ecart || 0; ecJ = (ecJ || 0) + (e.z.ecart || 0); }
+            if (!glob) rows.push({ cells: [hhmm(e.date), e.piece, `Clôture Z · théorique ${money(e.z.especesTheo)} · compté ${money(e.z.especesComptees)} · écart ${e.z.ecart > 0 ? '+' : ''}${money(e.z.ecart)}${e.z.rouverte ? ' (rouverte)' : ''}`, '', '', '', sol] }); return; }
           if (e.mode === 'Espèces') sol += e.entree - e.sortie;
           en += e.entree; so += e.sortie; if (e.entree) pm[e.mode] = (pm[e.mode] || 0) + e.entree;
-          rows.push({ cells: [hhmm(e.date), e.piece, e.lib, e.mode, e.entree || '', e.sortie || '', sol] });
+          if (!glob) rows.push({ cells: [hhmm(e.date), e.piece, e.lib, e.mode, e.entree || '', e.sortie || '', sol] });
         });
         Object.entries(pm).forEach(([m, x]) => TM[m] = (TM[m] || 0) + x);
-        rows.push({ type: 'st', cells: ['', '', 'Total du jour · ' + (MODE_KEYS.filter(m => pm[m]).concat(Object.keys(pm).filter(m => !MODE_KEYS.includes(m))).map(m => `${m} ${money(pm[m])}`).join(' · ') || 'aucun encaissement'), '', en, so, sol] });
+        rows.push(glob ? { cells: [fmtDate(g.j + 'T12:00'), ...(tous ? [g.b] : []), ...MODES.map(m => pm[m] || 0), en, so, sol, ecJ == null ? '—' : ecJ] }
+          : { type: 'st', cells: ['', '', 'Total du jour · ' + (MODES.filter(m => pm[m]).map(m => `${m} ${money(pm[m])}`).join(' · ') || 'aucun encaissement'), '', en, so, sol] });
         TE += en; TS += so;
       });
-      rows.push({ type: 'tt', cells: ['', '', 'Total de la période', '', TE, TS, (TM['Espèces'] || 0) - TS] });
-      return { titre: 'Journal de caisse', H, num: 4, rows,
+      rows.push({ type: 'tt', cells: glob ? ['Total de la période', ...(tous ? [''] : []), ...MODES.map(m => TM[m] || 0), TE, TS, (TM['Espèces'] || 0) - TS, nbZ ? ecarts : '—']
+        : ['', '', 'Total de la période', '', TE, TS, (TM['Espèces'] || 0) - TS] });
+      return { k, titre, per, H, num: glob ? 1 + mag.length : 4, rows,
         kpi: [['Encaissé', money(TE)], ['Espèces', money(TM['Espèces'] || 0)], ['Carte bancaire', money(TM['Carte bancaire'] || 0)],
           ['Mobile money', money((TM['Airtel Money'] || 0) + (TM['Moov Money'] || 0))], ['Sorties', money(TS)], ['Écarts de caisse', nbZ ? `${ecarts > 0 ? '+' : ''}${money(ecarts)}` : '—', ecarts ? 'warn-k' : '']] };
     }
     // jas : journal des PEC
     const P = V.filter(({ v }) => v.pec && dans(v.date, per));
     const G = new Map(); P.forEach(x => { const o = x.v.pec.organisme || '—'; if (!G.has(o)) G.set(o, []); G.get(o).push(x); });
-    const H = ['Date', 'N° facture', 'Assuré', 'N° adhérent', 'N° bon', 'Montant PEC', 'Réglé', 'Reste à recevoir', 'Statut', 'Bordereau'];
+    const H = glob ? ['Organisme', 'Dossiers', 'Montant PEC', 'Réglé', 'Reste à recevoir'] : ['Date', 'N° facture', 'Assuré', 'N° adhérent', 'N° bon', 'Montant PEC', 'Réglé', 'Reste à recevoir', 'Statut', 'Bordereau'];
     const rows = []; let TM = 0, TR = 0;
     [...G.keys()].sort().forEach(o => {
-      rows.push({ type: 'grp', cells: [o, '', '', '', '', '', '', '', '', ''] });
-      let m = 0, r = 0;
-      G.get(o).sort((a, b) => a.v.date.localeCompare(b.v.date)).forEach(({ v, c }) => { const p = v.pec, pr = p.paye || 0;
+      if (!glob) rows.push({ type: 'grp', cells: [o] });
+      let m = 0, r = 0; const X = G.get(o);
+      X.sort((a, b) => a.v.date.localeCompare(b.v.date)).forEach(({ v, c }) => { const p = v.pec, pr = p.paye || 0;
         m += p.montant || 0; r += pr;
-        rows.push({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), p.matricule || '', p.bon || '', p.montant || 0, pr, (p.montant || 0) - pr, pecStatut(p), p.bordereau || '—'] }); });
-      rows.push({ type: 'st', cells: ['', '', `Total ${o}`, '', '', m, r, m - r, '', ''] });
+        if (!glob) rows.push({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), p.matricule || '', p.bon || '', p.montant || 0, pr, (p.montant || 0) - pr, pecStatut(p), p.bordereau || '—'] }); });
+      rows.push(glob ? { cells: [o, String(X.length), m, r, m - r] } : { type: 'st', cells: ['', '', `Total ${o}`, '', '', m, r, m - r, '', ''] });
       TM += m; TR += r;
     });
-    rows.push({ type: 'tt', cells: ['', '', 'Total général', '', '', TM, TR, TM - TR, '', ''] });
-    return { titre: 'Journal des PEC', H, num: 5, rows, numFin: 8,
+    rows.push({ type: 'tt', cells: glob ? ['Total général', String(P.length), TM, TR, TM - TR] : ['', '', 'Total général', '', '', TM, TR, TM - TR, '', ''] });
+    return { k, titre, per, H, num: glob ? 2 : 5, numFin: glob ? 5 : 8, rows,
       kpi: [['Prises en charge', String(P.length)], ['Facturé aux assurances', money(TM)], ['Réglé', money(TR)], ['Reste à recevoir', money(TM - TR), TM - TR > 0.5 ? 'warn-k' : '']] };
   }
   // colonnes numériques : de « num » jusqu'à « numFin » (exclu), sinon jusqu'à la fin
   const estNum = (J, i) => i >= J.num && i < (J.numFin || J.H.length);
   const cel = (J, i, x) => estNum(J, i) && typeof x === 'number' ? money(x) : esc(String(x ?? ''));
+  const tableJrn = J => `<thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+    J.rows.length > 1 ? J.rows.map(r => `<tr class="${r.type || ''}">${r.type === 'grp' ? `<td colspan="${J.H.length}">${esc(r.cells[0])}</td>` : r.cells.map((x, i) => `<td class="${estNum(J, i) ? 'r' : ''}">${cel(J, i, x)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${J.H.length}">Aucune opération sur la période.</td></tr>`}</tbody>`;
   const PER_BTN = [['jour', 'Aujourd\'hui'], ['semaine', 'Cette semaine'], ['mois', 'Mois en cours'], ['mprec', 'Mois précédent'], ['perso', 'Période précise']];
   function drawPerBar(){
     const P = F('coPer').value;
     document.querySelectorAll('[data-perbar]').forEach(b => {
       b.innerHTML = PER_BTN.map(([v, t]) => `<button type="button" class="chip-btn${P === v ? ' on' : ''}" data-per="${v}">${t}</button>`).join('')
         + (P === 'perso' ? `<span class="per-dates"><input class="inp" type="date" data-perdu value="${F('coDu').value}"> → <input class="inp" type="date" data-perau value="${F('coAu').value}"></span>` : '')
-        + `<span class="muted" style="font-size:13px;margin-left:4px">${esc(perTxt())}</span>`;
+        + `<span class="muted" style="font-size:13px;margin-left:4px">${esc(perTxt())}</span>`
+        + `<span class="per-sep"></span><button type="button" class="chip-btn${jrnGlobal ? '' : ' on'}" data-jmode="det">Détaillé</button><button type="button" class="chip-btn${jrnGlobal ? ' on' : ''}" data-jmode="glob">Global</button>`
+        + `<button type="button" class="ghost per-fm" data-fm>Dossier de fin de mois</button>`;
     });
   }
-  F('v-compta').addEventListener('click', e => { const v = e.target.dataset.per; if (!v) return;
+  F('v-compta').addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (d.jmode) { jrnGlobal = d.jmode === 'glob'; openCompta(); return; }
+    if ('fm' in d) { ouvrirFinDeMois(); return; }
+    const v = d.per; if (!v) return;
     F('coPer').value = v; F('coPerso').hidden = v !== 'perso';
     if (v === 'perso' && !F('coDu').value) { const [a, b] = periode(); F('coDu').value = dayKey(a.toISOString()); F('coAu').value = dayKey(b.toISOString()); }
     openCompta(); });
@@ -3975,33 +4024,63 @@ select.inp{appearance:auto}
     drawPerBar();
     const J = journal(k);
     F(k + 'Kpi').innerHTML = J.kpi.map(([a, b, c]) => kpi(a, b, '', c || '')).join('');
-    F(k + 'Tbl').innerHTML = `<thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
-      J.rows.length > 1 ? J.rows.map(r => `<tr class="${r.type || ''}">${r.type === 'grp' ? `<td colspan="${J.H.length}">${esc(r.cells[0])}</td>` : r.cells.map((x, i) => `<td class="${estNum(J, i) ? 'r' : ''}">${cel(J, i, x)}</td>`).join('')}</tr>`).join('')
-      : `<tr><td colspan="${J.H.length}" class="muted">Aucune opération sur la période.</td></tr>`}</tbody>`;
+    F(k + 'Tbl').innerHTML = tableJrn(J);
   }
   async function enregistrerFichier(blob, nom){
     const dl = await (window.claude?.use ? window.claude.use('downloads').catch(() => null) : null);
     if (dl) { await dl.save({ filename: nom, data: blob }); return; }
     const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
+  const nomFic = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_');
+  const feuille = J => { const aoa = [[`${J.titre} · ${boutiqueCour()} · ${perTxt(J.per)}`], [], J.H, ...J.rows.map(r => r.type === 'grp' ? [r.cells[0]] : r.cells.map(c => c === '' ? null : c))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = J.H.map((h, i) => ({ wch: i < 3 ? 22 : 15 })); return ws; };
+  async function exporterExcel(Js, nom, synthese){
+    if (!window.XLSX) { show('Export Excel indisponible.'); return; }
+    const wb = XLSX.utils.book_new(), pris = new Set();
+    if (synthese) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(synthese), 'Synthèse');
+    Js.forEach(J => { let n = ({ jfa: 'Factures', jcl: 'Clients', jas: 'PEC', jca: 'Caisse' }[J.k] || 'Journal') + (/ · global$/.test(J.titre) ? ' (global)' : ' (détail)');
+      while (pris.has(n)) n = n.slice(0, 29) + ' ' + pris.size; pris.add(n); XLSX.utils.book_append_sheet(wb, feuille(J), n); });
+    try { await enregistrerFichier(new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nomFic(nom) + '.xlsx'); show('Fichier Excel enregistré'); }
+    catch (er) { show(er?.code === 'declined' ? 'Téléchargement annulé.' : 'Le fichier n\'a pas pu être enregistré.'); }
+  }
   F('v-compta').addEventListener('click', async e => {
     const x = e.target.dataset.jx, pr = e.target.dataset.jp; if (!x && !pr) return;
-    const J = journal(x || pr), titre = `${J.titre} · ${boutiqueCour()} · ${perTxt()}`;
-    if (pr) { openDocs({ kind: 'journal', numero: '', titre: J.titre, J, sous: `${boutiqueCour()} · ${perTxt()}` }); return; }
-    if (!window.XLSX) { show('Export Excel indisponible.'); return; }
-    const aoa = [[titre], [], J.H, ...J.rows.map(r => r.type === 'grp' ? [r.cells[0]] : r.cells.map(c => c === '' ? null : c))];
-    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = J.H.map((h, i) => ({ wch: i < 3 ? 22 : 15 }));
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, J.titre.slice(0, 31));
-    const nom = `${J.titre}_${boutiqueCour()}_${perTxt()}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') + '.xlsx';
-    try { await enregistrerFichier(new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nom); show('Fichier Excel enregistré'); }
-    catch (er) { show(er?.code === 'declined' ? 'Téléchargement annulé.' : 'Le fichier n\'a pas pu être enregistré.'); }
+    const J = journal(x || pr);
+    if (pr) { openDocs({ kind: 'journal', numero: '', titre: J.titre, Js: [J], sous: `${boutiqueCour()} · ${perTxt(J.per)}` }); return; }
+    exporterExcel([J], `${J.titre}_${boutiqueCour()}_${perTxt(J.per)}`);
   });
+
+  // --- Dossier de fin de mois : tous les journaux d'un mois, synthèse + global + détail
+  const moisLib = ym => { const t = new Date(ym + '-15T12:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  function ouvrirFinDeMois(){
+    const t = new Date(), p = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+    F('fmMois').value = `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}`;
+    F('fmSt').textContent = ''; F('dlgFm').hidden = false;
+  }
+  function dossierFinDeMois(){
+    const ym = F('fmMois').value; if (!ym) { F('fmSt').textContent = 'Choisissez un mois.'; return null; }
+    const [y, m] = ym.split('-').map(Number), per = [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)];
+    const ks = [...document.querySelectorAll('[data-fmj]:checked')].map(c => c.dataset.fmj);
+    if (!ks.length) { F('fmSt').textContent = 'Cochez au moins un journal.'; return null; }
+    const avecDetail = F('fmDet').checked;
+    const Js = []; ks.forEach(k => { Js.push(journal(k, { per, glob: true })); if (avecDetail) Js.push(journal(k, { per, glob: false })); });
+    const synth = ks.map(k => ({ titre: JRN[k], kpi: journal(k, { per, glob: true }).kpi }));
+    return { ym, per, Js, synth, titre: `Dossier de fin de mois · ${moisLib(ym)}` };
+  }
+  F('fmPrint').addEventListener('click', () => { const D = dossierFinDeMois(); if (!D) return; F('dlgFm').hidden = true;
+    openDocs({ kind: 'journal', numero: '', titre: D.titre, Js: D.Js, synth: D.synth, sous: `${boutiqueCour()} · ${perTxt(D.per)}` }); });
+  F('fmXl').addEventListener('click', () => { const D = dossierFinDeMois(); if (!D) return;
+    const aoa = [[D.titre], [`${boutiqueCour()} · ${perTxt(D.per)}`], []]; D.synth.forEach(s => { aoa.push([s.titre]); s.kpi.forEach(([a, b]) => aoa.push(['', a, b])); aoa.push([]); });
+    F('dlgFm').hidden = true; exporterExcel(D.Js, `Fin_de_mois_${D.ym}_${boutiqueCour()}`, aoa); });
+  document.querySelectorAll('[data-close-fm]').forEach(b => b.addEventListener('click', () => F('dlgFm').hidden = true));
+
   function journalHtml(s){
-    const J = s.J, b = boutiqueCour();
-    return `<div class="d-head">${b === 'Toutes les boutiques' ? `<div class="d-id"><div><div class="d-brand">${esc(PARAM.app.nom)}</div><div class="d-shop">Tous les magasins</div></div></div>` : entete(b)}
-      <div class="d-num"><b>${esc(J.titre.toUpperCase())}</b><div>${esc(perTxt())}</div><div>Édité le ${fmtDate(new Date().toISOString())}</div></div></div>
-      <div class="d-jrn"><table><thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
-        J.rows.map(r => `<tr class="${r.type || ''}">${r.type === 'grp' ? `<td colspan="${J.H.length}">${esc(r.cells[0])}</td>` : r.cells.map((x, i) => `<td class="${estNum(J, i) ? 'r' : ''}">${cel(J, i, x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const b = boutiqueCour(), Js = s.Js || [s.J];
+    const tete = `<div class="d-head">${b === 'Toutes les boutiques' ? `<div class="d-id"><div><div class="d-brand">${esc(PARAM.app.nom)}</div><div class="d-shop">Tous les magasins</div></div></div>` : entete(b)}
+      <div class="d-num"><b>${esc((s.synth ? s.titre : Js[0].titre).toUpperCase())}</b><div>${esc(perTxt(Js[0].per))}</div><div>Édité le ${fmtDate(new Date().toISOString())}</div></div></div>`;
+    const synth = s.synth ? `<div class="d-sec">Synthèse du mois</div><div class="d-jrn"><table><tbody>${s.synth.map(x => `<tr class="grp"><td colspan="2">${esc(x.titre)}</td></tr>`
+      + x.kpi.map(([a, v]) => `<tr><td>${esc(a)}</td><td class="r">${esc(v)}</td></tr>`).join('')).join('')}</tbody></table></div>` : '';
+    return tete + synth + Js.map((J, i) => `<div class="${s.synth || i ? 'd-saut' : ''}">${s.synth || i ? `<div class="d-sec">${esc(J.titre)}</div>` : ''}<div class="d-jrn"><table>${tableJrn(J)}</table></div></div>`).join('');
   }
 
   // --- Tableau de bord
