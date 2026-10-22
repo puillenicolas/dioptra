@@ -502,6 +502,15 @@ tr.pt td{color:var(--muted)}
 .pr-droits{display:grid;gap:4px}
 .pr-dr{margin:0!important;padding:8px 0;border-bottom:1px solid var(--line)}
 [hidden]{display:none!important}
+.s-tbl.jrn td,.s-tbl.jrn th{white-space:nowrap;font-size:13px}
+.s-tbl.jrn td.r,.s-tbl.jrn th.r{text-align:right;font-variant-numeric:tabular-nums}
+.s-tbl.jrn tr.grp td{background:var(--bg);font-weight:700}
+.s-tbl.jrn tr.st td{font-weight:700;border-top:1px solid var(--line)}
+.s-tbl.jrn tr.tt td{font-weight:700;border-top:2px solid var(--ink)}
+.d-jrn table{width:100%;border-collapse:collapse;font-size:9.5px}
+.d-jrn th,.d-jrn td{border-bottom:1px solid #ddd;padding:3px 4px;text-align:left;white-space:nowrap}
+.d-jrn th{background:#f2f2f2}.d-jrn .r{text-align:right}
+.d-jrn tr.grp td{background:#f7f7f7;font-weight:700}.d-jrn tr.st td,.d-jrn tr.tt td{font-weight:700}.d-jrn tr.tt td{border-top:1.5px solid #111}
 .fx-card{border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}
 .fx-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
 .fx-head label,.fx-mention label{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--muted)}
@@ -1014,6 +1023,7 @@ select.inp{appearance:auto}
   <div class="tabs" id="coTabs">
     <button class="tab on" data-co="tb">Tableau de bord</button><button class="tab" data-co="pec">Prises en charge</button>
     <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Rapprochement bancaire</button>
+    <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des assurances</button>
   </div>
 
   <div class="co-p" data-p="tb">
@@ -1057,6 +1067,31 @@ select.inp{appearance:auto}
       <div class="ip-msg" id="ipMsg" hidden><span class="lbl">Message de relance, modifiable (à envoyer par WhatsApp ou SMS)</span>
         <textarea class="inp" id="ipMsgTxt" rows="3"></textarea>
         <span class="bl-btns"><button class="save" id="ipCopy" type="button">Copier le message</button><button class="ghost" id="ipMsgClose" type="button">Fermer</button></span></div>
+    </section>
+  </div>
+
+  <div class="co-p" data-p="jfa" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Journal des factures</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jfa">Exporter Excel</button> <button class="ghost" type="button" data-jp="jfa">Imprimer</button></span></div>
+      <p class="sub">Toutes les factures de la période (ventes et ventes rapides), avec le détail HT, taxes et TTC, et la répartition entre l'assurance et le client.</p>
+      <div class="s-stats co-kpi" id="jfaKpi"></div>
+      <div class="tbl-wrap"><table class="s-tbl jrn" id="jfaTbl"></table></div>
+    </section>
+  </div>
+  <div class="co-p" data-p="jcl" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Journal clients</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jcl">Exporter Excel</button> <button class="ghost" type="button" data-jp="jcl">Imprimer</button></span></div>
+      <p class="sub">Compte de chaque client sur la période : au débit, la part client des factures ; au crédit, les règlements reçus. Le solde d'ouverture reprend ce qui restait dû au début de la période.</p>
+      <div class="s-stats co-kpi" id="jclKpi"></div>
+      <div class="tbl-wrap"><table class="s-tbl jrn" id="jclTbl"></table></div>
+    </section>
+  </div>
+  <div class="co-p" data-p="jas" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Journal des assurances</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jas">Exporter Excel</button> <button class="ghost" type="button" data-jp="jas">Imprimer</button></span></div>
+      <p class="sub">Prises en charge de la période, regroupées par organisme : montant facturé à l'assurance, réglé, reste à recevoir, statut et bordereau.</p>
+      <div class="s-stats co-kpi" id="jasKpi"></div>
+      <div class="tbl-wrap"><table class="s-tbl jrn" id="jasTbl"></table></div>
     </section>
   </div>
 
@@ -3577,7 +3612,7 @@ select.inp{appearance:auto}
     F('dMail').hidden = !(s && ((s.kind === 'z') || ((s.type === 'devis' || s.type === 'vente') && MAIL_DOCS.includes(docTab) && c && c.email)));
     F('dWaZ').hidden = !(s && s.kind === 'z');
   }
-  const docNom = () => docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.trim();
+  const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.trim();
   async function docPdf(opts = {}){
     if (!window.html2canvas || !window.jspdf) throw { code: 'lib' };
     const el = F('dPaper'), ticket = el.classList.contains('ticket-paper');
@@ -3779,8 +3814,8 @@ select.inp{appearance:auto}
     F('coSub').textContent = boutiqueCour();
     coTab = tab; F('coTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.co === tab));
     document.querySelectorAll('.co-p').forEach(p => p.hidden = p.dataset.p !== tab);
-    F('coPer').parentElement.hidden = !['tb', 'bq'].includes(tab);
-    ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ })[tab]();
+    F('coPer').parentElement.hidden = !['tb', 'bq', 'jfa', 'jcl', 'jas'].includes(tab);
+    ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas') })[tab]();
     go('compta');
   }
   F('goCompta').addEventListener('click', () => droit('compta') ? openCompta('tb') : show('Comptabilité réservée au responsable.'));
@@ -3791,6 +3826,108 @@ select.inp{appearance:auto}
   const kpi = (k, v, sub = '', cls = '') => `<div class="s-stat ${cls}"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
   const barTable = (rows, total) => !rows.length ? '<p class="muted" style="margin:0">Aucune donnée sur la période.</p>' : `<div class="bars">${rows.map(([k, v, n]) => `<div class="bar-row"><span class="bl">${esc(k)}</span>
     <span class="bt"><span style="width:${total ? Math.max(2, v / total * 100) : 0}%"></span></span><b>${money(v)}</b><small>${n != null ? n + ' vente' + (n > 1 ? 's' : '') : ''}</small></div>`).join('')}</div>`;
+
+  // --- Journaux comptables (factures, clients, assurances)
+  const jNomCli = (v, c) => c ? `${c.nom} ${c.prenom}` : (v.client || 'Client de passage');
+  const jPartPec = v => v.pec ? v.pec.montant || 0 : 0;
+  const jPartCli = v => v.resteAcharge != null ? v.resteAcharge : (v.net || 0) - jPartPec(v);
+  const jEncaisse = v => (v.paiements || []).reduce((a, p) => a + (p.montant || 0), 0);
+  const perTxt = () => { const [a, b] = periode(); return `du ${fmtDate(a.toISOString())} au ${fmtDate(b.toISOString())}`; };
+  // Chaque journal produit : titre, en-têtes, lignes (avec type : normal / grp / st / tt), indicateurs
+  function journal(k){
+    const per = periode(), V = toutesVentes().filter(({ v }) => enMagasin(v));
+    const tous = boutiqueCour() === 'Toutes les boutiques';
+    if (k === 'jfa') {
+      const L = V.filter(({ v }) => dans(v.date, per)).sort((a, b) => a.v.date.localeCompare(b.v.date)).map(({ v, c }) => ({ v, c, T: calculTaxes(v) }));
+      const noms = []; L.forEach(x => x.T.taxes.forEach(t => { const n = `${t.nom} ${fmtTaux(t.taux)}`; if (!noms.includes(n)) noms.push(n); }));
+      const H = ['Date', 'N° facture', 'Client', ...(tous ? ['Magasin'] : []), 'Total HT', ...noms, 'Total TTC', 'Part assurance', 'Part client', 'Encaissé', 'Reste dû'];
+      const tx = (T, n) => T.taxes.filter(t => `${t.nom} ${fmtTaux(t.taux)}` === n).reduce((a, t) => a + t.mt, 0);
+      const rows = L.map(({ v, c, T }) => ({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), ...(tous ? [v.boutique || ''] : []), T.ht, ...noms.map(n => tx(T, n)), T.ttc, jPartPec(v), jPartCli(v), jEncaisse(v), v.solde || 0] }));
+      const s = f => L.reduce((a, x) => a + f(x), 0);
+      const tot = [s(x => x.T.ht), ...noms.map(n => s(x => tx(x.T, n))), s(x => x.T.ttc), s(x => jPartPec(x.v)), s(x => jPartCli(x.v)), s(x => jEncaisse(x.v)), s(x => x.v.solde || 0)];
+      rows.push({ type: 'tt', cells: ['Total', `${L.length} facture${L.length > 1 ? 's' : ''}`, '', ...(tous ? [''] : []), ...tot] });
+      return { titre: 'Journal des factures', H, num: H.length - (6 + noms.length), rows,
+        kpi: [['Factures', String(L.length)], ['Total HT', money(tot[0])], ['Taxes', money(tot.slice(1, 1 + noms.length).reduce((a, x) => a + x, 0))], ['Total TTC', money(tot[1 + noms.length])], ['Reste dû clients', money(tot[tot.length - 1])]] };
+    }
+    if (k === 'jcl') {
+      // mouvements : débit = part client de la facture, crédit = règlements
+      const M = [];
+      V.forEach(({ v, c }) => {
+        const cle = c ? c.id : 'passage', nom = c ? `${c.nom} ${c.prenom}` : 'Clients de passage';
+        M.push({ cle, nom, date: v.date, piece: v.numero, lib: v.kind === 'rapide' ? 'Vente rapide' : v.kind === 'lentille' ? 'Facture lentilles' : 'Facture', d: jPartCli(v), c: 0 });
+        (v.paiements || []).forEach(p => M.push({ cle, nom, date: p.date || v.date, piece: v.numero, lib: `Règlement ${p.mode}${p.ref ? ' · ' + p.ref : ''}`, d: 0, c: p.montant || 0 }));
+        if (v.tropPercu) M.push({ cle, nom, date: v.modifieLe || v.date, piece: v.numero, lib: 'Trop-perçu à rendre', d: v.tropPercu, c: 0 });
+      });
+      const G = new Map();
+      M.forEach(m => { if (!G.has(m.cle)) G.set(m.cle, { nom: m.nom, avant: 0, L: [] }); const g = G.get(m.cle);
+        if (new Date(m.date) < per[0]) g.avant += m.d - m.c; else if (dans(m.date, per)) g.L.push(m); });
+      const H = ['Date', 'Pièce', 'Libellé', 'Débit', 'Crédit', 'Solde'];
+      const rows = []; let TD = 0, TC = 0, TS = 0, nb = 0;
+      [...G.values()].filter(g => g.L.length || Math.abs(g.avant) > 0.5).sort((a, b) => a.nom === 'Clients de passage' ? 1 : b.nom === 'Clients de passage' ? -1 : a.nom.localeCompare(b.nom)).forEach(g => {
+        nb++; rows.push({ type: 'grp', cells: [g.nom, '', '', '', '', ''] });
+        let sol = g.avant, d = 0, cr = 0;
+        if (Math.abs(g.avant) > 0.5) rows.push({ cells: [fmtDate(per[0].toISOString()), '', 'Solde d\'ouverture', '', '', sol] });
+        // par jour, la facture avant ses règlements
+        g.L.sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)) || (b.d > 0) - (a.d > 0) || String(a.date).localeCompare(String(b.date))).forEach(m => { sol += m.d - m.c; d += m.d; cr += m.c; rows.push({ cells: [fmtDate(m.date), m.piece, m.lib, m.d || '', m.c || '', sol] }); });
+        rows.push({ type: 'st', cells: ['', '', `Total ${g.nom}`, d, cr, sol] });
+        TD += d; TC += cr; TS += sol;
+      });
+      rows.push({ type: 'tt', cells: ['', '', 'Total général', TD, TC, TS] });
+      return { titre: 'Journal clients', H, num: 3, rows,
+        kpi: [['Clients mouvementés', String(nb)], ['Débit (part client facturée)', money(TD)], ['Crédit (règlements)', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
+    }
+    // jas : journal des assurances
+    const P = V.filter(({ v }) => v.pec && dans(v.date, per));
+    const G = new Map(); P.forEach(x => { const o = x.v.pec.organisme || '—'; if (!G.has(o)) G.set(o, []); G.get(o).push(x); });
+    const H = ['Date', 'N° facture', 'Assuré', 'N° adhérent', 'N° bon', 'Montant PEC', 'Réglé', 'Reste à recevoir', 'Statut', 'Bordereau'];
+    const rows = []; let TM = 0, TR = 0;
+    [...G.keys()].sort().forEach(o => {
+      rows.push({ type: 'grp', cells: [o, '', '', '', '', '', '', '', '', ''] });
+      let m = 0, r = 0;
+      G.get(o).sort((a, b) => a.v.date.localeCompare(b.v.date)).forEach(({ v, c }) => { const p = v.pec, pr = p.paye || 0;
+        m += p.montant || 0; r += pr;
+        rows.push({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), p.matricule || '', p.bon || '', p.montant || 0, pr, (p.montant || 0) - pr, pecStatut(p), p.bordereau || '—'] }); });
+      rows.push({ type: 'st', cells: ['', '', `Total ${o}`, '', '', m, r, m - r, '', ''] });
+      TM += m; TR += r;
+    });
+    rows.push({ type: 'tt', cells: ['', '', 'Total général', '', '', TM, TR, TM - TR, '', ''] });
+    return { titre: 'Journal des assurances', H, num: 5, rows, numFin: 8,
+      kpi: [['Prises en charge', String(P.length)], ['Montant facturé aux assurances', money(TM)], ['Réglé', money(TR)], ['Reste à recevoir', money(TM - TR), TM - TR > 0.5 ? 'warn-k' : '']] };
+  }
+  // colonnes numériques : de « num » jusqu'à « numFin » (exclu), sinon jusqu'à la fin
+  const estNum = (J, i) => i >= J.num && i < (J.numFin || J.H.length);
+  const cel = (J, i, x) => estNum(J, i) && typeof x === 'number' ? money(x) : esc(String(x ?? ''));
+  function drawJrn(k){
+    const J = journal(k);
+    F(k + 'Kpi').innerHTML = J.kpi.map(([a, b, c]) => kpi(a, b, '', c || '')).join('');
+    F(k + 'Tbl').innerHTML = `<thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+      J.rows.length > 1 ? J.rows.map(r => `<tr class="${r.type || ''}">${r.type === 'grp' ? `<td colspan="${J.H.length}">${esc(r.cells[0])}</td>` : r.cells.map((x, i) => `<td class="${estNum(J, i) ? 'r' : ''}">${cel(J, i, x)}</td>`).join('')}</tr>`).join('')
+      : `<tr><td colspan="${J.H.length}" class="muted">Aucune opération sur la période.</td></tr>`}</tbody>`;
+  }
+  async function enregistrerFichier(blob, nom){
+    const dl = await (window.claude?.use ? window.claude.use('downloads').catch(() => null) : null);
+    if (dl) { await dl.save({ filename: nom, data: blob }); return; }
+    const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
+  F('v-compta').addEventListener('click', async e => {
+    const x = e.target.dataset.jx, pr = e.target.dataset.jp; if (!x && !pr) return;
+    const J = journal(x || pr), titre = `${J.titre} · ${boutiqueCour()} · ${perTxt()}`;
+    if (pr) { openDocs({ kind: 'journal', numero: '', titre: J.titre, J, sous: `${boutiqueCour()} · ${perTxt()}` }); return; }
+    if (!window.XLSX) { show('Export Excel indisponible.'); return; }
+    const aoa = [[titre], [], J.H, ...J.rows.map(r => r.type === 'grp' ? [r.cells[0]] : r.cells.map(c => c === '' ? null : c))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = J.H.map((h, i) => ({ wch: i < 3 ? 22 : 15 }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, J.titre.slice(0, 31));
+    const nom = `${J.titre}_${boutiqueCour()}_${perTxt()}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') + '.xlsx';
+    try { await enregistrerFichier(new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nom); show('Fichier Excel enregistré'); }
+    catch (er) { show(er?.code === 'declined' ? 'Téléchargement annulé.' : 'Le fichier n\'a pas pu être enregistré.'); }
+  });
+  function journalHtml(s){
+    const J = s.J, b = boutiqueCour();
+    return `<div class="d-head">${b === 'Toutes les boutiques' ? `<div class="d-id"><div><div class="d-brand">${esc(PARAM.app.nom)}</div><div class="d-shop">Tous les magasins</div></div></div>` : entete(b)}
+      <div class="d-num"><b>${esc(J.titre.toUpperCase())}</b><div>${esc(perTxt())}</div><div>Édité le ${fmtDate(new Date().toISOString())}</div></div></div>
+      <div class="d-jrn"><table><thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+        J.rows.map(r => `<tr class="${r.type || ''}">${r.type === 'grp' ? `<td colspan="${J.H.length}">${esc(r.cells[0])}</td>` : r.cells.map((x, i) => `<td class="${estNum(J, i) ? 'r' : ''}">${cel(J, i, x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
 
   // --- Tableau de bord
   function drawTB(){
@@ -5009,12 +5146,12 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
 
   /* ================= Documents à imprimer ================= */
   let docSale = null;
-  const DOCS = { bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
-  const docsFor = s => s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', s.kind === 'lentille' ? 'flent' : 'technique', ...(s.pec ? ['assurance'] : [])];
+  const DOCS = { journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
+  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', s.kind === 'lentille' ? 'flent' : 'technique', ...(s.pec ? ['assurance'] : [])];
   function openDocs(s, kinds = docsFor(s)){
     docSale = s;
-    F('dBack').textContent = s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
-    F('dTitle').textContent = s.kind === 'z' && s.provisoire ? `Point de caisse · ${hhmm(s.date)}` : s.kind === 'bord' ? `Bordereau ${s.numero}` : s.kind === 'etiq' ? s.titre : s.kind === 'z' ? `Clôture ${s.numero}` : s.kind === 'rapide' ? `Vente rapide ${s.numero} encaissée` : s.type === 'devis' ? `Devis ${s.numero} ${s.modifieLe ? 'modifié' : 'créé'}` : `Vente ${s.numero} ${s.modifieLe ? 'modifiée' : 'encaissée'}`;
+    F('dBack').textContent = s.kind === 'journal' ? 'Retour à la comptabilité' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
+    F('dTitle').textContent = s.kind === 'journal' ? `${s.titre} · ${s.sous}` : s.kind === 'z' && s.provisoire ? `Point de caisse · ${hhmm(s.date)}` : s.kind === 'bord' ? `Bordereau ${s.numero}` : s.kind === 'etiq' ? s.titre : s.kind === 'z' ? `Clôture ${s.numero}` : s.kind === 'rapide' ? `Vente rapide ${s.numero} encaissée` : s.type === 'devis' ? `Devis ${s.numero} ${s.modifieLe ? 'modifié' : 'créé'}` : `Vente ${s.numero} ${s.modifieLe ? 'modifiée' : 'encaissée'}`;
     F('dTabs').innerHTML = kinds.map((k, i) => `<button class="tab${i ? '' : ' on'}" data-doc="${k}">${DOCS[k]}</button>`).join('');
     showDoc(kinds[0]);
     go('docs');
@@ -5037,7 +5174,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       show(e?.code === 'declined' ? 'Impression annulée.' : e?.code === 'lib' ? 'Générateur PDF indisponible : vérifiez la connexion.' : 'Le document n\'a pas pu être préparé.');
     } finally { F('dPrint').disabled = false; }
   });
-  F('dBack').addEventListener('click', () => docSale.kind === 'bord' ? openCompta('pec') : docSale.kind === 'etiq' ? openStock() : docSale.kind === 'z' ? openCJ() : docSale.kind === 'rapide' ? openRapide() : openDetail(docSale));
+  F('dBack').addEventListener('click', () => docSale.kind === 'journal' ? openCompta(coTab) : docSale.kind === 'bord' ? openCompta('pec') : docSale.kind === 'etiq' ? openStock() : docSale.kind === 'z' ? openCJ() : docSale.kind === 'rapide' ? openRapide() : openDetail(docSale));
 
   const lensTable = o => `<table class="d-rx"><thead><tr><th></th><th>Sphère</th><th>Cylindre</th><th>Axe</th><th>Addition</th><th>Rayon (mm)</th><th>Diamètre (mm)</th></tr></thead><tbody>${
     ['OD', 'OG'].map(k => { const e = o[k]; return e ? `<tr><th>${k}</th><td>${e.s != null ? d2(e.s) : '—'}</td><td>${e.c ? d2(e.c) : '—'}</td><td>${e.c ? e.a + '°' : '—'}</td><td>${e.add != null ? d2(e.add) : '—'}</td><td>${e.rc != null ? Number(e.rc).toFixed(2) : '—'}</td><td>${e.dia != null ? Number(e.dia).toFixed(1) : '—'}</td></tr>` : `<tr><th>${k}</th><td colspan="6">—</td></tr>`; }).join('')}</tbody></table>`;
@@ -5084,6 +5221,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   function showDoc0(k){
     docTab = k; try { majDocMail(); } catch(_) {}
     const s = docSale; let h = '';
+    if (s.kind === 'journal') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = journalHtml(s); return; }
     if (s.kind === 'bord') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = bordereauHtml(s); return; }
     if (s.kind === 'etiq') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = etiquettesHtml(s); renderBarcodes(); return; }
     if (s.kind === 'z') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = rapportZHtml(s); return; }
