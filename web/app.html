@@ -887,7 +887,7 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><h1>Paramètres</h1><button class="save" id="prSave">Enregistrer</button></div>
-  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="fis">Pays et taxes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes</button></div>
+  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="fis">Pays et taxes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes et accès</button></div>
 
   <section class="blk pr-p" data-p="gen">
     <h2>Général</h2>
@@ -942,12 +942,39 @@ select.inp{appearance:auto}
     <p class="sub">Chaque ordinateur ou tablette activé pour DIOPTRA. Désactivez immédiatement un appareil perdu, volé ou remplacé : il ne pourra plus recevoir ni envoyer de données.</p>
     <p class="muted" id="pstCe" style="font-size:13px"></p>
     <form id="pstLogin" class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end">
-      <div class="f"><label for="pstMail">E-mail du compte administrateur</label><input type="email" id="pstMail" autocomplete="username"></div>
+      <div class="f"><label for="pstMail">E-mail de votre compte</label><input type="email" id="pstMail" autocomplete="username"></div>
       <div class="f"><label for="pstMdp">Mot de passe</label><input type="password" id="pstMdp" autocomplete="current-password"></div>
-      <button class="save" type="submit">Afficher les postes</button>
+      <button class="save" type="submit">Se connecter</button>
     </form>
     <p class="muted" id="pstSt" style="font-size:13px"></p>
     <div class="tbl-wrap" id="pstBox" hidden><table class="s-tbl"><thead><tr><th>Code</th><th>Nom</th><th>Magasin</th><th>Activé le</th><th>Dernière connexion</th><th>État</th><th></th></tr></thead><tbody id="pstRows"></tbody></table></div>
+
+    <div id="cptBox" hidden>
+      <div class="row-head" style="margin-top:24px"><h2>Comptes d'accès</h2><button class="ghost" type="button" id="cptNew">+ Nouveau compte</button></div>
+      <p class="sub">Les comptes servent à activer les postes (et, pour les administrateurs, à gérer postes et comptes). Un <b>compte d'activation</b> ne peut activer des postes que dans les magasins qui lui sont attribués. Au quotidien, les vendeurs utilisent leur code PIN, pas ces comptes.</p>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Nom</th><th>E-mail</th><th>Type</th><th>Magasins</th><th>État</th><th></th></tr></thead><tbody id="cptRows"></tbody></table></div>
+      <form id="cptForm" class="fx-card" style="margin-top:12px" hidden autocomplete="off">
+        <b id="cptFormT">Nouveau compte</b>
+        <div class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+          <div class="f"><label for="cptNom">Nom</label><input type="text" id="cptNom"></div>
+          <div class="f"><label for="cptMail">E-mail (identifiant)</label><input type="email" id="cptMail"></div>
+          <div class="f"><label for="cptRole">Type de compte</label><select class="inp" id="cptRole"><option value="activation">Activation de postes (responsable)</option><option value="admin">Administrateur (tous les magasins)</option></select></div>
+          <div class="f"><label for="cptMdpN" id="cptMdpL">Mot de passe initial (10 caractères minimum)</label><input type="text" id="cptMdpN" autocomplete="new-password"></div>
+        </div>
+        <div id="cptMags"></div>
+        <div class="st-foot"><span class="muted" id="cptSt" style="font-size:13px"></span><span><button class="ghost" type="button" id="cptCancel">Annuler</button> <button class="save" type="submit">Enregistrer</button></span></div>
+      </form>
+    </div>
+
+    <div id="mdpBox" hidden>
+      <h2 style="margin-top:24px">Changer mon mot de passe</h2>
+      <form id="mdpForm" class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end" autocomplete="off">
+        <div class="f"><label for="mdpA">Mot de passe actuel</label><input type="password" id="mdpA" autocomplete="current-password"></div>
+        <div class="f"><label for="mdpN">Nouveau mot de passe (10 caractères minimum)</label><input type="password" id="mdpN" autocomplete="new-password"></div>
+        <button class="ghost" type="submit">Changer</button>
+      </form>
+      <p class="muted" id="mdpSt" style="font-size:13px"></p>
+    </div>
   </section>
 </main>
 
@@ -3356,7 +3383,7 @@ select.inp{appearance:auto}
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
     drawMags(); drawUsrs(); drawRap(); drawFiscal();
-    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { F('pstBox').hidden = true; F('pstSt').textContent = ''; } }
+    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
     go('param');
@@ -3375,11 +3402,66 @@ select.inp{appearance:auto}
       <td>${fmtJ(p.cree_le)}</td><td>${fmtJ(p.vu_le)}</td><td>${p.actif ? 'Actif' : '<b style="color:var(--pin)">Désactivé</b>'}</td>
       <td>${POSTE && p.id === POSTE.id ? '' : `<button class="ghost" type="button" data-pst="${esc(p.id)}" data-on="${p.actif ? 0 : 1}">${p.actif ? 'Désactiver' : 'Réactiver'}</button>`}</td></tr>`).join('');
   }
+  let pstCompte = null, cptListe = [], cptEdit = null;
+  const ROLES_CPT = { admin: 'Administrateur', activation: 'Activation de postes' };
   F('pstLogin').addEventListener('submit', async e => {
     e.preventDefault(); F('pstSt').textContent = 'Connexion…';
-    try { const r = await window.DSYNC.connexionAdmin(F('pstMail').value.trim(), F('pstMdp').value); pstSession = r.session; F('pstMdp').value = '';
-      F('pstSt').textContent = `${r.org.nom} · ${r.postes.length} poste(s)`; drawPostes(r.postes); }
+    try { const r = await window.DSYNC.connexionAdmin(F('pstMail').value.trim(), F('pstMdp').value); pstSession = r.session; pstCompte = r.compte; F('pstMdp').value = '';
+      F('mdpBox').hidden = false;
+      if (r.compte.role !== 'admin') { F('pstSt').textContent = `${r.org.nom} · compte d'activation (${(r.compte.magasins || []).join(', ')}) : il permet seulement d'activer des postes.`; F('pstBox').hidden = true; F('cptBox').hidden = true; return; }
+      F('pstSt').textContent = `${r.org.nom} · connecté en administrateur · ${r.postes.length} poste(s)`; drawPostes(r.postes); await chargerComptes(); }
     catch (er) { F('pstSt').textContent = er.message; }
+  });
+  async function chargerComptes(){
+    const r = await window.DSYNC.listeComptes(pstSession); cptListe = r.comptes;
+    F('cptBox').hidden = false;
+    F('cptRows').innerHTML = cptListe.map(c => `<tr class="${c.actif ? '' : 'pt'}"><td><b>${esc(c.nom)}</b>${c.id === r.moi ? ' <span class="chip">vous</span>' : ''}</td><td>${esc(c.email)}</td><td>${ROLES_CPT[c.role] || c.role}</td>
+      <td>${c.role === 'admin' ? '<span class="muted">Tous</span>' : esc((c.magasins || []).join(', '))}</td><td>${c.actif ? 'Actif' : '<b style="color:var(--pin)">Désactivé</b>'}</td>
+      <td style="white-space:nowrap">${c.id === r.moi ? '' : `<button class="ghost" type="button" data-cpt-mod="${c.id}">Modifier</button> <button class="ghost" type="button" data-cpt-on="${c.id}" data-on="${c.actif ? 0 : 1}">${c.actif ? 'Désactiver' : 'Réactiver'}</button>`}</td></tr>`).join('');
+  }
+  const mdpAlea = () => { const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let x = ''; const r = crypto.getRandomValues(new Uint32Array(12)); r.forEach(n => x += a[n % a.length]); return x; };
+  function drawCptMags(sel){
+    const role = F('cptRole').value;
+    F('cptMags').hidden = role === 'admin';
+    F('cptMags').innerHTML = `<span class="lbl">Magasins où ce compte peut activer des postes</span><div class="fx-cats">${PARAM.magasins.filter(m => m.actif).map(m => `<label><input type="checkbox" data-cpt-mag="${esc(m.nom)}"${(sel || []).includes(m.nom) ? ' checked' : ''}> ${esc(m.nom)}</label>`).join('')}</div>`;
+  }
+  function ouvrirCpt(c){
+    cptEdit = c || null; F('cptForm').hidden = false; F('cptSt').textContent = '';
+    F('cptFormT').textContent = c ? `Modifier · ${c.nom}` : 'Nouveau compte';
+    F('cptNom').value = c ? c.nom : ''; F('cptNom').disabled = !!c; F('cptMail').value = c ? c.email : ''; F('cptMail').disabled = !!c;
+    F('cptRole').value = c ? c.role : 'activation';
+    F('cptMdpL').textContent = c ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe initial (10 caractères minimum)';
+    F('cptMdpN').value = c ? '' : mdpAlea();
+    drawCptMags(c ? c.magasins : (magasinsVisibles()[0] && boutiqueCour() !== 'Toutes les boutiques' ? [boutiqueCour()] : []));
+    (c ? F('cptRole') : F('cptNom')).focus();
+  }
+  F('cptNew').addEventListener('click', () => ouvrirCpt(null));
+  F('cptCancel').addEventListener('click', () => { F('cptForm').hidden = true; });
+  F('cptRole').addEventListener('change', () => drawCptMags([...F('cptMags').querySelectorAll('[data-cpt-mag]:checked')].map(x => x.dataset.cptMag)));
+  F('cptForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const mags = [...F('cptMags').querySelectorAll('[data-cpt-mag]:checked')].map(x => x.dataset.cptMag), mdp = F('cptMdpN').value.trim();
+    const d = { role: F('cptRole').value, magasins: mags };
+    try {
+      if (cptEdit) { if (mdp) d.motdepasse = mdp; await window.DSYNC.majCompte(pstSession, cptEdit.id, d); }
+      else await window.DSYNC.creerCompte(pstSession, { ...d, nom: F('cptNom').value.trim(), email: F('cptMail').value.trim(), motdepasse: mdp });
+      F('cptForm').hidden = true; await chargerComptes();
+      show(cptEdit ? 'Compte modifié' : 'Compte créé');
+      if (mdp) F('pstSt').textContent = `Mot de passe à transmettre à ${cptEdit ? cptEdit.nom : F('cptNom').value.trim()} : ${mdp} (il pourra le changer ici après connexion).`;
+    } catch (er) { F('cptSt').textContent = er.message; }
+  });
+  F('cptRows').addEventListener('click', async e => {
+    const d = e.target.dataset;
+    if (d.cptMod) { ouvrirCpt(cptListe.find(c => c.id === d.cptMod)); return; }
+    if (d.cptOn) { const on = d.on === '1';
+      if (!on && !confirm('Désactiver ce compte ? Il ne pourra plus activer de poste. Les postes déjà activés continuent de fonctionner.')) return;
+      try { await window.DSYNC.majCompte(pstSession, d.cptOn, { actif: on }); await chargerComptes(); show(on ? 'Compte réactivé' : 'Compte désactivé'); }
+      catch (er) { F('pstSt').textContent = er.message; } }
+  });
+  F('mdpForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try { await window.DSYNC.changerMdp(pstSession, F('mdpA').value, F('mdpN').value); F('mdpA').value = ''; F('mdpN').value = ''; F('mdpSt').textContent = 'Mot de passe changé.'; }
+    catch (er) { F('mdpSt').textContent = er.message; }
   });
   F('pstRows').addEventListener('click', async e => {
     const id = e.target.dataset.pst; if (!id) return;

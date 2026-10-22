@@ -41,6 +41,14 @@ function construire(opts = {}) {
     if (!rows[0]) return err(rep, 401, 'Session expirée, reconnectez-vous.');
     req.compte = rows[0];
   }
+  async function sessionAdmin(req, rep) {
+    await session(req, rep);
+    if (rep.sent) return;
+    if (req.compte.role !== 'admin') return err(rep, 403, 'Réservé aux comptes administrateurs.');
+  }
+  const compteInfo = c => ({ id: c.id, nom: c.nom, email: c.email, role: c.role, magasins: c.magasins || [] });
+  // magasins qu'un compte peut utiliser pour activer un poste
+  const magasinsCompte = (c, mags) => c.role === 'admin' ? mags : mags.filter(m => (c.magasins || []).includes(m.nom));
 
   async function magasinsDe(orgId) {
     const { rows } = await pool.query(`SELECT data FROM donnees WHERE org_id = $1 AND coll = 'parametres' AND id = '_' AND NOT supprime`, [orgId]);
@@ -60,7 +68,10 @@ function construire(opts = {}) {
     const jeton = S.nouveauJeton();
     await pool.query(`INSERT INTO sessions (jeton_hash, compte_id, expire_le) VALUES ($1, $2, now() + interval '2 hours')`, [S.hacherJeton(jeton), c.id]);
     const { rows: postes } = await pool.query(`SELECT id, num, code, nom, magasin, actif, vu_le, cree_le FROM postes WHERE org_id = $1 ORDER BY num`, [c.org_id]);
-    return { session: jeton, org: { id: c.org_id, nom: c.org_nom }, compte: { nom: c.nom, email: c.email }, magasins: await magasinsDe(c.org_id), postes };
+    const mags = await magasinsDe(c.org_id), autorises = magasinsCompte(c, mags);
+    if (c.role !== 'admin' && !autorises.length) return err(rep, 403, 'Aucun magasin n\'est attribué à ce compte. Demandez à l\'administrateur de vous en attribuer un.');
+    return { session: jeton, org: { id: c.org_id, nom: c.org_nom }, compte: compteInfo(c), magasins: autorises,
+      postes: c.role === 'admin' ? postes : postes.map(p => ({ code: p.code })) };
   });
 
   // Activation d'un nouveau poste (appareil)
@@ -70,6 +81,10 @@ function construire(opts = {}) {
     const code = String(b.code || '').trim().toUpperCase();
     if (!nom) return err(rep, 400, 'Donnez un nom au poste (ex. Caisse Libreville).');
     if (!/^[A-Z0-9]{2,6}$/.test(code)) return err(rep, 400, 'Le code du poste doit faire 2 à 6 lettres ou chiffres (ex. LBV1).');
+    if (req.compte.role !== 'admin') {
+      const ok = magasinsCompte(req.compte, await magasinsDe(req.compte.org_id)).some(m => m.nom === magasin);
+      if (!ok) return err(rep, 403, 'Ce compte ne peut pas activer de poste dans ce magasin.');
+    }
     const jeton = S.nouveauJeton(), id = S.nouvelId('pt_');
     try {
       const p = await tx(async c => {
@@ -80,20 +95,61 @@ function construire(opts = {}) {
            RETURNING id, num, code, nom, magasin`, [id, req.compte.org_id, n, code, nom, magasin, S.hacherJeton(jeton), req.compte.email]);
         return rows[0];
       });
-      return { jeton, poste: p, org: { id: req.compte.org_id, nom: req.compte.org_nom }, compte: { nom: req.compte.nom, email: req.compte.email } };
+      return { jeton, poste: p, org: { id: req.compte.org_id, nom: req.compte.org_nom }, compte: compteInfo(req.compte) };
     } catch (e) {
       if (e.code === '23505') return err(rep, 409, `Le code ${code} est déjà utilisé par un autre poste.`);
       throw e;
     }
   });
 
-  app.get('/api/postes', { preHandler: session }, async req => {
+  app.get('/api/postes', { preHandler: sessionAdmin }, async req => {
     const { rows } = await pool.query(`SELECT id, num, code, nom, magasin, actif, vu_le, cree_le FROM postes WHERE org_id = $1 ORDER BY num`, [req.compte.org_id]);
     return { postes: rows };
   });
-  app.post('/api/postes/:id/actif', { preHandler: session }, async (req, rep) => {
+  app.post('/api/postes/:id/actif', { preHandler: sessionAdmin }, async (req, rep) => {
     const { rowCount } = await pool.query('UPDATE postes SET actif = $1 WHERE id = $2 AND org_id = $3', [!!req.body?.actif, req.params.id, req.compte.org_id]);
     if (!rowCount) return err(rep, 404, 'Poste introuvable.');
+    return { ok: true };
+  });
+
+  // ---------- Comptes d'accès (administrateurs et comptes d'activation) ----------
+  const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '').trim());
+  app.get('/api/comptes', { preHandler: sessionAdmin }, async req => {
+    const { rows } = await pool.query('SELECT id, nom, email, role, magasins, actif, cree_le FROM comptes WHERE org_id = $1 ORDER BY role, nom', [req.compte.org_id]);
+    return { comptes: rows, moi: req.compte.id };
+  });
+  app.post('/api/comptes', { preHandler: sessionAdmin }, async (req, rep) => {
+    const { email, nom, role = 'activation', magasins = [], motdepasse } = req.body || {};
+    if (!emailOk(email) || !String(nom || '').trim()) return err(rep, 400, 'Nom et e-mail valides obligatoires.');
+    if (!['admin', 'activation'].includes(role)) return err(rep, 400, 'Type de compte invalide.');
+    if (String(motdepasse || '').length < 10) return err(rep, 400, 'Le mot de passe doit faire au moins 10 caractères.');
+    if (role === 'activation' && (!Array.isArray(magasins) || !magasins.length)) return err(rep, 400, 'Choisissez au moins un magasin pour ce compte.');
+    try {
+      const id = S.nouvelId('cpt_');
+      await pool.query('INSERT INTO comptes (id, org_id, email, nom, mdp_hash, role, magasins) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [id, req.compte.org_id, String(email).trim().toLowerCase(), String(nom).trim().slice(0, 80), S.hacherMdp(motdepasse), role, JSON.stringify(role === 'admin' ? [] : magasins.map(String))]);
+      return { ok: true, id };
+    } catch (e) { if (e.code === '23505') return err(rep, 409, 'Cette adresse e-mail est déjà utilisée par un autre compte.'); throw e; }
+  });
+  app.post('/api/comptes/:id', { preHandler: sessionAdmin }, async (req, rep) => {
+    const b = req.body || {}, id = req.params.id;
+    const { rows: [c] } = await pool.query('SELECT * FROM comptes WHERE id = $1 AND org_id = $2', [id, req.compte.org_id]);
+    if (!c) return err(rep, 404, 'Compte introuvable.');
+    const role = b.role || c.role, actif = b.actif != null ? !!b.actif : c.actif, magasins = Array.isArray(b.magasins) ? b.magasins.map(String) : c.magasins;
+    if (id === req.compte.id && (!actif || role !== 'admin')) return err(rep, 400, 'Vous ne pouvez pas désactiver votre propre compte ni retirer vos droits d\'administrateur.');
+    if (role === 'activation' && !magasins.length) return err(rep, 400, 'Choisissez au moins un magasin pour ce compte.');
+    if (b.motdepasse != null && String(b.motdepasse).length < 10) return err(rep, 400, 'Le mot de passe doit faire au moins 10 caractères.');
+    await pool.query('UPDATE comptes SET role = $1, actif = $2, magasins = $3' + (b.motdepasse ? ', mdp_hash = $5' : '') + ' WHERE id = $4',
+      [role, actif, JSON.stringify(role === 'admin' ? [] : magasins), id, ...(b.motdepasse ? [S.hacherMdp(b.motdepasse)] : [])]);
+    if (!actif || b.motdepasse) await pool.query('DELETE FROM sessions WHERE compte_id = $1', [id]);
+    return { ok: true };
+  });
+  // changer son propre mot de passe
+  app.post('/api/moi/motdepasse', { preHandler: session }, async (req, rep) => {
+    const { ancien, nouveau } = req.body || {};
+    if (!S.verifierMdp(ancien || '', req.compte.mdp_hash)) return err(rep, 401, 'Mot de passe actuel incorrect.');
+    if (String(nouveau || '').length < 10) return err(rep, 400, 'Le nouveau mot de passe doit faire au moins 10 caractères.');
+    await pool.query('UPDATE comptes SET mdp_hash = $1 WHERE id = $2', [S.hacherMdp(nouveau), req.compte.id]);
     return { ok: true };
   });
 

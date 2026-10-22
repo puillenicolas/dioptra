@@ -300,7 +300,8 @@
   const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
   function suggestionCode(mag, postes) {
     const mots = sansAccents(mag).toUpperCase().replace(/^MAGASIN\s+/, '').replace(/[^A-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
-    const base = (mots.length > 1 ? mots.map(m => m[0]).join('') : (mots[0] || 'POS')).slice(0, 3).padEnd(3, 'X');
+    // dernier mot du nom (souvent la ville) : « FV Lomé » → LOM, « Fashion Vision Libreville » → LIB
+    const base = (mots.length ? mots[mots.length - 1] : 'POS').slice(0, 3).padEnd(3, 'X');
     const pris = new Set((postes || []).map(p => p.code));
     for (let n = 1; n < 100; n++) if (!pris.has(base + n)) return base + n;
     return base + Date.now() % 100;
@@ -335,7 +336,7 @@
         el.innerHTML = `<form class="box">
           <div class="logo">${LOGO}<span>dioptra</span></div>
           <h1>${esc(cx.org.nom)}</h1>
-          <p>Bonjour ${esc(cx.compte.nom)}. Dans quel magasin se trouve ce poste ?</p>
+          <p>Bonjour ${esc(cx.compte.nom)}. Dans quel magasin se trouve ce poste ?${cx.compte.role === 'activation' ? ' (magasins attribués à votre compte)' : ''}</p>
           ${mags.length ? `<label>Magasin<select name="mag">${mags.map(m => `<option>${esc(m.nom)}</option>`).join('')}</select></label>`
             : `<label>Nom de votre premier magasin<input name="mag" required placeholder="ex. Fashion Vision Libreville"></label>
                <p style="font-size:13px">Vous pourrez ajouter les autres magasins ensuite dans Paramètres.</p>`}
@@ -414,6 +415,10 @@
       connexionAdmin: (email, motdepasse) => api('/api/connexion', { email, motdepasse }).catch(enLigneSinon('Pas de connexion internet.')),
       listePostes: session => api('/api/postes', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
       posteActif: (session, id, actif) => api('/api/postes/' + encodeURIComponent(id) + '/actif', { actif }, session).catch(enLigneSinon('Pas de connexion internet.')),
+      listeComptes: session => api('/api/comptes', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
+      creerCompte: (session, d) => api('/api/comptes', d, session).catch(enLigneSinon('Pas de connexion internet.')),
+      majCompte: (session, id, d) => api('/api/comptes/' + encodeURIComponent(id), d, session).catch(enLigneSinon('Pas de connexion internet.')),
+      changerMdp: (session, ancien, nouveau) => api('/api/moi/motdepasse', { ancien, nouveau }, session).catch(enLigneSinon('Pas de connexion internet.')),
       essaiRapports: () => api('/api/rapports/essai', {}, S.meta.jeton).catch(enLigneSinon('Pas de connexion internet.')),
       // lecture automatique de documents (bons de livraison) par l'IA, via le serveur
       ia: {

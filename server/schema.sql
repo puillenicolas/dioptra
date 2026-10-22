@@ -70,3 +70,7 @@ CREATE TABLE IF NOT EXISTS envois (
   le          timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS envois_cle ON envois (org_id, type, cle) WHERE ok AND cle IS NOT NULL;
+
+-- Types de comptes : administrateur (tout) ou activation (activer des postes dans certains magasins seulement)
+ALTER TABLE comptes ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'admin';
+ALTER TABLE comptes ADD COLUMN IF NOT EXISTS magasins jsonb NOT NULL DEFAULT '[]';

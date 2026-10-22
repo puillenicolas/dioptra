@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "build": "node scripts/build.js",
-    "test": "node test/serveur.test.js && node test/taches.test.js",
+    "test": "node test/serveur.test.js && node test/taches.test.js && node test/comptes.test.js",
     "creer-opticien": "node scripts/creer-opticien.js"
   },
   "dependencies": {
