@@ -502,6 +502,11 @@ tr.pt td{color:var(--muted)}
 .pr-droits{display:grid;gap:4px}
 .pr-dr{margin:0!important;padding:8px 0;border-bottom:1px solid var(--line)}
 [hidden]{display:none!important}
+.per-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
+.per-bar .chip-btn{padding:6px 12px;font-size:13px;cursor:pointer}
+.per-bar .chip-btn.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.per-bar .per-dates{display:flex;gap:6px;align-items:center}
+.per-bar .per-dates .inp{padding:6px 8px;width:auto}
 .s-tbl.jrn td,.s-tbl.jrn th{white-space:nowrap;font-size:13px}
 .s-tbl.jrn td.r,.s-tbl.jrn th.r{text-align:right;font-variant-numeric:tabular-nums}
 .s-tbl.jrn tr.grp td{background:var(--bg);font-weight:700}
@@ -1017,7 +1022,7 @@ select.inp{appearance:auto}
   </button>
   <div class="head"><div><div class="k-lbl" id="coSub"></div><h1>Comptabilité &amp; PEC</h1></div>
     <div class="per"><select class="inp" id="coPer">
-      <option value="jour">Aujourd'hui</option><option value="mois" selected>Ce mois-ci</option><option value="mprec">Mois précédent</option><option value="annee">Cette année</option><option value="perso">Période personnalisée</option></select>
+      <option value="jour">Aujourd'hui</option><option value="semaine">Cette semaine</option><option value="mois" selected>Ce mois-ci</option><option value="mprec">Mois précédent</option><option value="annee">Cette année</option><option value="perso">Période personnalisée</option></select>
       <span id="coPerso" hidden><input class="inp" type="date" id="coDu"> → <input class="inp" type="date" id="coAu"></span></div>
   </div>
   <div class="tabs" id="coTabs">
@@ -1074,6 +1079,7 @@ select.inp{appearance:auto}
     <section class="blk">
       <div class="row-head"><h2>Journal des factures</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jfa">Exporter Excel</button> <button class="ghost" type="button" data-jp="jfa">Imprimer</button></span></div>
       <p class="sub">Toutes les factures de la période (ventes et ventes rapides), avec le détail HT, taxes et TTC, et la répartition entre l'assurance et le client.</p>
+      <div class="per-bar" data-perbar></div>
       <div class="s-stats co-kpi" id="jfaKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jfaTbl"></table></div>
     </section>
@@ -1082,6 +1088,7 @@ select.inp{appearance:auto}
     <section class="blk">
       <div class="row-head"><h2>Journal clients</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jcl">Exporter Excel</button> <button class="ghost" type="button" data-jp="jcl">Imprimer</button></span></div>
       <p class="sub">Compte de chaque client sur la période : au débit, la part client des factures ; au crédit, les règlements reçus. Le solde d'ouverture reprend ce qui restait dû au début de la période.</p>
+      <div class="per-bar" data-perbar></div>
       <div class="s-stats co-kpi" id="jclKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jclTbl"></table></div>
     </section>
@@ -1090,6 +1097,7 @@ select.inp{appearance:auto}
     <section class="blk">
       <div class="row-head"><h2>Journal des assurances</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jas">Exporter Excel</button> <button class="ghost" type="button" data-jp="jas">Imprimer</button></span></div>
       <p class="sub">Prises en charge de la période, regroupées par organisme : montant facturé à l'assurance, réglé, reste à recevoir, statut et bordereau.</p>
+      <div class="per-bar" data-perbar></div>
       <div class="s-stats co-kpi" id="jasKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jasTbl"></table></div>
     </section>
@@ -3798,6 +3806,7 @@ select.inp{appearance:auto}
     const t = new Date(), y = t.getFullYear(), m = t.getMonth(), P = F('coPer').value;
     const d0 = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
     if (P === 'jour') return [d0(t), t];
+    if (P === 'semaine') { const l = d0(t); l.setDate(l.getDate() - ((l.getDay() + 6) % 7)); return [l, t]; }   // depuis lundi
     if (P === 'mois') return [new Date(y, m, 1), t];
     if (P === 'mprec') return [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)];
     if (P === 'annee') return [new Date(y, 0, 1), t];
@@ -3814,7 +3823,7 @@ select.inp{appearance:auto}
     F('coSub').textContent = boutiqueCour();
     coTab = tab; F('coTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.co === tab));
     document.querySelectorAll('.co-p').forEach(p => p.hidden = p.dataset.p !== tab);
-    F('coPer').parentElement.hidden = !['tb', 'bq', 'jfa', 'jcl', 'jas'].includes(tab);
+    F('coPer').parentElement.hidden = !['tb', 'bq'].includes(tab);
     ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas') })[tab]();
     go('compta');
   }
@@ -3897,7 +3906,24 @@ select.inp{appearance:auto}
   // colonnes numériques : de « num » jusqu'à « numFin » (exclu), sinon jusqu'à la fin
   const estNum = (J, i) => i >= J.num && i < (J.numFin || J.H.length);
   const cel = (J, i, x) => estNum(J, i) && typeof x === 'number' ? money(x) : esc(String(x ?? ''));
+  const PER_BTN = [['jour', 'Aujourd\'hui'], ['semaine', 'Cette semaine'], ['mois', 'Mois en cours'], ['mprec', 'Mois précédent'], ['perso', 'Période précise']];
+  function drawPerBar(){
+    const P = F('coPer').value;
+    document.querySelectorAll('[data-perbar]').forEach(b => {
+      b.innerHTML = PER_BTN.map(([v, t]) => `<button type="button" class="chip-btn${P === v ? ' on' : ''}" data-per="${v}">${t}</button>`).join('')
+        + (P === 'perso' ? `<span class="per-dates"><input class="inp" type="date" data-perdu value="${F('coDu').value}"> → <input class="inp" type="date" data-perau value="${F('coAu').value}"></span>` : '')
+        + `<span class="muted" style="font-size:13px;margin-left:4px">${esc(perTxt())}</span>`;
+    });
+  }
+  F('v-compta').addEventListener('click', e => { const v = e.target.dataset.per; if (!v) return;
+    F('coPer').value = v; F('coPerso').hidden = v !== 'perso';
+    if (v === 'perso' && !F('coDu').value) { const [a, b] = periode(); F('coDu').value = dayKey(a.toISOString()); F('coAu').value = dayKey(b.toISOString()); }
+    openCompta(); });
+  F('v-compta').addEventListener('change', e => {
+    if ('perdu' in e.target.dataset) F('coDu').value = e.target.value; else if ('perau' in e.target.dataset) F('coAu').value = e.target.value; else return;
+    openCompta(); });
   function drawJrn(k){
+    drawPerBar();
     const J = journal(k);
     F(k + 'Kpi').innerHTML = J.kpi.map(([a, b, c]) => kpi(a, b, '', c || '')).join('');
     F(k + 'Tbl').innerHTML = `<thead><tr>${J.H.map((h, i) => `<th class="${estNum(J, i) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
