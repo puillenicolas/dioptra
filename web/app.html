@@ -5621,6 +5621,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   try { if (EN_LIGNE || localStorage.getItem('verrou') === user.id) verrouiller(); } catch(_) {}
   exigerCode();
   majTuileCaisse(); majTuileCmd();
+  if (EN_LIGNE) F('mlSend').textContent = 'Envoyer';   // en ligne : l'e-mail part du serveur DIOPTRA, pas de Gmail
   if (location.hash === '#clients') go('clients');
 
   /* ================= Points d'accroche pour la synchronisation (version en ligne) ================= */
