@@ -502,6 +502,16 @@ tr.pt td{color:var(--muted)}
 .pr-droits{display:grid;gap:4px}
 .pr-dr{margin:0!important;padding:8px 0;border-bottom:1px solid var(--line)}
 [hidden]{display:none!important}
+.fx-card{border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}
+.fx-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+.fx-head label,.fx-mention label{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--muted)}
+.fx-tx{display:grid;grid-template-columns:minmax(0,140px) 90px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 0;border-top:1px dashed var(--line)}
+.fx-cats{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px}
+.fx-cats label{display:flex;gap:5px;align-items:center}
+.fx-none{font-size:13px;color:var(--muted);padding:6px 0}
+@media (max-width:700px){.fx-head,.fx-tx{grid-template-columns:1fr}}
+.d-tot tr.tx td{font-size:12px;color:#444}
+.d-mention{font-size:11px;color:#555;margin:4px 0 0}
 .rap-grid{display:grid;grid-template-columns:140px minmax(0,1fr);gap:14px;max-width:760px;margin-top:10px}
 .rap-mags{display:grid;gap:10px;max-width:760px;margin-top:4px}
 @media (max-width:640px){.rap-grid{grid-template-columns:1fr}}
@@ -856,7 +866,7 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><h1>Paramètres</h1><button class="save" id="prSave">Enregistrer</button></div>
-  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes</button></div>
+  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="fis">Pays et taxes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes</button></div>
 
   <section class="blk pr-p" data-p="gen">
     <h2>Général</h2>
@@ -892,6 +902,12 @@ select.inp{appearance:auto}
       <div><h2>Assurances / mutuelles</h2><p class="sub">Une par ligne. Proposées dans la prise en charge (« Autre » reste disponible).</p><textarea class="inp" id="prOrgs" rows="10"></textarea></div>
       <div><h2>Motifs de sortie d'espèces</h2><p class="sub">Un par ligne. « Dépôt en banque » est conservé pour le rapprochement bancaire.</p><textarea class="inp" id="prMotifs" rows="10"></textarea></div>
     </div>
+  </section>
+
+  <section class="blk pr-p" data-p="fis" hidden>
+    <div class="row-head"><h2>Pays et taxes</h2><button class="ghost" id="fxAdd" type="button">+ Ajouter un pays ou un régime</button></div>
+    <p class="sub">Un profil par pays (ou par régime fiscal particulier). Chaque magasin choisit son profil dans l'onglet Magasins. Les prix de vente sont saisis TTC : le HT et chaque taxe sont calculés et imprimés sur les factures et devis. Taux à faire valider par votre expert-comptable.</p>
+    <div id="prPays" class="pr-cards"></div>
   </section>
 
   <section class="blk pr-p" data-p="drt" hidden>
@@ -1932,6 +1948,8 @@ select.inp{appearance:auto}
       { id: 'vd', prenom: 'Vendeur', nom: 'démo', ini: 'VD', role: 'vendeur', magasins: [], pin: '111111', actif: true } ],
     organismes: ['CNAMGS', 'ASCOMA', 'Gras Savoye', 'NSIA Assurances', 'AXA Assurances', 'OGAR', 'SUNU Assurances'],
     motifs: ['Dépôt en banque', 'Achat de fournitures', 'Transport', 'Remboursement client', 'Autre'],
+    // Profils fiscaux : un par pays (ou régime particulier) ; chaque magasin en choisit un
+    pays: [ { id: 'ga', pays: 'Gabon', libelle: '', taxes: [ { nom: 'TVA', taux: 18, cats: [] }, { nom: 'CSS', taux: 1, cats: [] } ], mention: 'TVA non applicable' } ],
     droits: { modifVente: false, corrCaisse: false, modifClient: true, produits: true, tarifs: false, sorties: true, rouvrirCaisse: false, compta: true, marges: false, remises: true },
   };
   let PARAM; try { PARAM = JSON.parse(localStorage.getItem('parametres') || 'null'); } catch(_) {}
@@ -2711,7 +2729,7 @@ select.inp{appearance:auto}
     };
     if (editing) { appliquerModif(editing, draft, ['lignes','total','remise','net','resume','offre','paire2','paire2Lib','paire2Cout','paire2Px','ordonnance','verres','monture','commentaire','commentaireAtelier','remisesLignes']); return; }
     if (mode === 'devis') {
-      draft.type = 'devis'; draft.numero = nextNum('DV');
+      draft.type = 'devis'; draft.numero = nextNum('DV'); figerFiscal(draft);
       (current.historique = current.historique || []).push(draft); save();
       openDocs(draft);
       show(`Devis ${draft.numero} créé`);
@@ -2866,7 +2884,7 @@ select.inp{appearance:auto}
       lentilles: { OD: prodOf('pod'), OG: prodOf('pog') }, monture: { des:'', px:0 } };
     if (lentEditing) { appliquerModif(lentEditing, d, ['lignes','total','remise','net','resume','offre','ordonnance','lentilles']); lentEditing = null; return; }
     if (asDevis) {
-      d.type = 'devis'; d.numero = nextNum('DV');
+      d.type = 'devis'; d.numero = nextNum('DV'); figerFiscal(d);
       (current.historique = current.historique || []).push(d); save();
       openDocs(d); show(`Devis lentilles ${d.numero} créé`);
       return;
@@ -3217,7 +3235,7 @@ select.inp{appearance:auto}
       paiements: rpays.map(p => ({ mode: MODES[p.mode], montant: p.mt, ref: p.ref || '', recu: p.recu || 0, date: now, par: user.nom })),
       paye: r.net, solde: 0, resteAcharge: r.net, statut: 'Soldée' };
     v.lignes.forEach(l => { const c0 = cart.find(x => x.des === l.des); if (c0 && c0.pid && produits.find(p => p.id === c0.pid)) { l.pid = c0.pid; mvtStock(c0.pid, v.boutique, -l.qty, 'Vente rapide', v.numero); } });
-    ventesRapides.push(v); saveR();
+    figerFiscal(v); ventesRapides.push(v); saveR();
     openDocs(v); show(`Vente rapide ${v.numero} encaissée`);
   });
 
@@ -3246,8 +3264,8 @@ select.inp{appearance:auto}
   function openParam(tab = prTab){
     if (user.role === 'vendeur') { show('Paramètres réservés aux responsables.'); return; }
     const adm = user.role === 'admin';
-    if (!adm && ['gen', 'lst', 'drt'].includes(tab)) tab = 'mag';
-    F('prTabs').querySelectorAll('[data-pr]').forEach(b => b.hidden = (!adm && ['gen', 'lst', 'drt', 'pst'].includes(b.dataset.pr)) || (b.dataset.pr === 'pst' && !EN_LIGNE));
+    if (!adm && ['gen', 'lst', 'drt', 'fis'].includes(tab)) tab = 'mag';
+    F('prTabs').querySelectorAll('[data-pr]').forEach(b => b.hidden = (!adm && ['gen', 'lst', 'drt', 'pst', 'fis'].includes(b.dataset.pr)) || (b.dataset.pr === 'pst' && !EN_LIGNE));
     if (tab === 'pst' && (!adm || !EN_LIGNE)) tab = adm ? 'gen' : 'mag';
     F('prMagAdd').hidden = !adm;
     if (!PD || views.param.hidden) PD = JSON.parse(JSON.stringify(PARAM));
@@ -3255,7 +3273,8 @@ select.inp{appearance:auto}
     prTab = tab; F('prTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.pr === tab));
     document.querySelectorAll('.pr-p').forEach(p => p.hidden = p.dataset.p !== tab);
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
-    drawMags(); drawUsrs(); drawRap();
+    PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
+    drawMags(); drawUsrs(); drawRap(); drawFiscal();
     if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { F('pstBox').hidden = true; F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
@@ -3289,6 +3308,90 @@ select.inp{appearance:auto}
     catch (er) { F('pstSt').textContent = er.message; }
   });
   F('prTabs').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (!b) return; lirePD(); openParam(b.dataset.pr); });
+  /* ---------- Fiscalité : profils par pays, calcul HT / taxes / TTC ---------- */
+  const TAXCATS = ['Verres', 'Montures', 'Solaires', 'Lentilles', 'Options et services', 'Entretien et accessoires', 'Autres'];
+  const nomFiscal = x => x.pays + (x.libelle ? ' · ' + x.libelle : '');
+  const profilFiscal = b => { const L = PARAM.pays && PARAM.pays.length ? PARAM.pays : PARAM_DEF.pays, m = magasinDe(b); return L.find(x => x.id === m.pays) || L[0]; };
+  // fige les règles fiscales sur un document au moment où il reçoit son numéro (une facture ne change plus ensuite)
+  function figerFiscal(d){ const x = profilFiscal(d.boutique); d.fiscal = { profil: nomFiscal(x), taxes: JSON.parse(JSON.stringify(x.taxes || [])), mention: x.mention || '' }; return d; }
+  function catLigne(l, s){
+    if (l.k === 'OD' || l.k === 'OG' || l.k === 'P2') return 'Verres';
+    if (l.k === 'LENT') return 'Lentilles';
+    const p = l.pid ? produits.find(x => x.id === l.pid) : null, c = p ? p.cat : l.k === 'PROD' ? CATS.find(x => x.toUpperCase() === l.label) : null;
+    if (l.k === 'MONTURE') return c === 'Solaire' ? 'Solaires' : 'Montures';
+    if (c) return { Monture: 'Montures', Solaire: 'Solaires', Lentilles: 'Lentilles', 'Option verre': 'Options et services', Entretien: 'Entretien et accessoires', Accessoire: 'Entretien et accessoires' }[c] || 'Autres';
+    if (l.k === 'OPT') return s.kind === 'lentille' ? 'Entretien et accessoires' : 'Options et services';
+    return 'Autres';
+  }
+  // Décomposition d'un document : prix TTC → HT + chaque taxe (la remise globale est répartie sur les lignes)
+  function calculTaxes(s){
+    const F0 = s.fiscal || (() => { const x = profilFiscal(s.boutique); return { taxes: x.taxes || [], mention: x.mention || '' }; })();
+    const taxes = (F0.taxes || []).filter(t => t.taux > 0);
+    const net = s.net || 0, total = s.total || 0, r = total > 0 ? net / total : 1;
+    const parTaxe = taxes.map(t => ({ nom: t.nom, taux: t.taux, base: 0, mt: 0 }));
+    (s.lignes || []).forEach(l => {
+      const ttc = (l.px || 0) * r, cat = catLigne(l, s);
+      const app = taxes.map((t, i) => (!t.cats || !t.cats.length || t.cats.includes(cat)) ? i : -1).filter(i => i >= 0);
+      const ht = ttc / (1 + app.reduce((a, i) => a + taxes[i].taux, 0) / 100);
+      app.forEach(i => { parTaxe[i].base += ht; parTaxe[i].mt += ht * taxes[i].taux / 100; });
+    });
+    parTaxe.forEach(t => { t.mt = Math.round(t.mt); t.base = Math.round(t.base); });
+    const totTaxes = parTaxe.reduce((a, t) => a + t.mt, 0);
+    return { ht: net - totTaxes, taxes: parTaxe.filter(t => t.mt || t.base), ttc: net, mention: taxes.length ? '' : (F0.mention || '') };
+  }
+  const fmtTaux = n => String(n).replace('.', ',') + ' %';
+  // lignes Total HT / taxes / Total TTC pour les tableaux de totaux des documents
+  function lignesTaxes(s){
+    const T = calculTaxes(s);
+    if (!T.taxes.length) return `<tr class="b"><td>Total TTC</td><td class="r">${money(T.ttc)}</td></tr>`
+      + (T.mention ? `<tr class="tx"><td colspan="2">${esc(T.mention)}</td></tr>` : '');
+    const partiel = t => t.base < T.ht - 1 ? ` sur ${money(t.base)}` : '';
+    return `<tr><td>Total HT</td><td class="r">${money(T.ht)}</td></tr>`
+      + T.taxes.map(t => `<tr class="tx"><td>${esc(t.nom)} ${fmtTaux(t.taux)}${partiel(t)}</td><td class="r">${money(t.mt)}</td></tr>`).join('')
+      + `<tr class="b"><td>Total TTC</td><td class="r">${money(T.ttc)}</td></tr>`;
+  }
+
+  function drawFiscal(){
+    const usage = id => PD.magasins.filter(m => (m.pays || PD.pays[0].id) === id).map(m => m.nom);
+    F('prPays').innerHTML = PD.pays.map((x, i) => `<div class="fx-card">
+      <div class="fx-head">
+        <label>Pays<input class="inp" data-fx="${i}" data-k="pays" value="${esc(x.pays)}" placeholder="ex. Gabon"></label>
+        <label>Régime <span style="font-weight:400">(facultatif)</span><input class="inp" data-fx="${i}" data-k="libelle" value="${esc(x.libelle || '')}" placeholder="ex. Régime simplifié, Non assujetti…"></label>
+        ${PD.pays.length > 1 && !usage(x.id).length ? `<button class="ghost" type="button" data-fx-del="${i}">Supprimer</button>` : '<span></span>'}
+      </div>
+      <div class="muted" style="font-size:12px">${usage(x.id).length ? 'Utilisé par : ' + usage(x.id).map(esc).join(', ') : 'Aucun magasin rattaché'}</div>
+      ${x.taxes.length ? x.taxes.map((t, j) => `<div class="fx-tx">
+        <input class="inp" data-fx="${i}" data-t="${j}" data-k="nom" value="${esc(t.nom)}" placeholder="Nom (TVA, CSS…)" aria-label="Nom de la taxe">
+        <input class="inp" data-fx="${i}" data-t="${j}" data-k="taux" value="${esc(String(t.taux).replace('.', ','))}" inputmode="decimal" aria-label="Taux en %" placeholder="%">
+        <div class="fx-cats"><label><input type="checkbox" data-fx="${i}" data-t="${j}" data-tous${!t.cats.length ? ' checked' : ''}> <b>Tous les produits</b></label>
+          ${TAXCATS.map(c => `<label><input type="checkbox" data-fx="${i}" data-t="${j}" data-cat="${esc(c)}"${!t.cats.length ? ' disabled' : ''}${t.cats.includes(c) ? ' checked' : ''}> ${c}</label>`).join('')}</div>
+        <button class="del" type="button" data-fx="${i}" data-t-del="${j}" aria-label="Retirer la taxe">×</button></div>`).join('')
+        : `<div class="fx-none">Aucune taxe : les factures porteront la mention ci-dessous.</div>`}
+      <div><button class="add" type="button" data-fx-tadd="${i}">+ Ajouter une taxe</button></div>
+      <div class="fx-mention"><label>Mention imprimée quand aucune taxe ne s'applique<input class="inp" data-fx="${i}" data-k="mention" value="${esc(x.mention || '')}" placeholder="ex. TVA non applicable"></label></div>
+    </div>`).join('');
+  }
+  F('prPays').addEventListener('input', e => {
+    const i = e.target.dataset.fx; if (i == null || e.target.type === 'checkbox') return;
+    const x = PD.pays[i], j = e.target.dataset.t, k = e.target.dataset.k;
+    if (j != null) { x.taxes[j][k] = k === 'taux' ? dec(e.target.value) : e.target.value; }
+    else x[k] = e.target.value;
+  });
+  F('prPays').addEventListener('change', e => {
+    const i = e.target.dataset.fx, j = e.target.dataset.t; if (i == null || j == null || e.target.type !== 'checkbox') return;
+    const t = PD.pays[i].taxes[j];
+    if ('tous' in e.target.dataset) t.cats = e.target.checked ? [] : TAXCATS.slice();
+    else { const c = e.target.dataset.cat; t.cats = e.target.checked ? [...new Set([...t.cats, c])] : t.cats.filter(x => x !== c); if (!t.cats.length) t.cats = []; }
+    drawFiscal();
+  });
+  F('prPays').addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (d.fxDel != null) { PD.pays.splice(d.fxDel, 1); drawFiscal(); drawMags(); }
+    else if (d.tDel != null) { PD.pays[d.fx].taxes.splice(d.tDel, 1); drawFiscal(); }
+    else if (d.fxTadd != null) { PD.pays[d.fxTadd].taxes.push({ nom: '', taux: 0, cats: [] }); drawFiscal(); }
+  });
+  F('fxAdd').addEventListener('click', () => { PD.pays.push({ id: 'p' + Date.now().toString(36), pays: '', libelle: '', taxes: [], mention: 'TVA non applicable' }); drawFiscal(); drawMags(); });
+
   const MF = [['nom', 'Nom affiché *'], ['raison', 'Raison sociale'], ['adresse', 'Adresse'], ['ville', 'Ville'], ['tel', 'Téléphone'], ['email', 'E-mail'], ['rccm', 'RCCM'], ['nif', 'NIF']];
   function drawMags(){
     F('prMags').innerHTML = PD.magasins.map((m, i) => !magGerable(m) ? '' : `<div class="pr-card${m.actif ? '' : ' off'}">
@@ -3296,6 +3399,7 @@ select.inp{appearance:auto}
         <label class="ghost bl-btn sm-btn"><input type="file" accept="image/png,image/jpeg,image/webp" data-logo="${i}" hidden>${m.logo ? 'Changer' : 'Ajouter'}</label>
         ${m.logo ? `<button class="ghost sm-btn" data-logo-del="${i}" type="button">Retirer</button>` : ''}</div>
       <div class="pr-fields">${MF.map(([k, l]) => `<label><span>${l}</span><input class="inp" data-m="${i}" data-k="${k}" value="${esc(m[k] || '')}"></label>`).join('')}
+        <label><span>Pays / régime fiscal</span><select class="inp" data-m="${i}" data-k="pays"${user.role === 'admin' ? '' : ' disabled'}>${PD.pays.map(x => `<option value="${esc(x.id)}"${(m.pays || PD.pays[0].id) === x.id ? ' selected' : ''}>${esc(nomFiscal(x))}</option>`).join('')}</select></label>
         ${user.role === 'admin' ? `<label class="check" style="margin:0"><input type="checkbox" data-m="${i}" data-k="actif"${m.actif ? ' checked' : ''}> Magasin actif</label>` : ''}</div></div>`).join('');
   }
   function drawUsrs(){
@@ -3366,6 +3470,9 @@ select.inp{appearance:auto}
     if (noms.some(n => !n)) { show('Chaque magasin doit avoir un nom.'); openParam('mag'); return; }
     if (new Set(noms).size !== noms.length) { show('Deux magasins portent le même nom.'); openParam('mag'); return; }
     if (!PD.magasins.some(m => m.actif)) { show('Il faut au moins un magasin actif.'); openParam('mag'); return; }
+    if (!PD.pays.length || PD.pays.some(x => !x.pays.trim())) { show('Chaque profil fiscal doit avoir un pays.'); openParam('fis'); return; }
+    if (PD.pays.some(x => x.taxes.some(t => !t.nom.trim() || !(t.taux >= 0) || t.taux > 100))) { show('Chaque taxe doit avoir un nom et un taux entre 0 et 100 %.'); openParam('fis'); return; }
+    PD.magasins.forEach(m => { if (!PD.pays.some(x => x.id === m.pays)) m.pays = PD.pays[0].id; });
     const U = PD.users;
     if (U.some(u => !u.prenom || !u.ini)) { show('Chaque utilisateur doit avoir un prénom et des initiales.'); openParam('usr'); return; }
     if (U.some(u => u._pinNew && !/^\d{6}$/.test(u._pinNew))) { show('Le code doit contenir exactement 6 chiffres.'); openParam('usr'); return; }
@@ -3382,7 +3489,7 @@ select.inp{appearance:auto}
     const renames = PD.magasins.filter(m => m._ancien && m._ancien !== m.nom).map(m => [m._ancien, m.nom]);
     PD.users.forEach(u => { u.ini = u.ini.toUpperCase(); if (u._pinNew) { u.pin = hashPin(u, u._pinNew); delete u._pinNew; } });
     if (user.role !== 'admin') { PD.magasins.forEach((m, i) => { const o = PARAM.magasins[i]; if (o && !magGerable(o)) Object.assign(m, o, { _ancien: o.nom }); });
-      PD.app = PARAM.app; PD.organismes = PARAM.organismes; PD.motifs = PARAM.motifs; PD.droits = PARAM.droits; PD.rapports = PARAM.rapports; }
+      PD.app = PARAM.app; PD.organismes = PARAM.organismes; PD.motifs = PARAM.motifs; PD.droits = PARAM.droits; PD.rapports = PARAM.rapports; PD.pays = PARAM.pays; }
     PARAM = JSON.parse(JSON.stringify(PD)); PARAM.magasins.forEach(m => delete m._ancien);
     renames.forEach(([a, b]) => renommerBoutique(a, b));
     BOUTIQUES.length = 0; PARAM.magasins.filter(m => m.actif).forEach(m => BOUTIQUES.push(m.nom));
@@ -4718,7 +4825,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     }
     if (typeof newPec !== 'undefined' && newPec) { draft.pec = newPec; }
     if (ctx.mode !== 'solde') {
-      draft.type = 'vente'; draft.numero = nextNum('FA'); draft.paiements = []; draft.vendeur = user.nom;
+      draft.type = 'vente'; draft.numero = nextNum('FA'); figerFiscal(draft); draft.paiements = []; draft.vendeur = user.nom;
       (current.historique = current.historique || []).push(draft);
       if (draft.monture?.pid) mvtStock(draft.monture.pid, draft.boutique, -1, 'Vente', draft.numero);
     }
@@ -4965,10 +5072,10 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     return `<table class="d-lines"><thead><tr><th>Désignation</th><th class="r">Montant</th></tr></thead><tbody>${
       s.lignes.map(l => `<tr><td><b>${l.label}</b><br><span>${esc(desDoc(l))}</span>${l.remise ? `<br><span class="rem">Prix ${money(l.brut)} · remise ${esc(l.remiseTxt)}${l.remiseTxt.includes('%') ? ' (− ' + money(l.remise) + ')' : ''}</span>` : ''}</td><td class="r">${money(l.px)}</td></tr>`).join('')}</tbody></table>
       <table class="d-tot"><tbody>
-        <tr><td>Total</td><td class="r">${money(s.total)}</td></tr>
+        ${s.remise ? `<tr><td>Sous-total</td><td class="r">${money(s.total)}</td></tr>` : ''}
         ${s.remise ? `<tr><td>Remise 20 %</td><td class="r">− ${money(s.remise)}</td></tr>` : ''}
         ${s.offre === 'paire2' && !p2Paye(s) ? `<tr><td>2ème paire offerte (${esc(p2Lib(s))})</td><td class="r">Offerte</td></tr>` : ''}
-        <tr class="b"><td>Net</td><td class="r">${money(s.net)}</td></tr>`;
+        ${lignesTaxes(s)}`;
   }
   function showDoc(k){
     showDoc0(k);
@@ -5072,7 +5179,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
 
   /* ================= En-tête des documents (paramètres magasin) ================= */
-  function coordsTxt(m){ return [[m.adresse, m.ville].filter(Boolean).join(', '), m.tel && 'Tél. ' + m.tel, m.email, m.rccm && 'RCCM ' + m.rccm, m.nif && 'NIF ' + m.nif].filter(Boolean); }
+  function coordsTxt(m){ const px = (PARAM.pays || []).find(x => x.id === m.pays); return [[m.adresse, m.ville, px && px.pays].filter(Boolean).join(', '), m.tel && 'Tél. ' + m.tel, m.email, m.rccm && 'RCCM ' + m.rccm, m.nif && 'NIF ' + m.nif].filter(Boolean); }
   function entete(b){
     const m = magasinDe(b), c = coordsTxt(m);
     return `<div class="d-id">${m.logo ? `<img class="d-logo" src="${m.logo}" alt="">` : ''}<div><div class="d-brand">${esc(m.raison || PARAM.app.nom)}</div>
@@ -5101,9 +5208,9 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       <div class="d-client"><span>Client</span><b>${esc(s.client || 'Client de passage')}</b>${s.clientTel ? `<span>${esc(fmtTel(digits(s.clientTel)))}</span>` : ''}</div>
       <table class="d-lines"><thead><tr><th>Désignation</th><th class="r">Qté</th><th class="r">Prix unitaire</th><th class="r">Montant</th></tr></thead><tbody>${
         s.lignes.map(l => `<tr><td>${esc(l.des)}<br><span>${esc(l.label)}</span></td><td class="r">${l.qty}</td><td class="r">${money(l.pu)}</td><td class="r">${money(l.px)}</td></tr>`).join('')}</tbody></table>
-      <table class="d-tot"><tbody><tr><td>Total</td><td class="r">${money(s.total)}</td></tr>
+      <table class="d-tot"><tbody>${s.remise ? `<tr><td>Sous-total</td><td class="r">${money(s.total)}</td></tr>` : ''}
         ${s.remise ? `<tr><td>Remise ${s.remisePct} %</td><td class="r">− ${money(s.remise)}</td></tr>` : ''}
-        <tr class="b"><td>Net</td><td class="r">${money(s.net)}</td></tr>
+        ${lignesTaxes(s)}
         ${s.paiements.map(p => `<tr><td>Payé le ${fmtDateTime(p.date)} · ${esc(p.mode)}${p.ref ? ' · réf. ' + esc(p.ref) : ''}</td><td class="r">${money(p.montant)}</td></tr>`).join('')}
         <tr class="b"><td>Soldée</td><td class="r">${money(0)}</td></tr></tbody></table>`;
   }
