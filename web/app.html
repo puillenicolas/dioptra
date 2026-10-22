@@ -1032,7 +1032,7 @@ select.inp{appearance:auto}
   <div class="tabs" id="coTabs">
     <button class="tab on" data-co="tb">Tableau de bord</button><button class="tab" data-co="pec">Prises en charge</button>
     <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Rapprochement bancaire</button>
-    <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des PEC</button>
+    <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des PEC</button><button class="tab" data-co="jca">Journal de caisse</button>
   </div>
 
   <div class="co-p" data-p="tb">
@@ -1104,6 +1104,16 @@ select.inp{appearance:auto}
       <div class="per-bar" data-perbar></div>
       <div class="s-stats co-kpi jrn-kpi" id="jasKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jasTbl"></table></div>
+    </section>
+  </div>
+
+  <div class="co-p" data-p="jca" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Journal de caisse</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jca">Exporter Excel</button> <button class="ghost" type="button" data-jp="jca">Imprimer</button></span></div>
+      <p class="sub">Jour par jour : chaque encaissement, chaque sortie d'espèces et chaque clôture Z, avec le solde des espèces au fil de la journée (pas de fond de caisse : le solde repart de zéro chaque jour) et le total par moyen de paiement.</p>
+      <div class="per-bar" data-perbar></div>
+      <div class="s-stats co-kpi jrn-kpi" id="jcaKpi"></div>
+      <div class="tbl-wrap"><table class="s-tbl jrn" id="jcaTbl"></table></div>
     </section>
   </div>
 
@@ -2986,7 +2996,7 @@ select.inp{appearance:auto}
     const J = journee(), ferme = caisseFermee(), Z = zDuJour();
     F('cjSub').textContent = `${J.b} · ${new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}`;
     F('cjSt').innerHTML = ferme ? `<span class="chip warn" style="vertical-align:middle;font-size:13px">Clôturée</span>` : `<span class="chip" style="vertical-align:middle;font-size:13px">Ouverte</span>`;
-    F('cjActs').innerHTML = `<button class="ghost wa-out" id="cjWa">WhatsApp</button><button class="ghost" id="cjMail">E-mail</button>`
+    F('cjActs').innerHTML = `<button class="ghost" id="cjJrn">Journal de caisse</button><button class="ghost wa-out" id="cjWa">WhatsApp</button><button class="ghost" id="cjMail">E-mail</button>`
       + (ferme ? `<button class="ghost" id="cjReopen">Rouvrir la caisse</button><button class="save" id="cjLastZ">Voir le rapport Z</button>`
                : `<button class="ghost" id="cjPoint">Point de caisse</button><button class="save" id="cjZ">Clôture Z</button>`);
     const lastZ = Z.filter(z => !z.rouverte).pop();
@@ -3033,6 +3043,8 @@ select.inp{appearance:auto}
   });
   F('cjActs').addEventListener('click', e => {
     if (e.target.id === 'cjZ') openZ();
+    if (e.target.id === 'cjJrn') { if (!droit('compta')) { show('Journal de caisse réservé aux personnes ayant accès à la comptabilité.'); return; }
+      F('coPer').value = 'jour'; F('coPerso').hidden = true; openCompta('jca'); }
     if (e.target.id === 'cjPoint') openDocs(etatCaisse());
     if (e.target.id === 'cjWa') openWaCaisse(etatCaisse());
     if (e.target.id === 'cjMail') { openDocs(etatCaisse()); setTimeout(() => F('dMail').click(), 0); }
@@ -3828,7 +3840,7 @@ select.inp{appearance:auto}
     coTab = tab; F('coTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.co === tab));
     document.querySelectorAll('.co-p').forEach(p => p.hidden = p.dataset.p !== tab);
     F('coPer').parentElement.hidden = !['tb', 'bq'].includes(tab);
-    ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas') })[tab]();
+    ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas'), jca: () => drawJrn('jca') })[tab]();
     go('compta');
   }
   F('goCompta').addEventListener('click', () => droit('compta') ? openCompta('tb') : show('Comptabilité réservée au responsable.'));
@@ -3889,7 +3901,40 @@ select.inp{appearance:auto}
       return { titre: 'Journal clients', H, num: 3, rows,
         kpi: [['Clients mouvementés', String(nb)], ['Débit · facturé', money(TD)], ['Crédit · réglé', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
     }
-    // jas : journal des assurances
+    if (k === 'jca') {
+      // encaissements (par magasin de la vente), sorties d'espèces et clôtures Z, regroupés par magasin et par jour
+      const E = [];
+      V.forEach(({ v, c }) => (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) E.push({ b: v.boutique || '', date: p.date, piece: v.numero,
+        lib: `${jNomCli(v, c)} · ${v.kind === 'rapide' ? 'vente rapide' : (v.paiements.indexOf(p) > 0 || dayKey(v.date) !== dayKey(p.date)) ? 'règlement' : 'vente'}${p.ref ? ' · réf. ' + p.ref : ''}`,
+        mode: p.mode, entree: p.montant || 0, sortie: 0 }); }));
+      mouvements.filter(m => (tous || m.boutique === boutiqueCour()) && dans(m.date, per)).forEach(m => E.push({ b: m.boutique, date: m.date, piece: '',
+        lib: `Sortie · ${m.motif || ''}${m.commentaire ? ' · ' + m.commentaire : ''}${m.par ? ' · ' + m.par : ''}`, mode: 'Espèces', entree: 0, sortie: m.montant || 0 }));
+      clotures.filter(z => (tous || z.boutique === boutiqueCour()) && dans(z.date, per)).forEach(z => E.push({ b: z.boutique, date: z.date, piece: z.numero, z }));
+      const G = new Map();
+      E.forEach(e => { const kk = e.b + '\u0000' + dayKey(e.date); if (!G.has(kk)) G.set(kk, { b: e.b, j: dayKey(e.date), L: [] }); G.get(kk).L.push(e); });
+      const H = ['Heure', 'Pièce', 'Libellé', 'Moyen', 'Entrée', 'Sortie', 'Solde espèces'];
+      const rows = [], TM = {}; let TE = 0, TS = 0, ecarts = 0, nbZ = 0;
+      [...G.values()].sort((a, b) => a.j.localeCompare(b.j) || a.b.localeCompare(b.b)).forEach(g => {
+        const jour = new Date(g.j + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+        rows.push({ type: 'grp', cells: [`${jour.charAt(0).toUpperCase() + jour.slice(1)}${tous ? ' · ' + g.b : ''}`] });
+        let sol = 0, en = 0, so = 0; const pm = {};
+        g.L.sort((a, b) => String(a.date).localeCompare(String(b.date))).forEach(e => {
+          if (e.z) { nbZ++; if (!e.z.rouverte) ecarts += e.z.ecart || 0;
+            rows.push({ cells: [hhmm(e.date), e.piece, `Clôture Z · théorique ${money(e.z.especesTheo)} · compté ${money(e.z.especesComptees)} · écart ${e.z.ecart > 0 ? '+' : ''}${money(e.z.ecart)}${e.z.rouverte ? ' (rouverte)' : ''}`, '', '', '', sol] }); return; }
+          if (e.mode === 'Espèces') sol += e.entree - e.sortie;
+          en += e.entree; so += e.sortie; if (e.entree) pm[e.mode] = (pm[e.mode] || 0) + e.entree;
+          rows.push({ cells: [hhmm(e.date), e.piece, e.lib, e.mode, e.entree || '', e.sortie || '', sol] });
+        });
+        Object.entries(pm).forEach(([m, x]) => TM[m] = (TM[m] || 0) + x);
+        rows.push({ type: 'st', cells: ['', '', 'Total du jour · ' + (MODE_KEYS.filter(m => pm[m]).concat(Object.keys(pm).filter(m => !MODE_KEYS.includes(m))).map(m => `${m} ${money(pm[m])}`).join(' · ') || 'aucun encaissement'), '', en, so, sol] });
+        TE += en; TS += so;
+      });
+      rows.push({ type: 'tt', cells: ['', '', 'Total de la période', '', TE, TS, (TM['Espèces'] || 0) - TS] });
+      return { titre: 'Journal de caisse', H, num: 4, rows,
+        kpi: [['Encaissé', money(TE)], ['Espèces', money(TM['Espèces'] || 0)], ['Carte bancaire', money(TM['Carte bancaire'] || 0)],
+          ['Mobile money', money((TM['Airtel Money'] || 0) + (TM['Moov Money'] || 0))], ['Sorties', money(TS)], ['Écarts de caisse', nbZ ? `${ecarts > 0 ? '+' : ''}${money(ecarts)}` : '—', ecarts ? 'warn-k' : '']] };
+    }
+    // jas : journal des PEC
     const P = V.filter(({ v }) => v.pec && dans(v.date, per));
     const G = new Map(); P.forEach(x => { const o = x.v.pec.organisme || '—'; if (!G.has(o)) G.set(o, []); G.get(o).push(x); });
     const H = ['Date', 'N° facture', 'Assuré', 'N° adhérent', 'N° bon', 'Montant PEC', 'Réglé', 'Reste à recevoir', 'Statut', 'Bordereau'];
