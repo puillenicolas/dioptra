@@ -2,15 +2,17 @@
 // E-mails (SMTP) et lecture automatique de documents (API Claude)
 const { pool } = require('./db');
 
+// Réglages lus sans espaces ni retours à la ligne parasites (copier-coller dans Render)
+const env = k => String(process.env[k] || '').trim();
 let transport = null;
-function mailConfigure() { return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS); }
+function mailConfigure() { return !!(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASS')); }
 function getTransport() {
   if (!transport) {
     const nodemailer = require('nodemailer');
-    const port = Number(process.env.SMTP_PORT) || 587;
+    const port = Number(env('SMTP_PORT')) || 587;
     transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, port, secure: port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      host: env('SMTP_HOST'), port, secure: port === 465,
+      auth: { user: env('SMTP_USER'), pass: env('SMTP_PASS') },
     });
   }
   return transport;
@@ -23,7 +25,7 @@ function getTransport() {
 async function envoyerMail({ orgId, orgNom, type = 'manuel', cle = null, to, subject, text, html, replyTo, attachments = [] }) {
   if (!mailConfigure()) { const e = new Error('L\'envoi d\'e-mails n\'est pas encore configuré sur le serveur (réglages SMTP).'); e.status = 503; throw e; }
   const dest = (Array.isArray(to) ? to : [to]).map(x => String(x).trim()).filter(Boolean);
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const from = env('MAIL_FROM') || env('SMTP_USER');
   try {
     await getTransport().sendMail({
       from: orgNom ? `"${orgNom.replace(/"/g, '')} via DIOPTRA" <${from.replace(/^.*<|>.*$/g, '')}>` : from,
@@ -37,7 +39,7 @@ async function envoyerMail({ orgId, orgNom, type = 'manuel', cle = null, to, sub
   }
 }
 
-function iaConfiguree() { return !!process.env.ANTHROPIC_API_KEY; }
+function iaConfiguree() { return !!env('ANTHROPIC_API_KEY'); }
 async function iaJson(prompt, images = []) {
   if (!iaConfiguree()) { const e = new Error('La lecture automatique n\'est pas activée sur ce serveur. Saisissez les lignes à la main ou importez un fichier Excel.'); e.status = 503; throw e; }
   const content = [
@@ -46,7 +48,7 @@ async function iaJson(prompt, images = []) {
   ];
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    headers: { 'content-type': 'application/json', 'x-api-key': env('ANTHROPIC_API_KEY'), 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: 8000, messages: [{ role: 'user', content }] }),
   });
   const j = await r.json().catch(() => ({}));
