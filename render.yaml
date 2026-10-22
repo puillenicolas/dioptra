@@ -1,0 +1,44 @@
+# DIOPTRA — déploiement Render (Blueprint)
+# Render › New › Blueprint › choisir ce dépôt GitHub : le serveur et la base sont créés ensemble.
+services:
+  - type: web
+    name: dioptra
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/sante
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dioptra-db
+          property: connectionString
+      - key: FUSEAU
+        value: Africa/Libreville
+      - key: ADMIN_KEY            # clé pour créer de nouveaux opticiens (générée automatiquement)
+        generateValue: true
+      # E-mails (à renseigner dans Render › Environment) — voir le guide
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Lecture automatique des bons de livraison (facultatif)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: dioptra-db
+    plan: basic-1gb
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: dioptra
+    user: dioptra
