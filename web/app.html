@@ -1032,7 +1032,7 @@ select.inp{appearance:auto}
   <div class="tabs" id="coTabs">
     <button class="tab on" data-co="tb">Tableau de bord</button><button class="tab" data-co="pec">Prises en charge</button>
     <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Rapprochement bancaire</button>
-    <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des assurances</button>
+    <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des PEC</button>
   </div>
 
   <div class="co-p" data-p="tb">
@@ -1099,7 +1099,7 @@ select.inp{appearance:auto}
   </div>
   <div class="co-p" data-p="jas" hidden>
     <section class="blk">
-      <div class="row-head"><h2>Journal des assurances</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jas">Exporter Excel</button> <button class="ghost" type="button" data-jp="jas">Imprimer</button></span></div>
+      <div class="row-head"><h2>Journal des PEC</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jas">Exporter Excel</button> <button class="ghost" type="button" data-jp="jas">Imprimer</button></span></div>
       <p class="sub">Prises en charge de la période, regroupées par organisme : montant facturé à l'assurance, réglé, reste à recevoir, statut et bordereau.</p>
       <div class="per-bar" data-perbar></div>
       <div class="s-stats co-kpi jrn-kpi" id="jasKpi"></div>
@@ -3904,7 +3904,7 @@ select.inp{appearance:auto}
       TM += m; TR += r;
     });
     rows.push({ type: 'tt', cells: ['', '', 'Total général', '', '', TM, TR, TM - TR, '', ''] });
-    return { titre: 'Journal des assurances', H, num: 5, rows, numFin: 8,
+    return { titre: 'Journal des PEC', H, num: 5, rows, numFin: 8,
       kpi: [['Prises en charge', String(P.length)], ['Facturé aux assurances', money(TM)], ['Réglé', money(TR)], ['Reste à recevoir', money(TM - TR), TM - TR > 0.5 ? 'warn-k' : '']] };
   }
   // colonnes numériques : de « num » jusqu'à « numFin » (exclu), sinon jusqu'à la fin
