@@ -947,6 +947,11 @@ select.inp{appearance:auto}
       <button class="save" type="submit">Se connecter</button>
     </form>
     <p class="muted" id="pstSt" style="font-size:13px"></p>
+    <div class="fx-card" id="decoBox" hidden style="margin-bottom:16px">
+      <b>Déconnecter ce poste</b>
+      <p class="sub" style="margin:0">Pour utiliser ce poste avec un autre compte (par exemple passer du compte de test au compte réel). DIOPTRA vérifie d'abord que tout a été envoyé au serveur, puis efface les données de ce poste et affiche l'écran d'activation. Rien n'est perdu : les données restent sur le serveur.</p>
+      <div><button class="ghost" type="button" id="decoBtn">Déconnecter ce poste</button> <span class="muted" id="decoSt" style="font-size:13px"></span></div>
+    </div>
     <div class="tbl-wrap" id="pstBox" hidden><table class="s-tbl"><thead><tr><th>Code</th><th>Nom</th><th>Magasin</th><th>Activé le</th><th>Dernière connexion</th><th>État</th><th></th></tr></thead><tbody id="pstRows"></tbody></table></div>
 
     <div id="cptBox" hidden>
@@ -3383,7 +3388,7 @@ select.inp{appearance:auto}
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
     drawMags(); drawUsrs(); drawRap(); drawFiscal();
-    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
+    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox', 'decoBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
     go('param');
@@ -3407,7 +3412,7 @@ select.inp{appearance:auto}
   F('pstLogin').addEventListener('submit', async e => {
     e.preventDefault(); F('pstSt').textContent = 'Connexion…';
     try { const r = await window.DSYNC.connexionAdmin(F('pstMail').value.trim(), F('pstMdp').value); pstSession = r.session; pstCompte = r.compte; F('pstMdp').value = '';
-      F('mdpBox').hidden = false;
+      F('mdpBox').hidden = false; F('decoBox').hidden = false; F('decoSt').textContent = '';
       if (r.compte.role !== 'admin') { F('pstSt').textContent = `${r.org.nom} · compte d'activation (${(r.compte.magasins || []).join(', ')}) : il permet seulement d'activer des postes.`; F('pstBox').hidden = true; F('cptBox').hidden = true; return; }
       F('pstSt').textContent = `${r.org.nom} · connecté en administrateur · ${r.postes.length} poste(s)`; drawPostes(r.postes); await chargerComptes(); }
     catch (er) { F('pstSt').textContent = er.message; }
@@ -3457,6 +3462,12 @@ select.inp{appearance:auto}
       if (!on && !confirm('Désactiver ce compte ? Il ne pourra plus activer de poste. Les postes déjà activés continuent de fonctionner.')) return;
       try { await window.DSYNC.majCompte(pstSession, d.cptOn, { actif: on }); await chargerComptes(); show(on ? 'Compte réactivé' : 'Compte désactivé'); }
       catch (er) { F('pstSt').textContent = er.message; } }
+  });
+  F('decoBtn').addEventListener('click', async () => {
+    if (!confirm(`Déconnecter ce poste de « ${window.DSYNC.org ? window.DSYNC.org.nom : ''} » ? Il faudra l'activer à nouveau avec un compte (e-mail et mot de passe).`)) return;
+    F('decoBtn').disabled = true; F('decoSt').textContent = 'Vérification de la synchronisation…';
+    try { await window.DSYNC.deconnecter(pstSession, pstCompte && pstCompte.role === 'admin'); }
+    catch (er) { F('decoSt').textContent = er.message; F('decoBtn').disabled = false; }
   });
   F('mdpForm').addEventListener('submit', async e => {
     e.preventDefault();

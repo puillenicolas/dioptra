@@ -419,6 +419,17 @@
       creerCompte: (session, d) => api('/api/comptes', d, session).catch(enLigneSinon('Pas de connexion internet.')),
       majCompte: (session, id, d) => api('/api/comptes/' + encodeURIComponent(id), d, session).catch(enLigneSinon('Pas de connexion internet.')),
       changerMdp: (session, ancien, nouveau) => api('/api/moi/motdepasse', { ancien, nouveau }, session).catch(enLigneSinon('Pas de connexion internet.')),
+      // Déconnecte ce poste : vérifie que tout est envoyé, désactive le poste (si administrateur), vide les données locales
+      deconnecter: async (session, estAdmin) => {
+        if (navigator.onLine === false) throw new Error('Pas de connexion internet : impossible de vérifier que tout a été envoyé.');
+        await cycle(); if (S.enCours) await new Promise(r => setTimeout(r, 1500));
+        const reste = calculer(Object.keys(COLLS)).length;
+        if (reste) throw new Error(`${reste} modification(s) n'ont pas encore été envoyées au serveur. Attendez que le voyant affiche « Synchronisé », puis réessayez.`);
+        if (estAdmin && S.meta.poste) await api('/api/postes/' + encodeURIComponent(S.meta.poste.id) + '/actif', { actif: false }, session).catch(() => {});
+        clearTimeout(S.minuteur); S.meta = {}; IDB.file = new Map();
+        await IDB.effacerTout();
+        location.reload();
+      },
       essaiRapports: () => api('/api/rapports/essai', {}, S.meta.jeton).catch(enLigneSinon('Pas de connexion internet.')),
       // lecture automatique de documents (bons de livraison) par l'IA, via le serveur
       ia: {
