@@ -502,6 +502,10 @@ tr.pt td{color:var(--muted)}
 .pr-droits{display:grid;gap:4px}
 .pr-dr{margin:0!important;padding:8px 0;border-bottom:1px solid var(--line)}
 [hidden]{display:none!important}
+.jrn-kpi{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);grid-template-columns:none;overflow-x:auto;gap:10px}
+.jrn-kpi .s-stat{padding:10px 12px}
+.jrn-kpi .s-stat span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jrn-kpi .s-stat b{font-size:17px;white-space:nowrap}
 .per-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
 .per-bar .chip-btn{padding:6px 12px;font-size:13px;cursor:pointer}
 .per-bar .chip-btn.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
@@ -1080,7 +1084,7 @@ select.inp{appearance:auto}
       <div class="row-head"><h2>Journal des factures</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jfa">Exporter Excel</button> <button class="ghost" type="button" data-jp="jfa">Imprimer</button></span></div>
       <p class="sub">Toutes les factures de la période (ventes et ventes rapides), avec le détail HT, taxes et TTC, et la répartition entre l'assurance et le client.</p>
       <div class="per-bar" data-perbar></div>
-      <div class="s-stats co-kpi" id="jfaKpi"></div>
+      <div class="s-stats co-kpi jrn-kpi" id="jfaKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jfaTbl"></table></div>
     </section>
   </div>
@@ -1089,7 +1093,7 @@ select.inp{appearance:auto}
       <div class="row-head"><h2>Journal clients</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jcl">Exporter Excel</button> <button class="ghost" type="button" data-jp="jcl">Imprimer</button></span></div>
       <p class="sub">Compte de chaque client sur la période : au débit, la part client des factures ; au crédit, les règlements reçus. Le solde d'ouverture reprend ce qui restait dû au début de la période.</p>
       <div class="per-bar" data-perbar></div>
-      <div class="s-stats co-kpi" id="jclKpi"></div>
+      <div class="s-stats co-kpi jrn-kpi" id="jclKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jclTbl"></table></div>
     </section>
   </div>
@@ -1098,7 +1102,7 @@ select.inp{appearance:auto}
       <div class="row-head"><h2>Journal des assurances</h2><span class="bl-btns"><button class="ghost" type="button" data-jx="jas">Exporter Excel</button> <button class="ghost" type="button" data-jp="jas">Imprimer</button></span></div>
       <p class="sub">Prises en charge de la période, regroupées par organisme : montant facturé à l'assurance, réglé, reste à recevoir, statut et bordereau.</p>
       <div class="per-bar" data-perbar></div>
-      <div class="s-stats co-kpi" id="jasKpi"></div>
+      <div class="s-stats co-kpi jrn-kpi" id="jasKpi"></div>
       <div class="tbl-wrap"><table class="s-tbl jrn" id="jasTbl"></table></div>
     </section>
   </div>
@@ -3883,7 +3887,7 @@ select.inp{appearance:auto}
       });
       rows.push({ type: 'tt', cells: ['', '', 'Total général', TD, TC, TS] });
       return { titre: 'Journal clients', H, num: 3, rows,
-        kpi: [['Clients mouvementés', String(nb)], ['Débit (part client facturée)', money(TD)], ['Crédit (règlements)', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
+        kpi: [['Clients mouvementés', String(nb)], ['Débit · facturé', money(TD)], ['Crédit · réglé', money(TC)], ['Solde à recevoir', money(TS), TS > 0.5 ? 'warn-k' : '']] };
     }
     // jas : journal des assurances
     const P = V.filter(({ v }) => v.pec && dans(v.date, per));
@@ -3901,7 +3905,7 @@ select.inp{appearance:auto}
     });
     rows.push({ type: 'tt', cells: ['', '', 'Total général', '', '', TM, TR, TM - TR, '', ''] });
     return { titre: 'Journal des assurances', H, num: 5, rows, numFin: 8,
-      kpi: [['Prises en charge', String(P.length)], ['Montant facturé aux assurances', money(TM)], ['Réglé', money(TR)], ['Reste à recevoir', money(TM - TR), TM - TR > 0.5 ? 'warn-k' : '']] };
+      kpi: [['Prises en charge', String(P.length)], ['Facturé aux assurances', money(TM)], ['Réglé', money(TR)], ['Reste à recevoir', money(TM - TR), TM - TR > 0.5 ? 'warn-k' : '']] };
   }
   // colonnes numériques : de « num » jusqu'à « numFin » (exclu), sinon jusqu'à la fin
   const estNum = (J, i) => i >= J.num && i < (J.numFin || J.H.length);
