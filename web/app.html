@@ -106,7 +106,7 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .tile-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:32px;flex-wrap:wrap}
 .tile-wide .tile-link{flex-direction:row;align-items:center;gap:16px}
 .tile-wide .ic{margin-bottom:0}.tile-wide h2{margin:0}
-.tile ul.tile-kpis{flex:1;min-width:260px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 24px}
+.tile ul.tile-kpis{flex:1;min-width:260px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 24px}
 .tile-kpis li{display:grid;gap:2px;font-variant-numeric:tabular-nums;min-width:0}
 .tile-kpis span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .tile-kpis b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -128,8 +128,11 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 :root{--pi-y:#fff3a0;--pi-g:#dcf5c9;--pi-b:#d8e9ff;--pi-ink:#2e2a14;--pi-muted:#6b6440;--pi-sh:rgb(60 50 0 / .18)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}}
 :root[data-theme="dark"]{--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}
-.home{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:28px;align-items:start}
-.nt-side{display:grid;gap:14px;min-width:0}
+.home{position:relative}
+/* les tuiles gardent toute la largeur ; les post-it se placent dans la marge de droite quand l'écran est assez large, sinon sous les tuiles */
+.nt-side{display:grid;gap:14px;min-width:0;margin-top:28px}
+@media (min-width:1720px){.nt-side{position:absolute;top:0;margin-top:0;left:calc(100% + 40px);width:min(300px,calc((100vw - 1260px) / 2 - 64px))}}
+@media (max-width:1719.98px){.nt-list{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}
 .nt-head{display:flex;align-items:center;gap:10px}
 .nt-head h2{font-size:19px;font-weight:600;margin:0}
 .nt-addbtn{margin-left:auto;width:36px;height:36px;border-radius:50%;border:0;background:var(--pi-y);color:var(--pi-ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px var(--pi-sh)}
@@ -156,7 +159,7 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .nt-act button:hover{color:var(--pi-ink);text-decoration:underline}
 .nt-empty{color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:10px;padding:14px}
 .nt-more{justify-self:start}
-@media (max-width:1100px){.home{grid-template-columns:1fr}.nt-list{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}}
+
 .s-stat .evo{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--muted)}
 .s-stat .evo i{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
 .s-stat .evo-up{color:var(--ok)}.s-stat .evo-dn{color:var(--pin)}
