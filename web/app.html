@@ -776,6 +776,89 @@ select.inp{appearance:auto}
   .col-mail{display:none}
 }
 @media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover{transform:none}}
+
+/* ================= Version tablette et téléphone ================= */
+@media (max-width:980px){
+  .topbar{grid-template-columns:auto minmax(0,1fr)}
+  .right{min-width:0}
+}
+@media (max-width:620px){
+  .topbar{gap:8px 10px}
+  .right{gap:6px}
+  .store{min-width:0}
+  .store-btn{padding:8px 10px;max-width:100%}
+  .store-btn .label{max-width:30vw}
+  .logo{font-size:20px}
+}
+@media (max-width:420px){ .logo span{display:none} }
+/* les colonnes de grille ne s'élargissent jamais au-delà de l'écran (les tableaux défilent dans leur cadre) */
+.grid>*,.sale>*,.cj-two>*,.sx-grid>*,.row2>*,.row3>*,.choice>*,.va-add>*,.line-add>*,.free>*{min-width:0}
+.tbl-wrap,.rx-grid{-webkit-overflow-scrolling:touch}
+@media (max-width:980px){
+  .sale{grid-template-columns:minmax(0,1fr)}
+  .cj-two{grid-template-columns:minmax(0,1fr)}
+  .home .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* tablette : onglets sur une ligne qui défile */
+@media (max-width:1100px){
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-inline:-4px;padding-inline:4px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;white-space:nowrap}
+}
+/* écrans tactiles : zones de toucher plus grandes, pas de zoom automatique sur les champs */
+@media (pointer:coarse){
+  .inp,select,textarea,input[type=text],input[type=search],input[type=email],input[type=tel],input[type=date],input[type=number],input[type=password]{font-size:16px}
+  .tab{padding:10px 16px}
+  .save,.ghost,.act,.new{min-height:44px}
+  .crumb{padding:8px 0;font-size:15px}
+  .tile:hover{transform:none;box-shadow:none}
+}
+/* barre du total en bas de l'écran pendant une vente (tablette et téléphone) */
+.sale-bar{display:none}
+@media (max-width:980px){
+  .sale-bar{position:fixed;left:0;right:0;bottom:0;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgb(0 0 0 / .08);
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transition:transform .2s}
+  .sale-bar.off{transform:translateY(110%)}
+  .sale-bar span{font-size:13px;color:var(--muted)}.sale-bar b{display:block;font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+  #v-vente,#v-lent,#v-rapide{padding-bottom:110px}
+}
+/* téléphone */
+@media (max-width:620px){
+  h1{font-size:22px}
+  .head{margin-bottom:20px;gap:12px}
+  .head .per{width:100%}.head .per .inp{flex:1;min-width:0}
+  .home .grid{gap:12px}
+  .home .tile{padding:16px}
+  .home .tile .ic{width:44px;height:44px;margin-bottom:12px}
+  .home .tile .ic svg{width:20px;height:20px}
+  .home .tile h2{font-size:16px;margin-bottom:6px}
+  .home .tile li span.item{font-size:12.5px;gap:5px}
+  .home .tile li svg{display:none}
+  .tile-wide{gap:14px}
+  .tile-wide .tile-link{gap:12px}
+  .tile ul.tile-kpis{min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+  .tile-kpis span{font-size:10.5px}
+  .tile-kpis b{font-size:15px;white-space:normal}
+  .blk{padding:16px 14px;border-radius:10px;margin-bottom:14px}
+  #v-vente .rx-grid table{min-width:0}
+  .co-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rx-grid td{padding:3px 2px}.rx-grid th{padding:4px 2px;font-size:10.5px}
+  .rx-grid input{padding:10px 2px}
+  .rx-grid tbody th{font-size:13px}
+  .overlay{padding:0;place-items:end stretch}
+  .dialog{width:100%;max-height:94vh;border-radius:16px 16px 0 0}
+  .dialog header{padding:16px 18px}
+  .dialog form{padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+  .s-stat{padding:10px 12px}.s-stat b{font-size:16px}
+  .sx-grid{grid-template-columns:minmax(0,1fr)}
+  .nt-tab{padding:12px 7px;font-size:13px;top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+  .tile-wide{flex-direction:column;align-items:stretch}
+  .tile ul.tile-kpis{flex:none}
+  .choice button{padding:16px}
+  .dialog .actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));background:var(--card);margin:0 -18px -20px;padding:12px 18px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);z-index:2}
+}
+
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -6151,6 +6234,17 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   // en ligne : code PIN demandé à chaque ouverture de DIOPTRA (poste partagé)
   try { if (EN_LIGNE || localStorage.getItem('verrou') === user.id) verrouiller(); } catch(_) {}
   exigerCode();
+
+  /* Tablette et téléphone : total de la vente toujours visible en bas, bouton vers le récapitulatif */
+  [['v-vente', 'recapTot'], ['v-lent', 'lTot'], ['v-rapide', 'rTot']].forEach(([vid, tid]) => {
+    const v = F(vid), tot = F(tid), rc = v && v.querySelector('aside.recap'); if (!v || !tot || !rc) return;
+    const bar = document.createElement('div'); bar.className = 'sale-bar';
+    bar.innerHTML = `<span>Net à payer<b>${esc(tot.textContent)}</b></span><button class="save" type="button">Récapitulatif ↓</button>`;
+    v.appendChild(bar);
+    new MutationObserver(() => { bar.querySelector('b').textContent = tot.textContent; }).observe(tot, { childList: true, characterData: true, subtree: true });
+    bar.querySelector('button').addEventListener('click', () => rc.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    if ('IntersectionObserver' in window) new IntersectionObserver(es => es.forEach(e => bar.classList.toggle('off', e.isIntersecting)), { threshold: 0.15 }).observe(rc);
+  });
 
   /* ================= Notes et messages de l'accueil ================= */
   // portée : « moi » (note personnelle), « magasin » (équipe d'un magasin), « tous » (tous les magasins)
