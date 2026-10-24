@@ -106,7 +106,7 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .tile-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:32px;flex-wrap:wrap}
 .tile-wide .tile-link{flex-direction:row;align-items:center;gap:16px}
 .tile-wide .ic{margin-bottom:0}.tile-wide h2{margin:0}
-.tile ul.tile-kpis{flex:1;min-width:260px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 24px}
+.tile ul.tile-kpis{flex:1;min-width:260px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 24px}
 .tile-kpis li{display:grid;gap:2px;font-variant-numeric:tabular-nums;min-width:0}
 .tile-kpis span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .tile-kpis b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -124,27 +124,39 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .sx-bars .bar-row{grid-template-columns:minmax(110px,190px) minmax(0,1fr) auto minmax(64px,auto)}
 .sx-bars .bt span.alt{background:var(--ic-purple-fg)}
 .sx-pct{color:var(--muted);font-size:12px}
-/* Notes et messages de l'accueil */
-.nt-tile{flex-direction:column;align-items:stretch;gap:12px}
-.nt-tile:hover{transform:none}
-.nt-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.nt-t{display:flex;align-items:center;gap:16px}.nt-t .ic{margin-bottom:0}.nt-t h2{margin:0}
-.nt-form{display:grid;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}
-.nt-form textarea{resize:vertical;min-height:72px}
-.nt-opts{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:14px}
-.nt-opts label{display:inline-flex;align-items:center;gap:8px}
-.nt-btns{margin-left:auto;display:flex;gap:8px}
-.tile ul.nt-list{gap:8px}
-.nt-list li{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px}
-.nt-list li.ep{border-left-color:var(--primary);background:var(--ic-blue)}
-.nt-list li.moi{border-left-color:var(--ic-amber-fg)}
-.nt-txt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;color:var(--ink)}
-.nt-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
-.nt-meta .nt-act{margin-left:auto;display:flex;gap:6px}
-.nt-act button{background:none;border:0;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px;border-radius:4px}
-.nt-act button:hover{color:var(--primary)}.nt-act button.nt-del:hover{color:var(--pin)}
-.nt-empty{color:var(--muted);font-size:14px;border:0!important;padding:0!important}
-.nt-more{justify-self:start;align-self:flex-start}
+/* Post-it de l'accueil (colonne latérale) */
+:root{--pi-y:#fff3a0;--pi-g:#dcf5c9;--pi-b:#d8e9ff;--pi-ink:#2e2a14;--pi-muted:#6b6440;--pi-sh:rgb(60 50 0 / .18)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}}
+:root[data-theme="dark"]{--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}
+.home{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:28px;align-items:start}
+.nt-side{display:grid;gap:14px;min-width:0}
+.nt-head{display:flex;align-items:center;gap:10px}
+.nt-head h2{font-size:19px;font-weight:600;margin:0}
+.nt-addbtn{margin-left:auto;width:36px;height:36px;border-radius:50%;border:0;background:var(--pi-y);color:var(--pi-ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px var(--pi-sh)}
+.nt-addbtn svg{width:16px;height:16px}.nt-addbtn:hover{filter:brightness(.97);transform:scale(1.05)}
+.postit{background:var(--pi-y);color:var(--pi-ink);border-radius:2px 2px 14px 2px;box-shadow:0 6px 14px var(--pi-sh);padding:16px 14px 12px;position:relative}
+.nt-form{display:grid;gap:10px}
+.nt-form textarea{background:transparent;border:0;border-bottom:1px dashed var(--pi-muted);color:var(--pi-ink);font:inherit;font-size:15px;resize:vertical;min-height:84px;outline:none;padding:0 0 6px}
+.nt-form textarea::placeholder{color:var(--pi-muted)}
+.nt-lbl{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--pi-muted)}
+.nt-form .check{color:var(--pi-ink);font-size:13px}
+.nt-btns{display:flex;gap:8px;justify-content:flex-end}
+.nt-list{list-style:none;margin:0;padding:0;display:grid;gap:18px}
+.nt-list li.postit{display:grid;gap:8px;transform:rotate(-1.2deg);transition:transform .15s}
+.nt-list li.postit:nth-child(even){transform:rotate(1deg)}
+.nt-list li.postit:hover{transform:rotate(0) scale(1.02)}
+.nt-list li.p-magasin{background:var(--pi-g)}.nt-list li.p-tous{background:var(--pi-b)}
+.nt-list li.ep::before{content:"";position:absolute;top:-7px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--pin);box-shadow:0 2px 3px rgb(0 0 0 / .3)}
+.nt-txt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.4}
+.nt-meta{display:flex;gap:4px 8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--pi-muted)}
+.nt-meta .nt-tag{font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.nt-meta .nt-new{background:var(--pin);color:#fff;border-radius:99px;padding:1px 7px;font-weight:700;font-size:10.5px}
+.nt-act{display:flex;gap:4px;justify-content:flex-end}
+.nt-act button{background:none;border:0;color:var(--pi-muted);font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px;border-radius:4px}
+.nt-act button:hover{color:var(--pi-ink);text-decoration:underline}
+.nt-empty{color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:10px;padding:14px}
+.nt-more{justify-self:start}
+@media (max-width:1100px){.home{grid-template-columns:1fr}.nt-list{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}}
 .s-stat .evo{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--muted)}
 .s-stat .evo i{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
 .s-stat .evo-up{color:var(--ok)}.s-stat .evo-dn{color:var(--pin)}
@@ -797,6 +809,7 @@ select.inp{appearance:auto}
     </button>
   </div>
 
+  <div class="home">
   <div class="grid">
     <section class="tile">
       <button class="tile-link" data-go="clients" aria-label="Ouvrir Client" style="flex:1">
@@ -861,23 +874,21 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
-    <section class="tile tile-wide nt-tile" id="tNotes" aria-labelledby="ntTitle">
-      <div class="nt-head">
-        <div class="nt-t"><div class="ic amber"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h10l4 4v12.5A1.5 1.5 0 0 1 17.5 21h-12A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3Z" opacity=".35"/><path d="M8 10h8M8 13.5h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-          <h2 id="ntTitle">Notes et messages</h2><span class="chip" id="ntNew" hidden></span></div>
-        <button class="ghost" type="button" id="ntAdd">+ Nouvelle note</button>
-      </div>
-      <form id="ntForm" class="nt-form" hidden autocomplete="off">
-        <textarea class="inp" id="ntTxt" rows="3" maxlength="2000" placeholder="Votre message : livraison attendue, rappel, information pour l'équipe…"></textarea>
-        <div class="nt-opts">
-          <label>Visible par <select class="inp sm" id="ntPortee"></select></label>
-          <label class="check" id="ntEpBox" style="margin:0"><input type="checkbox" id="ntEp"> Épingler en haut</label>
-          <span class="nt-btns"><button class="ghost" type="button" id="ntCancel">Annuler</button> <button class="save" type="submit">Publier</button></span>
-        </div>
-      </form>
-      <ul class="nt-list" id="ntList"></ul>
-      <button class="ghost nt-more" type="button" id="ntMore" hidden></button>
-    </section>
+  </div>
+  <aside class="nt-side" id="tNotes" aria-labelledby="ntTitle">
+    <div class="nt-head">
+      <h2 id="ntTitle">Post-it</h2><span class="chip" id="ntNew" hidden></span>
+      <button class="nt-addbtn" type="button" id="ntAdd" title="Nouvelle note" aria-label="Nouvelle note"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button>
+    </div>
+    <form id="ntForm" class="nt-form postit" hidden autocomplete="off">
+      <textarea id="ntTxt" rows="4" maxlength="2000" placeholder="Écrivez votre note…"></textarea>
+      <label class="nt-lbl">Visible par<select class="inp sm" id="ntPortee"></select></label>
+      <label class="check" id="ntEpBox" style="margin:0"><input type="checkbox" id="ntEp"> Épingler en haut</label>
+      <span class="nt-btns"><button class="ghost" type="button" id="ntCancel">Annuler</button><button class="save" type="submit">Coller</button></span>
+    </form>
+    <ul class="nt-list" id="ntList"></ul>
+    <button class="ghost nt-more" type="button" id="ntMore" hidden></button>
+  </aside>
   </div>
 </main>
 
@@ -6132,26 +6143,27 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     : n.portee === 'tous' ? true
     : boutiqueCour() === 'Toutes les boutiques' ? user.role === 'admin' || n.par === user.id : n.magasin === boutiqueCour() || n.par === user.id;
   const ntPeutGerer = n => n.par === user.id || user.role === 'admin' || (user.role === 'responsable' && n.portee === 'magasin' && magasinsVisibles().includes(n.magasin));
-  const PORTEE_LIB = n => n.portee === 'moi' ? 'Note personnelle' : n.portee === 'tous' ? 'Tous les magasins' : n.magasin;
+  const PORTEE_LIB = n => n.portee === 'moi' ? 'Note perso' : n.portee === 'tous' ? 'Tous les magasins' : (n.magasin || '').replace(/^Magasin /, '');
   function drawNotes(){
     const L = notes.filter(ntVisible).sort((a, b) => (!!b.epingle - !!a.epingle) || b.date.localeCompare(a.date));
     let vu = ''; try { vu = localStorage.getItem(ntCleVu()) || ''; } catch(_) {}
     const nv = L.filter(n => n.par !== user.id && n.date > vu).length;
     F('ntNew').hidden = !nv; F('ntNew').textContent = `${nv} nouvelle${nv > 1 ? 's' : ''}`;
     const MAX = 5, A = ntTout ? L : L.slice(0, MAX);
-    F('ntList').innerHTML = A.map(n => `<li class="${n.epingle ? 'ep' : ''}${n.portee === 'moi' ? ' moi' : ''}">
+    F('ntList').innerHTML = A.map(n => `<li class="postit p-${n.portee}${n.epingle ? ' ep' : ''}">
+        <div class="nt-meta"><span class="nt-tag">${esc(PORTEE_LIB(n))}</span>${n.par !== user.id && n.date > vu ? '<span class="nt-new">nouveau</span>' : ''}</div>
         <div class="nt-txt">${esc(n.texte)}</div>
-        <div class="nt-meta">${n.epingle ? '<b>Épinglée</b> ·' : ''}<span>${esc(n.parNom || '')} · ${fmtDateTime(n.date)}</span><span class="chip ${n.portee === 'moi' ? 'warn' : n.portee === 'tous' ? 'blue' : ''}">${esc(PORTEE_LIB(n))}</span>${n.par !== user.id && n.date > vu ? '<span class="chip">nouveau</span>' : ''}
-        ${ntPeutGerer(n) ? `<span class="nt-act">${n.portee !== 'moi' && user.role !== 'vendeur' ? `<button type="button" data-nt-ep="${esc(n.id)}">${n.epingle ? 'Désépingler' : 'Épingler'}</button>` : ''}<button type="button" class="nt-del" data-nt-del="${esc(n.id)}">Supprimer</button></span>` : ''}</div></li>`).join('')
-      || '<li class="nt-empty">Aucune note pour l\'instant. Laissez un message à l\'équipe ou une note pour vous-même.</li>';
-    F('ntMore').hidden = L.length <= MAX; F('ntMore').textContent = ntTout ? 'Réduire' : `Voir toutes les notes (${L.length})`;
+        <div class="nt-meta"><span>${esc(n.parNom || '')} · ${fmtDateTime(n.date)}</span></div>
+        ${ntPeutGerer(n) ? `<div class="nt-act">${n.portee !== 'moi' && user.role !== 'vendeur' ? `<button type="button" data-nt-ep="${esc(n.id)}">${n.epingle ? 'Désépingler' : 'Épingler'}</button>` : ''}<button type="button" class="nt-del" data-nt-del="${esc(n.id)}">Retirer</button></div>` : ''}</li>`).join('')
+      || '<li class="nt-empty">Aucun post-it pour l\'instant. Cliquez sur + pour laisser un message à l\'équipe ou une note pour vous-même.</li>';
+    F('ntMore').hidden = L.length <= MAX; F('ntMore').textContent = ntTout ? 'Réduire' : `Voir tous les post-it (${L.length})`;
   }
   // les notes affichées sont « lues » quand on quitte l'accueil
   function ntMarquerLu(){ try { localStorage.setItem(ntCleVu(), new Date().toISOString()); } catch(_) {} }
   function ntOuvrir(){
     const b = boutiqueCour(), tous = b === 'Toutes les boutiques';
-    F('ntPortee').innerHTML = (tous ? '' : `<option value="magasin">L'équipe de ${esc(b)}</option>`)
-      + (user.role !== 'vendeur' ? '<option value="tous">Tous les magasins</option>' : '') + '<option value="moi">Moi seulement (note personnelle)</option>';
+    F('ntPortee').innerHTML = (tous ? '' : `<option value="magasin">L'équipe · ${esc(b.replace(/^Magasin /, ''))}</option>`)
+      + (user.role !== 'vendeur' ? '<option value="tous">Tous les magasins</option>' : '') + '<option value="moi">Moi seulement (note perso)</option>';
     F('ntEpBox').hidden = user.role === 'vendeur'; F('ntEp').checked = false;
     F('ntTxt').value = ''; F('ntForm').hidden = false; F('ntAdd').hidden = true; F('ntTxt').focus();
   }
@@ -6168,7 +6180,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   });
   F('ntList').addEventListener('click', e => {
     const d = e.target.dataset, id = d.ntDel || d.ntEp; if (!id) return; const n = notes.find(x => x.id === id); if (!n || !ntPeutGerer(n)) return;
-    if (d.ntDel) { if (!confirm('Supprimer cette note ?')) return; notes = notes.filter(x => x.id !== id); }
+    if (d.ntDel) { if (!confirm('Retirer ce post-it ?')) return; notes = notes.filter(x => x.id !== id); }
     else n.epingle = !n.epingle;
     saveNotes(); drawNotes();
   });
