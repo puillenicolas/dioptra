@@ -834,9 +834,9 @@ select.inp{appearance:auto}
       </button>
       <ul class="tile-kpis">
         <li><span>Chiffre d'affaires du mois</span><b id="tStatCa">—</b></li>
-        <li><span>Par rapport au mois dernier</span><b id="tStatEvo">—</b></li>
-        <li><span>Ordonnances du mois</span><b id="tStatOrd">—</b></li>
-        <li><span>Premier prescripteur</span><b id="tStatOph">—</b></li>
+        <li><span>Par rapport à M-1</span><b id="tStatEvo">—</b></li>
+        <li><span>Par rapport à N-1</span><b id="tStatN1">—</b></li>
+        <li><span>Ventes validées du mois</span><b id="tStatNb">—</b></li>
       </ul>
     </section>
   </div>
@@ -4639,13 +4639,16 @@ select.inp{appearance:auto}
   // Tuile de l'accueil : mois en cours comparé aux mêmes jours du mois précédent
   function majTuileStat(){
     const ok = droit('stats'); F('tStat').hidden = !ok; if (!ok) return;
-    const t = new Date(), per = [new Date(t.getFullYear(), t.getMonth(), 1), t], prec = [decMois(per[0], -1), decMois(t, -1)];
-    const V = sxV(per), ca = V.reduce((a, { v }) => a + (v.net || 0), 0), caP = sxV(prec).reduce((a, { v }) => a + (v.net || 0), 0);
+    // mois en cours du 1er à aujourd'hui, comparé aux mêmes dates du mois précédent (M-1) et du même mois l'an dernier (N-1)
+    const t = new Date(), per = [new Date(t.getFullYear(), t.getMonth(), 1), t];
+    const caDe = P => sxV(P).reduce((a, { v }) => a + (v.net || 0), 0), V = sxV(per), ca = caDe(per);
     F('tStatCa').textContent = money(ca);
-    const e = F('tStatEvo'); e.className = ''; 
-    if (caP) { const p = (ca - caP) / caP * 100; e.textContent = `${p >= 0 ? '+' : '−'}${evoTxt(p)} %`; e.className = p >= 0.5 ? 'evo-up' : p <= -0.5 ? 'evo-dn' : ''; } else e.textContent = '—';
-    F('tStatOrd').textContent = sxN(V.filter(({ v }) => avecOrd(v)).length);
-    const top = sxOphAgg(V).find(x => x.key !== '-'); F('tStatOph').textContent = top ? `${top.nom} (${top.ord})` : '—';
+    const ecart = (id, ref, lib) => { const e = F(id); e.className = ''; e.title = `${lib} aux mêmes dates : ${money(ref)}`;
+      if (!ref) { e.textContent = '—'; return; } const p = (ca - ref) / ref * 100;
+      e.textContent = `${p >= 0 ? '+' : '−'}${evoTxt(p)} % (${money(ref)})`; e.className = p >= 0.5 ? 'evo-up' : p <= -0.5 ? 'evo-dn' : ''; };
+    ecart('tStatEvo', caDe(per.map(d => decMois(d, -1))), 'Mois précédent');
+    ecart('tStatN1', caDe(per.map(d => decMois(d, -12))), 'Même mois l\'an dernier');
+    F('tStatNb').textContent = sxN(V.length);
   }
   try { majTuileStat(); } catch(_) {}
 
