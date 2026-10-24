@@ -848,6 +848,19 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile tile-wide" id="tStat">
+      <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
+      <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+      <h2>Statistiques</h2>
+      </button>
+      <ul class="tile-kpis">
+        <li><span>Chiffre d'affaires du mois</span><b id="tStatCa">—</b></li>
+        <li><span>Par rapport à M-1</span><b id="tStatEvo">—</b></li>
+        <li><span>Par rapport à N-1</span><b id="tStatN1">—</b></li>
+        <li><span>Ventes validées du mois</span><b id="tStatNb">—</b></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide nt-tile" id="tNotes" aria-labelledby="ntTitle">
       <div class="nt-head">
         <div class="nt-t"><div class="ic amber"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h10l4 4v12.5A1.5 1.5 0 0 1 17.5 21h-12A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3Z" opacity=".35"/><path d="M8 10h8M8 13.5h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
@@ -864,19 +877,6 @@ select.inp{appearance:auto}
       </form>
       <ul class="nt-list" id="ntList"></ul>
       <button class="ghost nt-more" type="button" id="ntMore" hidden></button>
-    </section>
-
-    <section class="tile tile-wide" id="tStat">
-      <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
-      <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
-      <h2>Statistiques</h2>
-      </button>
-      <ul class="tile-kpis">
-        <li><span>Chiffre d'affaires du mois</span><b id="tStatCa">—</b></li>
-        <li><span>Par rapport à M-1</span><b id="tStatEvo">—</b></li>
-        <li><span>Par rapport à N-1</span><b id="tStatN1">—</b></li>
-        <li><span>Ventes validées du mois</span><b id="tStatNb">—</b></li>
-      </ul>
     </section>
   </div>
 </main>
