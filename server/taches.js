@@ -59,7 +59,7 @@ function htmlMagasin(J) {
 }
 const enveloppe = (titre, corps) => `<div style="font:14px Arial,sans-serif;color:#111;max-width:620px">
   <p style="font:600 13px Arial,sans-serif;letter-spacing:.08em;color:#6b6b6b;margin:0">DIOPTRA</p><h1 style="font:600 22px Arial,sans-serif;margin:4px 0 0">${titre}</h1>${corps}
-  <p style="font:12px Arial,sans-serif;color:#6b6b6b;margin-top:28px">E-mail automatique envoyé par DIOPTRA. Pour modifier les destinataires : Paramètres › Général › E-mail de caisse automatique.</p></div>`;
+  <p style="font:12px Arial,sans-serif;color:#6b6b6b;margin-top:28px">E-mail automatique envoyé par DIOPTRA. Pour modifier les destinataires : Paramètres › Général › E-mail de caisse.</p></div>`;
 const texte = J => `${J.b} : ${J.z ? 'clôturée' : 'NON CLÔTURÉE'} · encaissé ${money(J.total)} · espèces théoriques ${money(J.especesTheo)}${J.z ? ` · écart ${money(J.z.ecart)}` : ''} · PEC ${money(J.totPec)}`;
 
 async function dejaEnvoye(orgId, type, cle) {
@@ -79,7 +79,7 @@ async function rapportsOrg(org, j, force = false) {
   for (let i = 0; i < mags.length; i++) {
     const m = mags[i], to = adresses((R.magasins || {})[m.nom] || m.email);
     if (!to.length) continue;
-    // un essai (force) n'empêche pas l'envoi automatique du soir
+    // un essai (force) n'empêche pas les envois automatiques
     const cle = force ? null : `${j}|${m.nom}`;
     if (cle && await dejaEnvoye(org.id, 'caisse', cle)) continue;
     await SV.envoyerMail({ orgId: org.id, orgNom: org.nom, type: force ? 'caisse-essai' : 'caisse', cle, to,
@@ -102,25 +102,54 @@ async function rapportsOrg(org, j, force = false) {
   return { envoyes };
 }
 
-async function verifier(log) {
-  if (!SV.mailConfigure()) return;
-  const { rows: orgs } = await pool.query('SELECT id, nom FROM organisations WHERE actif');
-  const j = jourDe(), maintenant = heureDe();
-  for (const org of orgs) {
-    try {
-      const { rows } = await pool.query(`SELECT data FROM donnees WHERE org_id = $1 AND coll = 'parametres' AND id = '_'`, [org.id]);
-      const R = rows[0]?.data?.v?.rapports;
-      if (!R || !R.actif || maintenant < (R.heure || '20:30')) continue;
-      const r = await rapportsOrg(org, j);
-      if (r.envoyes) log.info({ org: org.nom, jour: j, envoyes: r.envoyes }, 'rapports de caisse envoyés');
-    } catch (e) { log.error({ org: org.nom, err: e.message }, 'rapport de caisse en échec'); }
+// Le rapport d'une clôture Z se construit à partir des chiffres enregistrés dans la clôture elle-même
+function depuisZ(z) {
+  const num = o => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, typeof v === 'number' ? v : (v && v.mt) || 0]));
+  return { b: z.boutique, j: z.jour, z, total: z.total || 0, parMode: num(z.parMode), nbVentes: z.nb || 0, sorties: z.sorties || [],
+    totSorties: z.totSorties || 0, especesTheo: z.especesTheo || 0, parOrg: num(z.parOrg), totPec: z.totPec || 0 };
+}
+const dateLongue = j => new Date(j + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+/**
+ * Envoi automatique au moment d'une clôture Z (appelé quand le serveur reçoit une nouvelle clôture) :
+ * rapport du magasin, puis récapitulatif de tous les magasins quand le dernier magasin du jour a clôturé.
+ */
+async function surCloture(org, z, log = console) {
+  if (!SV.mailConfigure() || !z || !z.numero || z.rouverte) return { envoyes: 0 };
+  const D = await charger(org.id, ['parametres', 'clotures']);
+  const P = D.parametres || {}, R = P.rapports || {};
+  if (!R.actif) return { envoyes: 0 };
+  const m = (P.magasins || []).find(x => x.nom === z.boutique) || { nom: z.boutique };
+  const J = depuisZ(z), dateTxt = dateLongue(z.jour);
+  let envoyes = 0;
+  const to = adresses((R.magasins || {})[m.nom] || m.email);
+  if (to.length && !(await dejaEnvoye(org.id, 'caisse', 'Z:' + z.numero))) {
+    await SV.envoyerMail({ orgId: org.id, orgNom: org.nom, type: 'caisse', cle: 'Z:' + z.numero, to,
+      subject: `Clôture de caisse · ${m.nom} · ${dateTxt} · ${money(J.total)}`,
+      html: enveloppe(`Clôture de caisse du ${dateTxt}`, htmlMagasin(J)), text: texte(J) });
+    envoyes++;
   }
+  // récapitulatif : seulement quand tous les magasins actifs ont clôturé ce jour-là
+  const recap = adresses(R.recap), mags = (P.magasins || []).filter(x => x.actif !== false);
+  if (recap.length && mags.length) {
+    const derniereZ = b => D.clotures.filter(x => x.boutique === b && x.jour === z.jour && !x.rouverte).sort((a, c) => String(a.date).localeCompare(String(c.date))).pop();
+    const Z = mags.map(x => derniereZ(x.nom));
+    if (Z.every(Boolean) && !(await dejaEnvoye(org.id, 'caisse-recap', z.jour))) {
+      const L = Z.map(depuisZ), tot = L.reduce((a, x) => a + x.total, 0), totPec = L.reduce((a, x) => a + x.totPec, 0);
+      const corps = `<p style="margin:12px 0;color:#1f9d55">Tous les magasins ont clôturé leur caisse.</p>`
+        + table(L.map(x => tr(esc(x.b), money(x.total))).join('') + tr('Total encaissé tous magasins', money(tot), true) + tr('Prises en charge du jour', money(totPec)))
+        + L.map(htmlMagasin).join('');
+      await SV.envoyerMail({ orgId: org.id, orgNom: org.nom, type: 'caisse-recap', cle: z.jour, to: recap,
+        subject: `Récapitulatif des caisses · ${dateTxt} · ${money(tot)}`,
+        html: enveloppe(`Récapitulatif des caisses du ${dateTxt}`, corps), text: L.map(texte).join('\n') });
+      envoyes++;
+    }
+  }
+  if (envoyes && log.info) log.info({ org: org.nom, z: z.numero, envoyes }, 'rapport de clôture envoyé');
+  return { envoyes };
 }
 
-function demarrer(log) {
-  const tour = () => verifier(log).catch(e => log.error(e));
-  setTimeout(tour, 20000);
-  setInterval(tour, 5 * 60 * 1000);
-}
+// Plus d'envoi programmé : les rapports partent à chaque clôture (voir surCloture)
+function demarrer() {}
 
-module.exports = { demarrer, rapportsOrg, journee, jourDe, verifier };
+module.exports = { demarrer, rapportsOrg, journee, jourDe, surCloture, depuisZ };

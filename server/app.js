@@ -168,6 +168,7 @@ function construire(opts = {}) {
       if (!ch || !M.COLLS[ch.coll] || typeof ch.id !== 'string' || ch.id.length > 300) return err(rep, 400, `Enregistrement invalide (${ch && ch.coll}).`);
     }
     let ecrits = 0;
+    const nouvellesZ = [];   // clôtures Z reçues pour la première fois → e-mail de clôture
     if (changes.length) {
       await tx(async c => {
         for (const ch of changes) {
@@ -181,6 +182,7 @@ function construire(opts = {}) {
             data = cur.data; supprime = true;
           } else {
             data = cur && !cur.supprime ? M.merge(ch.coll, ch.base, ch.data, cur.data) : ch.data;
+            if (ch.coll === 'clotures' && (!cur || cur.supprime)) nouvellesZ.push(data);
             if (cur && !cur.supprime && M.eq(data, cur.data)) continue;
           }
           await c.query(
@@ -190,6 +192,10 @@ function construire(opts = {}) {
           ecrits++;
         }
       });
+    }
+    if (nouvellesZ.length) {
+      const T = require('./taches');
+      setImmediate(async () => { for (const z of nouvellesZ) await T.surCloture({ id: org, nom: req.poste.org_nom }, z, app.log).catch(e => app.log.error({ err: e.message }, 'e-mail de clôture en échec')); });
     }
     const { rows } = await pool.query(
       `SELECT coll, id, data, rev, supprime FROM donnees WHERE org_id = $1 AND rev > $2 ORDER BY rev LIMIT ${LIMITE_PULL}`, [org, Number(since) || 0]);

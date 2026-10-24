@@ -895,11 +895,10 @@ select.inp{appearance:auto}
       <div class="f"><label for="prApp">Nom de l'application (barre du haut)</label><input type="text" id="prApp"></div>
     </div>
     <div class="f" style="max-width:760px"><label for="prPied">Pied de page des documents <span class="opt">(mentions légales, conditions…)</span></label><textarea id="prPied" rows="3" placeholder="ex. SARL au capital de … · Les montures restent la propriété du magasin jusqu'au paiement intégral."></textarea></div>
-    <h2 style="margin-top:24px">E-mail de caisse automatique</h2>
-    <p class="sub">Chaque soir, le serveur envoie le rapport de caisse de chaque magasin à ses destinataires, et un récapitulatif de tous les magasins. Un magasin dont la caisse n'est pas clôturée est signalé. Fonctionne avec la version en ligne.</p>
-    <label class="check"><input type="checkbox" id="prRapOn"> Activer l'envoi automatique</label>
-    <div class="rap-grid">
-      <div class="f"><label for="prRapH">Heure d'envoi</label><input type="time" id="prRapH" value="20:30"></div>
+    <h2 style="margin-top:24px">E-mail de caisse</h2>
+    <p class="sub">À chaque clôture Z, le rapport de caisse du magasin part automatiquement à ses destinataires. Quand tous les magasins ont clôturé leur journée, un récapitulatif de tous les magasins est envoyé. Une clôture faite hors connexion est envoyée dès que le poste retrouve internet. Fonctionne avec la version en ligne.</p>
+    <label class="check"><input type="checkbox" id="prRapOn"> Envoyer automatiquement le rapport à chaque clôture</label>
+    <div class="rap-grid" style="grid-template-columns:1fr">
       <div class="f"><label for="prRapRecap">Récapitulatif de tous les magasins envoyé à <span class="opt">(plusieurs adresses séparées par des virgules)</span></label><input type="text" id="prRapRecap" placeholder="direction@exemple.com, compta@exemple.com"></div>
     </div>
     <div id="prRapMags" class="rap-mags"></div>
@@ -1379,7 +1378,7 @@ select.inp{appearance:auto}
     <form id="fProd" novalidate>
       <div class="row2">
         <div class="f"><label for="pCat">Catégorie</label><select class="inp" id="pCat"></select></div>
-        <div class="f"><label for="pCode">Code étiquette</label><input type="text" id="pCode" readonly></div>
+        <div class="f" data-f="pCode"><label for="pCode">Code étiquette <span class="opt">(vide = automatique)</span></label><input type="text" id="pCode" autocomplete="off" style="text-transform:uppercase" maxlength="24"></div>
       </div>
       <div class="row2">
         <div class="f" data-f="pMarque"><label for="pMarque">Marque</label><input type="text" id="pMarque"></div>
@@ -2098,7 +2097,8 @@ select.inp{appearance:auto}
   function connecter(u){
     setUser(u); try { localStorage.setItem('user', u.id); } catch(_) {}
     // un utilisateur limité à certains magasins bascule sur le premier autorisé
-    if (u.magasins?.length && !u.magasins.includes(label.textContent)) choisirBoutique(u.magasins[0], true);
+    const V = magasinsVisibles(), toutesOk = u.role === 'admin' && !u.magasins?.length;
+    if (!V.includes(label.textContent) && !(label.textContent === 'Toutes les boutiques' && toutesOk) && V[0]) choisirBoutique(V[0], true);
     applyUser(); drawStoreMenu();
     if (!document.getElementById('v-fiche').hidden && typeof refreshFiche === 'function') refreshFiche();
     if (!document.getElementById('v-detail').hidden && typeof refreshDetail === 'function') refreshDetail();
@@ -2162,9 +2162,12 @@ select.inp{appearance:auto}
   });
 
   // Sélecteur de magasin (liste issue des paramètres, filtrée selon l'utilisateur)
-  const magasinsVisibles = () => PARAM.magasins.filter(m => m.actif && (!user.magasins?.length || user.magasins.includes(m.nom))).map(m => m.nom);
+  // Magasins accessibles : ceux attribués à l'utilisateur ; sans attribution, l'administrateur voit tout,
+  // les autres seulement le magasin du poste (version en ligne). « Toutes les boutiques » : administrateur uniquement.
+  const magasinsVisibles = () => PARAM.magasins.filter(m => m.actif && (user.magasins?.length ? user.magasins.includes(m.nom)
+    : user.role === 'admin' || !(POSTE && POSTE.magasin) || m.nom === POSTE.magasin)).map(m => m.nom);
   function drawStoreMenu(){
-    const L = magasinsVisibles(), tous = !user.magasins?.length && L.length > 1 ? ['Toutes les boutiques'] : [];
+    const L = magasinsVisibles(), tous = user.role === 'admin' && !user.magasins?.length && L.length > 1 ? ['Toutes les boutiques'] : [];
     menu.innerHTML = [...L, ...tous].map(n => `<li><button role="menuitem" class="${n === label.textContent ? 'on' : ''}">${esc(n)}</button></li>`).join('');
   }
   function choisirBoutique(n, silencieux){
@@ -2176,7 +2179,7 @@ select.inp{appearance:auto}
   document.addEventListener('click', closeMenu);
   menu.addEventListener('click', e => { const b = e.target.closest('button'); if (b) choisirBoutique(b.textContent); });
   { let sb = null; try { sb = localStorage.getItem('boutique'); } catch(_) {}
-    const V = magasinsVisibles(); label.textContent = sb && (V.includes(sb) || (sb === 'Toutes les boutiques' && !user.magasins?.length)) ? sb : (V[0] || 'Magasin'); }
+    const V = magasinsVisibles(); label.textContent = sb && (V.includes(sb) || (sb === 'Toutes les boutiques' && user.role === 'admin' && !user.magasins?.length)) ? sb : (V[0] || 'Magasin'); }
 
   const toast = document.getElementById('toast'); let t;
   function show(msg){ toast.textContent = msg; toast.hidden = false; clearTimeout(t); t = setTimeout(() => toast.hidden = true, 2400); }
@@ -3260,7 +3263,7 @@ select.inp{appearance:auto}
   }
   function drawProds(){
     const q = norm(F('rQ').value);
-    const L = produits.filter(p => p.rapide && (rCat === 'Tous' || p.cat === rCat) && (!q || norm(p.nom).includes(q)));
+    const L = produitsVisibles().filter(p => p.rapide && (rCat === 'Tous' || p.cat === rCat) && (!q || norm(p.nom).includes(q)));
     F('rProds').innerHTML = L.map(p => `<button class="prod" data-pid="${p.id}"><span class="p-cat">${p.cat}</span><b>${esc(p.nom)}</b><span class="p-px">${money(p.prix)}${['Entretien','Accessoire','Solaire','Lentilles','Monture'].includes(p.cat) ? `<small class="p-st${stockDe(p) <= 0 ? ' zero' : ''}">stock ${stockDe(p)}</small>` : ''}</span></button>`).join('')
       || `<p class="muted" style="grid-column:1/-1;margin:0">Aucun produit. Utilisez la saisie libre ci-dessous.</p>`;
     F('rDemo').hidden = !produits.some(p => p.exemple);
@@ -3283,7 +3286,7 @@ select.inp{appearance:auto}
     if (F('rLSave').checked) {
       const ex = produits.find(p => norm(p.nom) === norm(des));
       if (ex) { ex.prix = px; ex.cat = cat; ex.rapide = true; pid = ex.id; }
-      else { pid = 'p' + Date.now(); produits.push({ id: pid, nom: des, modele: des, cat, prix: px, rapide: true, code: nouveauCode(cat), stock: {}, creePar: user.nom, creeLe: new Date().toISOString() }); }
+      else { pid = 'p' + Date.now(); produits.push({ id: pid, nom: des, modele: des, cat, prix: px, rapide: true, code: nouveauCode(cat), stock: {}, magasin: magasinCreation(), creePar: user.nom, creeLe: new Date().toISOString() }); }
       saveR(); drawCats(); drawProds(); show(`Produit « ${des} » ajouté à la vente rapide`);
     }
     const l = pid && cart.find(x => x.pid === pid);
@@ -3598,14 +3601,14 @@ select.inp{appearance:auto}
   function drawRap(){
     F('prRapTestBox').hidden = !EN_LIGNE; F('prRapSt').textContent = '';
     const R = PD.rapports = PD.rapports || { actif: false, heure: '20:30', recap: '', magasins: {} };
-    F('prRapOn').checked = !!R.actif; F('prRapH').value = R.heure || '20:30'; F('prRapRecap').value = R.recap || '';
+    F('prRapOn').checked = !!R.actif; F('prRapRecap').value = R.recap || '';
     F('prRapMags').innerHTML = PD.magasins.filter(m => m.actif).map(m => `<div class="f"><label>Rapport de <b>${esc(m.nom)}</b> envoyé à</label>
       <input type="text" data-rap="${esc(m.nom)}" value="${esc((R.magasins || {})[m.nom] || '')}" placeholder="${esc(m.email || 'adresse du responsable du magasin')}"></div>`).join('');
   }
   function lirePD(){
     if (!PD) return;
     PD.app.nom = F('prApp').value.trim(); PD.app.pied = F('prPied').value.trim();
-    PD.rapports = { ...(PD.rapports || {}), actif: F('prRapOn').checked, heure: F('prRapH').value || '20:30', recap: F('prRapRecap').value.trim(), magasins: { ...((PD.rapports || {}).magasins || {}) } };
+    PD.rapports = { ...(PD.rapports || {}), actif: F('prRapOn').checked, recap: F('prRapRecap').value.trim(), magasins: { ...((PD.rapports || {}).magasins || {}) } };
     F('prRapMags').querySelectorAll('[data-rap]').forEach(i => { PD.rapports.magasins[i.dataset.rap] = i.value.trim(); });
     F('prMags').querySelectorAll('[data-m]').forEach(i => { const m = PD.magasins[i.dataset.m]; m[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
     F('prUsrs').querySelectorAll('[data-u][data-k]').forEach(i => { const u = PD.users[i.dataset.u]; u[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
@@ -4367,13 +4370,14 @@ select.inp{appearance:auto}
   const saveSt = () => { try { ['mvtsStock','receptions','transferts','inventaires'].forEach(k => localStorage.setItem(k, JSON.stringify(({ mvtsStock, receptions, transferts, inventaires })[k]))); } catch(_) {} saveR(); };
 
   // Code étiquette unique : lettre de catégorie + numéro séquentiel
+  // Codes étiquette courts : M1, M2… pour les montures, S1, S2… pour les solaires, etc. (numéro suivant le plus grand déjà utilisé)
   function nouveauCode(cat){
-    let n = ld('seqCode', 0) + 1;
-    const pre = (PREFIX[cat] || 'X') + (POSTE ? String(POSTE.num).padStart(2, '0') : '');   // en ligne : numéro du poste dans le code
-    while (produits.some(p => p.code === pre + String(n).padStart(6, '0'))) n++;
-    try { localStorage.setItem('seqCode', JSON.stringify(n)); } catch(_) {}
-    return pre + String(n).padStart(6, '0');
+    const pre = PREFIX[cat] || 'X', re = new RegExp('^' + pre + '([1-9]\\d{0,6})$');
+    const n = produits.reduce((m, p) => { const x = re.exec(p.code || ''); return x ? Math.max(m, +x[1]) : m; }, 0) + 1;
+    return pre + n;
   }
+  const codeValide = c => /^[A-Z0-9][A-Z0-9._\/-]{0,23}$/.test(c);
+  const codeEnDouble = (c, id) => produits.some(p => p.id !== id && (p.code || '').toUpperCase() === c);
   // Mise à niveau des produits existants (vente rapide) : code + stock par magasin
   produits.forEach(p => { if (!p.code) p.code = nouveauCode(p.cat); if (!p.stock) p.stock = {}; });
   if (!EN_LIGNE && !produits.some(p => p.cat === 'Monture')) {
@@ -4399,7 +4403,19 @@ select.inp{appearance:auto}
   }
   const montureLabel = p => `${p.code} · ${p.nom}${p.couleur ? ' · ' + p.couleur : ''}`;
   const prodLabel = p => `${p.code} · ${p.nom}${p.couleur ? ' · ' + p.couleur : ''}`;
-  const findProd = v => { v = (v || '').trim(); return produits.find(p => p.code === v.toUpperCase() || prodLabel(p) === v); };
+  // Chaque magasin ne voit que ses produits (créés chez lui ou passés par son stock) ; l'administrateur général voit tout.
+  // Les options de verre (services, sans stock) sont communes à tous les magasins.
+  function produitVisible(p, b = boutiqueCour()){
+    if (b === 'Toutes les boutiques') return user.role === 'admin';
+    if (p.cat === 'Option verre') return true;
+    if (p.magasin === b) return true;
+    const st = p.stock || {};
+    if (Object.prototype.hasOwnProperty.call(st, b)) return true;
+    return !p.magasin && !Object.keys(st).length;   // anciens produits sans magasin ni stock : communs
+  }
+  const produitsVisibles = () => produits.filter(p => produitVisible(p));
+  const magasinCreation = () => boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : undefined;
+  const findProd = v => { v = (v || '').trim(); return produitsVisibles().find(p => p.code === v.toUpperCase() || prodLabel(p) === v); };
 
   // --- Coût d'achat arrivé et prix conseillé
   const PA_DEF = { taux: 655.957, transport: 8, douane: 30, tva: 18, css: 1, divers: 2, tvaIncl: true, coefDefaut: 2.5, arrondi: 500, coefs: {} };
@@ -4426,7 +4442,7 @@ select.inp{appearance:auto}
   // --- Vente : monture issue du stock, options catalogue
   let montureSel = null, optSel = [];
   function majMontureList(){
-    F('mList').innerHTML = produits.filter(p => ['Monture', 'Solaire'].includes(p.cat))
+    F('mList').innerHTML = produitsVisibles().filter(p => ['Monture', 'Solaire'].includes(p.cat))
       .sort((a, b) => stockDe(b) - stockDe(a)).map(p => `<option value="${esc(montureLabel(p))}">stock ${stockDe(p)}</option>`).join('');
   }
   function montureInfo(){
@@ -4451,7 +4467,7 @@ select.inp{appearance:auto}
     F('stCat').innerHTML = ['Toutes catégories', ...CATS].map(c => `<option>${c}</option>`).join('');
     F('invCat').innerHTML = ['Toutes catégories', ...CATS.filter(c => c !== 'Option verre')].map(c => `<option>${c}</option>`).join('');
     F('fourList').innerHTML = [...new Set([...produits.map(p => p.fournisseur), ...receptions.map(r => r.fournisseur)].filter(Boolean))].map(f => `<option value="${esc(f)}">`).join('');
-    F('prodList').innerHTML = produits.filter(geresEnStock).map(p => `<option value="${esc(prodLabel(p))}">`).join('');
+    F('prodList').innerHTML = produitsVisibles().filter(geresEnStock).map(p => `<option value="${esc(prodLabel(p))}">`).join('');
     showStTab(tab); go('stock');
   }
   F('goStock').addEventListener('click', () => openStock('prod'));
@@ -4466,13 +4482,13 @@ select.inp{appearance:auto}
 
   function drawStProds(){
     const q = norm(F('stQ').value), cat = F('stCat').value;
-    const L = produits.filter(p => (cat === 'Toutes catégories' || !cat || p.cat === cat)
+    const L = produitsVisibles().filter(p => (cat === 'Toutes catégories' || !cat || p.cat === cat)
       && (!q || norm([p.code, p.nom, p.marque, p.modele, p.couleur, p.taille].join(' ')).includes(q)))
       .sort((a, b) => a.cat.localeCompare(b.cat) || a.nom.localeCompare(b.nom));
     F('stCount').textContent = `${L.length} produit${L.length > 1 ? 's' : ''}${produits.some(p => p.exemple) ? ' · certains sont des exemples à remplacer' : ''}`;
     F('stRows').innerHTML = L.map(p => `<tr data-pid="${p.id}">
       <td><input type="checkbox" data-sel="${p.id}"${stSel.has(p.id) ? ' checked' : ''} aria-label="Sélectionner"></td>
-      <td><code>${p.code}</code></td><td>${p.cat}${p.rapide ? ' <span class="chip blue" style="font-size:10px">rapide</span>' : ''}</td>
+      <td><code>${p.code}</code>${codeEnDouble((p.code || '').toUpperCase(), p.id) ? ' <span class="chip warn" style="font-size:10px" title="Deux produits ont ce code : modifiez-en un">en double</span>' : ''}</td><td>${p.cat}${p.rapide ? ' <span class="chip blue" style="font-size:10px">rapide</span>' : ''}</td>
       <td><b>${esc(p.nom)}</b>${p.exemple ? ' <span class="muted" style="font-size:11px">exemple</span>' : ''}</td>
       <td class="muted">${esc([p.couleur, p.taille].filter(Boolean).join(' · '))}</td>
       <td style="text-align:right" class="muted">${p.achat ? money(p.achat) + (p.importe ? ` <small>(${fmtN(p.achatEur)} €)</small>` : '') : '—'}</td>
@@ -4525,11 +4541,14 @@ select.inp{appearance:auto}
       F('pCouleur').value = p.couleur || ''; F('pTaille').value = p.taille || ''; F('pMatiere').value = p.matiere || ''; F('pGenre').value = p.genre || '';
       F('pFour').value = p.fournisseur || ''; F('pPrix').value = p.prix || ''; F('pRapide').checked = !!p.rapide;
       F('pImport').checked = !!p.importe; F('pAchat').value = p.importe ? (p.achatEur ?? '') : (p.achatHT ?? p.achat ?? '');
-      F('pStocks').innerHTML = geresEnStock(p) ? `<span class="lbl">Stock par magasin</span>` + BOUTIQUES.map(b => `<span class="ps">${esc(b)} : <b>${p.stock?.[b] || 0}</b></span>`).join('') + `<small class="muted">Le stock se modifie par réception, transfert, inventaire ou vente.</small>` : '';
-    } else { F('pCat').value = after ? 'Monture' : (F('stCat').value && CATS.includes(F('stCat').value) ? F('stCat').value : 'Monture'); F('pCode').value = '(attribué à la création)'; F('pStocks').innerHTML = ''; }
+      F('pStocks').innerHTML = geresEnStock(p) ? `<span class="lbl">Stock par magasin</span>` + BOUTIQUES.filter(b => user.role === 'admin' || b === boutiqueCour()).map(b => `<span class="ps">${esc(b)} : <b>${p.stock?.[b] || 0}</b></span>`).join('') + `<small class="muted">Le stock se modifie par réception, transfert, inventaire ou vente.</small>` : '';
+    } else { F('pCat').value = after ? 'Monture' : (F('stCat').value && CATS.includes(F('stCat').value) ? F('stCat').value : 'Monture'); F('pCode').value = ''; F('pStocks').innerHTML = ''; }
+    pCodeAide();
     pFormMode(); pCalc(); F('dlgProd').hidden = false; F('pMarque').focus();
   }
-  F('pCat').addEventListener('change', pFormMode);
+  // code proposé automatiquement, que l'opticien peut remplacer par le sien
+  function pCodeAide(){ F('pCode').placeholder = `Automatique : ${pEdit && pEdit.cat === F('pCat').value ? pEdit.code : nouveauCode(F('pCat').value)}`; }
+  F('pCat').addEventListener('change', () => { pFormMode(); pCodeAide(); });
   document.querySelectorAll('[data-close-p]').forEach(b => b.addEventListener('click', () => F('dlgProd').hidden = true));
   F('fProd').addEventListener('submit', e => {
     e.preventDefault();
@@ -4540,6 +4559,9 @@ select.inp{appearance:auto}
     let ok = true;
     if (!modele) { fbad('pModele', 'Obligatoire.'); ok = false; }
     if (!prix) { fbad('pPrix', 'Indiquez le prix de vente.'); ok = false; }
+    const codeSaisi = F('pCode').value.trim().toUpperCase();
+    if (codeSaisi && !codeValide(codeSaisi)) { fbad('pCode', 'Lettres, chiffres, tirets ou points (24 caractères maximum).'); ok = false; }
+    else if (codeSaisi && codeEnDouble(codeSaisi, pEdit && pEdit.id)) { fbad('pCode', 'Ce code est déjà utilisé par un autre produit.'); ok = false; }
     if (!ok) return;
     const frame = ['Monture', 'Solaire'].includes(cat);
     const imp = F('pImport').checked, av = dec(F('pAchat').value), cr = coutArrive({ importe: imp, achatEur: av, achatHT: av });
@@ -4548,9 +4570,9 @@ select.inp{appearance:auto}
       couleur: frame ? F('pCouleur').value.trim() : '', taille: frame ? F('pTaille').value.trim() : '', matiere: frame ? F('pMatiere').value : '',
       genre: frame ? F('pGenre').value : '', fournisseur: F('pFour').value.trim(), rapide: F('pRapide').checked };
     let p = pEdit;
-    if (p) { if (p.cat !== cat) p.code = nouveauCode(cat); Object.assign(p, data); delete p.exemple; }
+    if (p) { p.code = codeSaisi || (p.cat !== cat ? nouveauCode(cat) : p.code); Object.assign(p, data); delete p.exemple; }
     else {
-      p = { id: 'p' + Date.now(), ...data, code: nouveauCode(cat), stock: {}, creeLe: new Date().toISOString(), creePar: user.nom };
+      p = { id: 'p' + Date.now(), ...data, code: codeSaisi || nouveauCode(cat), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom };
       produits.push(p);
       const q0 = intOf(F('pStock').value);
       if (q0 && geresEnStock(p) && !needShop()) mvtStock(p.id, boutiqueCour(), q0, 'Stock initial', '');
@@ -4674,7 +4696,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) F('recDate').value = d.date;
     d.lignes.forEach(l => { l._p = blMatch(l); l._on = true; l._cat = CATS.includes(l.categorie) ? l.categorie : 'Monture'; l._q = Math.max(1, Math.round(Number(l.quantite) || 1)); l._px = Number(l.prix_unitaire) || 0; });
     F('blPxH').textContent = eur ? 'Prix unitaire (€ brut)' : `Prix unitaire (${esc(d.devise || 'FCFA')} HT)`;
-    const opts = produits.filter(geresEnStock).map(p => `<option value="${p.id}">${esc(prodLabel(p))}</option>`).join('');
+    const opts = produitsVisibles().filter(geresEnStock).map(p => `<option value="${p.id}">${esc(prodLabel(p))}</option>`).join('');
     F('blRows').innerHTML = d.lignes.map((l, i) => `<tr>
       <td><input type="checkbox" data-bl="${i}" data-k="_on" checked></td>
       <td class="bl-src"><b>${esc([l.marque, l.modele].filter(Boolean).join(' ') || l.designation || '—')}</b><br><span class="muted">${esc([l.reference, l.couleur, l.taille].filter(Boolean).join(' · '))}</span></td>
@@ -4711,7 +4733,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         p = { id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), cat: l._cat, marque, modele, nom: [marque, modele].filter(Boolean).join(' '),
           couleur: frame ? (l.couleur || '') : '', taille: frame ? (l.taille || '') : '', reference: l.reference || '', fournisseur: blData.fournisseur || '',
           importe: eur, achatEur: eur ? l._px : null, achatHT: eur ? null : Math.round(l._px), achat: cr.arr, prix: prixConseille(cr.arr, marque) || cr.arr,
-          rapide: false, code: nouveauCode(l._cat), stock: {}, creeLe: new Date().toISOString(), creePar: user.nom, creeDepuis: 'Bon de livraison' };
+          rapide: false, code: nouveauCode(l._cat), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom, creeDepuis: 'Bon de livraison' };
         produits.push(p); crees++;
       }
       p.importe = eur;   // la devise du bon fait foi : en euros = produit importé
@@ -4720,7 +4742,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       if (ex) { ex.q += l._q; ex.pa = pa; ex.brut = l._px; } else recLines.push({ p, q: l._q, pa, brut: l._px });
     });
     saveR(); blData = null; F('bl').hidden = true;
-    F('prodList').innerHTML = produits.filter(geresEnStock).map(p => `<option value="${esc(prodLabel(p))}">`).join('');
+    F('prodList').innerHTML = produitsVisibles().filter(geresEnStock).map(p => `<option value="${esc(prodLabel(p))}">`).join('');
     drawRec(); show(`Lignes ajoutées à la réception${crees ? ` · ${crees} produit(s) créé(s) avec leur prix conseillé` : ''}. Vérifiez puis validez.`);
   });
 
@@ -4842,7 +4864,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   let invCount = {};
   function drawInv(){
     const cat = F('invCat').value, q = norm(F('invQ').value);
-    const L = produits.filter(p => geresEnStock(p) && (cat === 'Toutes catégories' || !cat || p.cat === cat) && (!q || norm(p.code + ' ' + p.nom + ' ' + (p.couleur || '')).includes(q)))
+    const L = produitsVisibles().filter(p => geresEnStock(p) && (cat === 'Toutes catégories' || !cat || p.cat === cat) && (!q || norm(p.code + ' ' + p.nom + ' ' + (p.couleur || '')).includes(q)))
       .sort((a, b) => a.cat.localeCompare(b.cat) || a.nom.localeCompare(b.nom));
     F('invRows').innerHTML = L.map(p => { const c = invCount[p.id], ec = c == null ? null : c - stockDe(p);
       return `<tr><td><code>${p.code}</code></td><td><b>${esc(p.nom)}</b>${p.couleur ? ' · ' + esc(p.couleur) : ''}</td><td style="text-align:right">${stockDe(p)}</td>

@@ -1,5 +1,5 @@
 'use strict';
-// Vérifie l'envoi automatique du soir (heure atteinte, une seule fois par jour) avec un faux SMTP
+// E-mail automatique à la clôture Z : rapport du magasin, puis récapitulatif quand tous les magasins ont clôturé
 const assert = require('assert');
 const { migrer, pool } = require('../server/db');
 const SV = require('../server/services');
@@ -11,22 +11,27 @@ const T = require('../server/taches');
   await migrer();
   await pool.query('TRUNCATE donnees, postes, sessions, comptes, organisations, envois CASCADE');
   await pool.query(`INSERT INTO organisations (id, nom) VALUES ('o1', 'Test')`);
-  const j = T.jourDe(), now = new Date().toISOString();
-  const P = { magasins: [{ nom: 'A', actif: true, email: 'a@x.ga' }, { nom: 'B', actif: true }], rapports: { actif: true, heure: '00:00', recap: 'dir@x.ga', magasins: { B: 'b@x.ga' } } };
+  const j = '2026-10-24', now = new Date().toISOString(), org = { id: 'o1', nom: 'Test' };
+  const P = { magasins: [{ nom: 'A', actif: true, email: 'a@x.ga' }, { nom: 'B', actif: true }], rapports: { actif: true, recap: 'dir@x.ga', magasins: { B: 'b@x.ga' } } };
   const ins = (coll, id, data) => pool.query(`INSERT INTO donnees (org_id, coll, id, data, rev) VALUES ('o1',$1,$2,$3,nextval('rev_seq'))`, [coll, id, JSON.stringify(data)]);
   await ins('parametres', '_', { v: P });
-  await ins('clients', 'i:c1', { id: 'c1', nom: 'X', prenom: 'Y', historique: [{ type: 'vente', numero: 'FA-1', boutique: 'A', date: now, paiements: [{ date: now, mode: 'Espèces', montant: 50000 }, { date: now, mode: 'Airtel Money', montant: 10000 }], pec: { organisme: 'CNAMGS', montant: 40000, date: now } }] });
-  await ins('mouvements', 'i:m1', { id: 'm1', boutique: 'A', date: now, type: 'sortie', montant: 5000, motif: 'Transport' });
-  await ins('clotures', 'n:Z-1', { numero: 'Z-1', boutique: 'A', jour: j, date: now, par: 'Nico', especesComptees: 44000, ecart: -1000, rouverte: false });
-  const log = { info() {}, error(e) { console.error(e); } };
-  await T.verifier(log);
-  assert.equal(envoyes.length, 3, 'A + B + récap');
-  const a = envoyes.find(m => m.to.includes('a@x.ga')), b = envoyes.find(m => m.to.includes('b@x.ga')), r = envoyes.find(m => m.type === 'caisse-recap');
-  assert.ok(/^Caisse/.test(a.subject) && /60 000 FCFA/.test(a.text) && /espèces théoriques 45 000/.test(a.text) && /écart -1 000/.test(a.text), a.text);
-  assert.ok(/non clôturée/.test(b.subject));
-  assert.ok(/⚠/.test(r.subject) && /B/.test(r.html));
-  await T.verifier(log);
-  assert.equal(envoyes.length, 3, 'pas de second envoi le même jour');
+  const zA = { numero: 'Z-A1', boutique: 'A', jour: j, date: now, par: 'Nico', total: 60000, nb: 2, parMode: { 'Espèces': { n: 1, mt: 50000 }, 'Airtel Money': { n: 1, mt: 10000 } },
+    sorties: [{ motif: 'Transport', montant: 5000 }], totSorties: 5000, especesTheo: 45000, especesComptees: 44000, ecart: -1000, parOrg: { CNAMGS: { n: 1, mt: 40000 } }, totPec: 40000 };
+  await ins('clotures', 'n:Z-A1', zA);
+  let r = await T.surCloture(org, zA, {});
+  assert.equal(r.envoyes, 1, 'seulement le rapport du magasin A (B pas encore clôturé)');
+  assert.ok(/^Clôture de caisse · A/.test(envoyes[0].subject) && /60 000 FCFA/.test(envoyes[0].text) && /écart -1 000/.test(envoyes[0].text), envoyes[0].text);
+  assert.ok(!envoyes.some(m => /non clôtur/i.test(m.subject)), 'aucune alerte « non clôturée »');
+  r = await T.surCloture(org, zA, {}); assert.equal(r.envoyes, 0, 'pas de doublon');
+  const zB = { ...zA, numero: 'Z-B1', boutique: 'B', total: 20000 };
+  await ins('clotures', 'n:Z-B1', zB);
+  r = await T.surCloture(org, zB, {});
+  assert.equal(r.envoyes, 2, 'rapport B + récapitulatif');
+  const rec = envoyes.find(m => m.type === 'caisse-recap');
+  assert.ok(rec && /80 000 FCFA/.test(rec.subject), rec && rec.subject);
+  // désactivé : rien
+  await pool.query(`UPDATE donnees SET data = $1 WHERE coll = 'parametres'`, [JSON.stringify({ v: { ...P, rapports: { ...P.rapports, actif: false } } })]);
+  assert.equal((await T.surCloture(org, { ...zA, numero: 'Z-A2' }, {})).envoyes, 0);
   console.log('tâches : tous les tests passent');
   await pool.end();
 })().catch(e => { console.error(e); process.exit(1); });
