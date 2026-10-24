@@ -129,12 +129,11 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}}
 :root[data-theme="dark"]{--pi-y:#5a4f17;--pi-g:#244a22;--pi-b:#1f3a5e;--pi-ink:#fdf6d8;--pi-muted:#d6cc9e;--pi-sh:rgb(0 0 0 / .45)}
 .home{position:relative}
-/* les tuiles gardent toute la largeur ; les post-it se placent dans la marge de droite quand l'écran est assez large, sinon sous les tuiles */
+/* les tuiles gardent toute la largeur ; les post-it s'ouvrent depuis la languette du bord droit */
 .nt-side{display:grid;gap:14px;min-width:0;margin-top:28px}
-@media (min-width:1720px){.nt-side{position:absolute;top:0;margin-top:0;left:calc(100% + 40px);width:min(300px,calc((100vw - 1260px) / 2 - 64px))}}
-/* écran moins large : languette sur le bord droit qui ouvre un panneau par-dessus la page */
+/* languette sur le bord droit qui ouvre un panneau par-dessus la page (tous les écrans) */
 .nt-tab,.nt-close{display:none}
-@media (max-width:1719.98px){
+@media all{
   .nt-tab{display:flex;align-items:center;gap:8px;position:fixed;right:0;top:42%;z-index:15;writing-mode:vertical-rl;transform:rotate(180deg);
     background:var(--pi-y);color:var(--pi-ink);border:0;border-radius:0 10px 10px 0;padding:16px 9px;font:inherit;font-weight:700;font-size:14px;letter-spacing:.04em;cursor:pointer;box-shadow:2px 0 10px var(--pi-sh)}
   .nt-tab:hover{padding-right:13px}
