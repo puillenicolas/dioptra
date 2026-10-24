@@ -103,6 +103,33 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .tile-link{all:unset;cursor:pointer;display:flex;flex-direction:column;border-radius:8px}
 .tile-link:focus-visible{outline:2px solid var(--brand);outline-offset:4px}
 .tile-link:hover h2{color:var(--primary)}
+.tile-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:32px;flex-wrap:wrap}
+.tile-wide .tile-link{flex-direction:row;align-items:center;gap:16px}
+.tile-wide .ic{margin-bottom:0}.tile-wide h2{margin:0}
+.tile ul.tile-kpis{flex:1;min-width:260px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 24px}
+.tile-kpis li{display:grid;gap:2px;font-variant-numeric:tabular-nums;min-width:0}
+.tile-kpis span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.tile-kpis b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Statistiques */
+.evo{display:block;font-size:12px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.evo i{font-style:normal;font-weight:400;color:var(--muted)}
+.evo-up{color:var(--ok)}.evo-dn{color:var(--pin)}.evo-eq{color:var(--muted)}
+.sx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:0 20px}
+.sx-grid .blk{min-width:0}
+.sx-tbl td,.sx-tbl th{white-space:nowrap}
+.sx-tbl td.n,.sx-tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.sx-tbl tbody tr{cursor:default}
+.sx-tbl tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.sx-note{font-size:13px;color:var(--muted);margin:4px 0 12px}
+.sx-bars .bar-row{grid-template-columns:minmax(110px,190px) minmax(0,1fr) auto minmax(64px,auto)}
+.sx-bars .bt span.alt{background:var(--ic-purple-fg)}
+.sx-pct{color:var(--muted);font-size:12px}
+.s-stat .evo{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--muted)}
+.s-stat .evo i{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+.s-stat .evo-up{color:var(--ok)}.s-stat .evo-dn{color:var(--pin)}
+.s-stat.main small,.s-stat.main .evo,.s-stat.main .evo i{color:var(--primary-ink);opacity:.9}
+.bar-row .bl{border:0;padding:0;margin:0;background:none;border-radius:0}
+.bar-row b{white-space:nowrap}
 
 /* ---------- Espace Client ---------- */
 .crumb{display:inline-flex;align-items:center;gap:6px;background:none;border:0;color:var(--muted);padding:0;font-size:14px;margin-bottom:8px}
@@ -799,6 +826,19 @@ select.inp{appearance:auto}
         <li><span class="item"><svg><use href="#chev"/></svg>Prêtes à retirer : <b id="tCmdPret">0</b></span></li>
       </ul>
     </section>
+
+    <section class="tile tile-wide" id="tStat">
+      <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
+      <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+      <h2>Statistiques</h2>
+      </button>
+      <ul class="tile-kpis">
+        <li><span>Chiffre d'affaires du mois</span><b id="tStatCa">—</b></li>
+        <li><span>Par rapport au mois dernier</span><b id="tStatEvo">—</b></li>
+        <li><span>Ordonnances du mois</span><b id="tStatOrd">—</b></li>
+        <li><span>Premier prescripteur</span><b id="tStatOph">—</b></li>
+      </ul>
+    </section>
   </div>
 </main>
 
@@ -887,7 +927,7 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><h1>Paramètres</h1><button class="save" id="prSave">Enregistrer</button></div>
-  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="fis">Pays et taxes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes et accès</button></div>
+  <div class="tabs" id="prTabs"><button class="tab on" data-pr="gen">Général</button><button class="tab" data-pr="mag">Magasins</button><button class="tab" data-pr="usr">Utilisateurs</button><button class="tab" data-pr="lst">Listes</button><button class="tab" data-pr="oph">Ophtalmologues</button><button class="tab" data-pr="fis">Pays et taxes</button><button class="tab" data-pr="drt">Droits des vendeurs</button><button class="tab" data-pr="pst" hidden>Postes et accès</button></div>
 
   <section class="blk pr-p" data-p="gen">
     <h2>Général</h2>
@@ -922,6 +962,14 @@ select.inp{appearance:auto}
       <div><h2>Assurances / mutuelles</h2><p class="sub">Une par ligne. Proposées dans la prise en charge (« Autre » reste disponible).</p><textarea class="inp" id="prOrgs" rows="10"></textarea></div>
       <div><h2>Motifs de sortie d'espèces</h2><p class="sub">Un par ligne. « Dépôt en banque » est conservé pour le rapprochement bancaire.</p><textarea class="inp" id="prMotifs" rows="10"></textarea></div>
     </div>
+  </section>
+
+  <section class="blk pr-p" data-p="oph" hidden>
+    <div class="row-head"><h2>Ophtalmologues</h2><button class="ghost" id="ophAdd" type="button">+ Ajouter un ophtalmologue</button></div>
+    <p class="sub">Ils sont proposés dans le champ « Prescripteur » de chaque ordonnance et permettent de voir d'où viennent vos clients dans Statistiques › Ophtalmologues. Un ophtalmologue désactivé n'est plus proposé mais reste dans les statistiques.</p>
+    <input class="inp" type="search" id="ophQ" placeholder="Rechercher un nom, un établissement, une ville…" style="max-width:360px;margin-bottom:12px" autocomplete="off">
+    <div class="tbl-wrap"><table class="s-tbl pr-oph"><thead><tr><th>Nom *</th><th>Établissement</th><th>Ville</th><th>Téléphone</th><th>E-mail</th><th style="text-align:right">Ordonnances</th><th>Actif</th><th></th></tr></thead><tbody id="ophRows"></tbody></table></div>
+    <p class="muted" id="ophNone" style="font-size:13px" hidden>Aucun ophtalmologue pour l'instant. Ajoutez ceux qui vous envoient des patients.</p>
   </section>
 
   <section class="blk pr-p" data-p="fis" hidden>
@@ -1197,6 +1245,27 @@ select.inp{appearance:auto}
     </form>
   </div>
 </div>
+
+<datalist id="ophList"></datalist>
+
+<!-- =================== STATISTIQUES =================== -->
+<main id="v-stat" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="sxSub"></div><h1>Statistiques</h1></div>
+    <div class="per"><select class="inp" id="sxPer">
+      <option value="jour">Aujourd'hui</option><option value="semaine">Cette semaine</option><option value="mois" selected>Ce mois-ci</option><option value="mprec">Mois précédent</option><option value="annee">Cette année</option><option value="perso">Période personnalisée</option></select>
+      <span id="sxPerso" hidden><input class="inp" type="date" id="sxDu"> → <input class="inp" type="date" id="sxAu"></span>
+      <button class="ghost" id="sxXls" type="button">Exporter (Excel)</button></div>
+  </div>
+  <div class="tabs" id="sxTabs">
+    <button class="tab on" data-sx="vue">Vue d'ensemble</button><button class="tab" data-sx="ven">Ventes</button><button class="tab" data-sx="oph">Ophtalmologues</button>
+    <button class="tab" data-sx="cli">Clients</button><button class="tab" data-sx="vdr">Vendeurs</button><button class="tab" data-sx="stk">Stock</button><button class="tab" data-sx="mag">Magasins</button>
+  </div>
+  <div id="sxBody"></div>
+</main>
 
 <!-- =================== GESTION STOCK =================== -->
 <main id="v-stock" hidden>
@@ -1573,7 +1642,7 @@ select.inp{appearance:auto}
         <div class="ep-note" id="lReprise" hidden style="margin:0 0 12px"></div>
         <div class="rx-meta">
           <div><label class="lbl" for="lDate">Date de l'ordonnance</label><input class="inp" type="date" id="lDate"></div>
-          <div><label class="lbl" for="lDoc">Prescripteur</label><input class="inp" type="text" id="lDoc" placeholder="Dr …"></div>
+          <div><label class="lbl" for="lDoc">Prescripteur</label><input class="inp" type="text" id="lDoc" placeholder="Dr …" list="ophList" autocomplete="off"></div>
         </div>
         <div class="rx-grid"><table>
           <thead><tr><th></th><th>Sphère</th><th>Cylindre</th><th>Axe (°)</th><th>Addition</th><th>Rayon (mm)</th><th>Diamètre (mm)</th></tr></thead>
@@ -1670,7 +1739,7 @@ select.inp{appearance:auto}
         <p class="sub">Saisissez l'ordonnance telle qu'elle est écrite. Si le cylindre est négatif, elle est transposée automatiquement en cylindre positif.</p>
         <div class="rx-meta">
           <div><label class="lbl" for="rxDate">Date de l'ordonnance</label><input class="inp" type="date" id="rxDate"></div>
-          <div><label class="lbl" for="rxDoc">Prescripteur</label><input class="inp" type="text" id="rxDoc" placeholder="Dr …"></div>
+          <div><label class="lbl" for="rxDoc">Prescripteur</label><input class="inp" type="text" id="rxDoc" placeholder="Dr …" list="ophList" autocomplete="off"></div>
         </div>
         <div class="rx-grid">
           <table>
@@ -2058,9 +2127,11 @@ select.inp{appearance:auto}
       { id: 'vd', prenom: 'Vendeur', nom: 'démo', ini: 'VD', role: 'vendeur', magasins: [], pin: '111111', actif: true } ],
     organismes: ['CNAMGS', 'ASCOMA', 'Gras Savoye', 'NSIA Assurances', 'AXA Assurances', 'OGAR', 'SUNU Assurances'],
     motifs: ['Dépôt en banque', 'Achat de fournitures', 'Transport', 'Remboursement client', 'Autre'],
+    // Ophtalmologues prescripteurs (proposés sur les ordonnances, suivis dans les statistiques)
+    ophtalmos: [],
     // Profils fiscaux : un par pays (ou régime particulier) ; chaque magasin en choisit un
     pays: [ { id: 'ga', pays: 'Gabon', libelle: '', taxes: [ { nom: 'TVA', taux: 18, cats: [] }, { nom: 'CSS', taux: 1, cats: [] } ], mention: 'TVA non applicable' } ],
-    droits: { modifVente: false, corrCaisse: false, modifClient: true, produits: true, tarifs: false, sorties: true, rouvrirCaisse: false, compta: true, marges: false, remises: true },
+    droits: { modifVente: false, corrCaisse: false, modifClient: true, produits: true, tarifs: false, sorties: true, rouvrirCaisse: false, compta: true, marges: false, remises: true, stats: false },
   };
   let PARAM; try { PARAM = JSON.parse(localStorage.getItem('parametres') || 'null'); } catch(_) {}
   PARAM = { ...JSON.parse(JSON.stringify(PARAM_DEF)), ...(PARAM || {}) };
@@ -2173,7 +2244,7 @@ select.inp{appearance:auto}
   function choisirBoutique(n, silencieux){
     label.textContent = n; try { localStorage.setItem('boutique', n); } catch(_) {}
     drawStoreMenu(); if (!silencieux) show('Boutique : ' + n);
-    try { majTuileCaisse(); if (!document.getElementById('v-cj').hidden) openCJ(); if (!document.getElementById('v-stock').hidden) openStock(); if (!document.getElementById('v-compta').hidden) openCompta(); } catch(_) {}
+    try { majTuileCaisse(); majTuileStat(); if (!document.getElementById('v-stat').hidden) openStat(); if (!document.getElementById('v-cj').hidden) openCJ(); if (!document.getElementById('v-stock').hidden) openStock(); if (!document.getElementById('v-compta').hidden) openCompta(); } catch(_) {}
   }
   btn.addEventListener('click', e => { e.stopPropagation(); userMenu.hidden = true; menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
   document.addEventListener('click', closeMenu);
@@ -2190,10 +2261,10 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat') };
   function go(name){
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -2834,7 +2905,7 @@ select.inp{appearance:auto}
       paire2Lib: sel.offre === 'paire2' ? (CFG.paire2.find(o => o.v === sel.paire2) || {}).lib || '' : '',
       paire2Cout: sel.offre === 'paire2' ? (CFG.paire2.find(o => o.v === sel.paire2) || {}).cout || 0 : 0,
       paire2Px: p2Sel().px || 0,
-      ordonnance: { date: F('rxDate').value, prescripteur: F('rxDoc').value.trim(), OD: eye('OD'), OG: eye('OG') },
+      ordonnance: { date: F('rxDate').value, prescripteur: F('rxDoc').value.trim(), ophtalmoId: ophParNom(F('rxDoc').value)?.id || null, OD: eye('OD'), OG: eye('OG') },
       verres: { ...sel, marque: F('vMarque').value.trim(), libelle: libVerres(), percee: F('percee').checked, prixPaire: intOf(F('pxVerres').value),
         ref: vaSel ? vaSel.id : null, achatVerre: vaSel ? vaSel.achat : 0, cout: coutVerresSel(r.lines) },
       monture: { des: F('mDes').value.trim(), px: intOf(F('mPx').value), pid: montureSel ? montureSel.id : null },
@@ -2994,7 +3065,7 @@ select.inp{appearance:auto}
     const eye = e => e.filled ? { s: e.s, c: e.c, a: e.a, add: e.add, rc: e.rc, dia: e.dia } : null;
     const d = { date: new Date().toISOString(), boutique: label.textContent, kind: 'lentille',
       lignes: r.lines, total: r.total, remise: r.remise, net: r.net, resume: 'Lentilles' + (r.remise ? ' · remise 20 %' : ''), offre: r.remise ? 'remise20' : 'aucune',
-      ordonnance: { date: F('lDate').value, prescripteur: F('lDoc').value.trim(), OD: eye(od), OG: eye(og) },
+      ordonnance: { date: F('lDate').value, prescripteur: F('lDoc').value.trim(), ophtalmoId: ophParNom(F('lDoc').value)?.id || null, OD: eye(od), OG: eye(og) },
       lentilles: { OD: prodOf('pod'), OG: prodOf('pog') }, monture: { des:'', px:0 } };
     if (lentEditing) { appliquerModif(lentEditing, d, ['lignes','total','remise','net','resume','offre','ordonnance','lentilles']); lentEditing = null; return; }
     if (asDevis) {
@@ -3376,7 +3447,7 @@ select.inp{appearance:auto}
   let PD = null, prTab = 'gen';
   const DROITS = [['modifVente', 'Modifier une vente déjà enregistrée'], ['corrCaisse', 'Corriger la caisse d\'une vente (paiements, prise en charge)'],
     ['modifClient', 'Modifier les fiches clients'], ['produits', 'Créer et modifier les produits (prix de vente)'], ['tarifs', 'Modifier les tarifs verres, coûts et coefficients'],
-    ['sorties', 'Faire des sorties d\'espèces'], ['rouvrirCaisse', 'Rouvrir la caisse après la clôture Z'], ['compta', 'Accéder à la comptabilité'], ['marges', 'Voir les prix d\'achat et les marges'], ['remises', 'Accorder des remises sur les verres et la monture']];
+    ['sorties', 'Faire des sorties d\'espèces'], ['rouvrirCaisse', 'Rouvrir la caisse après la clôture Z'], ['compta', 'Accéder à la comptabilité'], ['marges', 'Voir les prix d\'achat et les marges'], ['stats', 'Voir les statistiques'], ['remises', 'Accorder des remises sur les verres et la monture']];
   function openParam(tab = prTab){
     if (user.role === 'vendeur') { show('Paramètres réservés aux responsables.'); return; }
     const adm = user.role === 'admin';
@@ -3390,7 +3461,7 @@ select.inp{appearance:auto}
     document.querySelectorAll('.pr-p').forEach(p => p.hidden = p.dataset.p !== tab);
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
-    drawMags(); drawUsrs(); drawRap(); drawFiscal();
+    drawMags(); drawUsrs(); drawRap(); drawFiscal(); drawOph();
     if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox', 'decoBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
@@ -3484,6 +3555,41 @@ select.inp{appearance:auto}
     try { await window.DSYNC.posteActif(pstSession, id, on); const r = await window.DSYNC.listePostes(pstSession); drawPostes(r.postes); show(on ? 'Poste réactivé' : 'Poste désactivé'); }
     catch (er) { F('pstSt').textContent = er.message; }
   });
+  /* ---------- Ophtalmologues : liste proposée sur les ordonnances, suivie dans les statistiques ---------- */
+  // « Dr Mba », « docteur MBA » et « Dr. Mba » désignent le même prescripteur
+  const ophCle = s => norm(String(s || '').replace(/^\s*(dr|docteur|doc|pr|professeur)\b\.?\s*/i, '').replace(/[.,]/g, ''));
+  const ophListe = () => PARAM.ophtalmos || [];
+  const ophParNom = n => { const k = ophCle(n); return k ? ophListe().find(o => ophCle(o.nom) === k) || null : null; };
+  const ophDeOrd = o => !o ? null : (o.ophtalmoId && ophListe().find(x => x.id === o.ophtalmoId)) || ophParNom(o.prescripteur);
+  function remplirOph(){
+    F('ophList').innerHTML = ophListe().filter(o => o.actif !== false && o.nom).sort((a, b) => ophCle(a.nom).localeCompare(ophCle(b.nom)))
+      .map(o => `<option value="${esc(o.nom)}">${esc([o.etablissement, o.ville].filter(Boolean).join(' · '))}</option>`).join('');
+  }
+  ['rxDoc', 'lDoc'].forEach(id => F(id).addEventListener('focus', remplirOph));
+  remplirOph();
+  const ordsParOph = () => { const m = {}; toutesVentes().forEach(({ v }) => { const o = ophDeOrd(v.ordonnance); if (o) m[o.id] = (m[o.id] || 0) + 1; }); return m; };
+  const OPHF = [['nom', 'Dr …'], ['etablissement', 'Clinique, hôpital, cabinet'], ['ville', ''], ['tel', ''], ['email', '']];
+  function drawOph(){
+    const L = PD.ophtalmos = PD.ophtalmos || [], nb = ordsParOph();
+    F('ophRows').innerHTML = L.map((o, i) => `<tr class="${o.actif !== false ? '' : 'pt'}" data-oph-row="${i}">
+      ${OPHF.map(([k, ph]) => `<td><input class="inp" data-o="${i}" data-k="${k}" value="${esc(o[k] || '')}"${ph ? ` placeholder="${esc(ph)}"` : ''}${k === 'tel' ? ' inputmode="tel"' : k === 'email' ? ' type="email"' : ''}></td>`).join('')}
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${nb[o.id] || 0}</td>
+      <td><input type="checkbox" data-o="${i}" data-k="actif"${o.actif !== false ? ' checked' : ''} aria-label="Actif"></td>
+      <td>${nb[o.id] ? '' : `<button class="del" type="button" data-oph-del="${i}" aria-label="Supprimer">×</button>`}</td></tr>`).join('');
+    F('ophNone').hidden = L.length > 0; filtrerOph();
+  }
+  function filtrerOph(){
+    const q = norm(F('ophQ').value);
+    F('ophRows').querySelectorAll('[data-oph-row]').forEach(tr => { const o = PD.ophtalmos[tr.dataset.ophRow];
+      tr.hidden = !!q && !norm([o.nom, o.etablissement, o.ville, o.tel].join(' ')).includes(q) && !!o.nom; });
+  }
+  function lireOph(){ if (!PD || !PD.ophtalmos) return;
+    F('ophRows').querySelectorAll('[data-o]').forEach(i => { const o = PD.ophtalmos[i.dataset.o]; if (o) o[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value.trim(); }); }
+  F('ophQ').addEventListener('input', () => { lireOph(); filtrerOph(); });
+  F('ophAdd').addEventListener('click', () => { lireOph(); F('ophQ').value = '';
+    PD.ophtalmos.push({ id: 'oph' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nom: '', etablissement: '', ville: '', tel: '', email: '', actif: true }); drawOph();
+    F('ophRows').querySelector(`[data-o="${PD.ophtalmos.length - 1}"][data-k="nom"]`).focus(); });
+  F('ophRows').addEventListener('click', e => { const i = e.target.dataset.ophDel; if (i == null) return; lireOph(); PD.ophtalmos.splice(i, 1); drawOph(); });
   F('prTabs').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (!b) return; lirePD(); openParam(b.dataset.pr); });
   /* ---------- Fiscalité : profils par pays, calcul HT / taxes / TTC ---------- */
   const TAXCATS = ['Verres', 'Montures', 'Solaires', 'Lentilles', 'Options et services', 'Entretien et accessoires', 'Autres'];
@@ -3617,6 +3723,7 @@ select.inp{appearance:auto}
     if (F('prOrgs').value || prTab === 'lst') PD.organismes = F('prOrgs').value.split('\n').map(x => x.trim()).filter(Boolean);
     if (F('prMotifs').value || prTab === 'lst') PD.motifs = F('prMotifs').value.split('\n').map(x => x.trim()).filter(Boolean);
     F('prDroits').querySelectorAll('[data-dr]').forEach(c => PD.droits[c.dataset.dr] = c.checked);
+    lireOph();
   }
   F('prMagAdd').addEventListener('click', () => { lirePD(); PD.magasins.push({ id: 'm' + Date.now(), nom: 'Nouveau magasin', raison: '', adresse: '', ville: '', tel: '', email: '', rccm: '', nif: '', logo: '', actif: true, _ancien: '' }); drawMags(); });
   F('prUsrAdd').addEventListener('click', () => { lirePD(); PD.users.push({ id: 'u' + Date.now(), prenom: '', nom: '', ini: '', role: 'vendeur', magasins: mesMagasins() ? [mesMagasins()[0]] : [], pin: '', actif: true }); drawUsrs();
@@ -3650,6 +3757,10 @@ select.inp{appearance:auto}
     if (!PD.pays.length || PD.pays.some(x => !x.pays.trim())) { show('Chaque profil fiscal doit avoir un pays.'); openParam('fis'); return; }
     if (PD.pays.some(x => x.taxes.some(t => !t.nom.trim() || !(t.taux >= 0) || t.taux > 100))) { show('Chaque taxe doit avoir un nom et un taux entre 0 et 100 %.'); openParam('fis'); return; }
     PD.magasins.forEach(m => { if (!PD.pays.some(x => x.id === m.pays)) m.pays = PD.pays[0].id; });
+    PD.ophtalmos = (PD.ophtalmos || []).filter(o => o.nom || o.etablissement || o.ville || o.tel || o.email);
+    if (PD.ophtalmos.some(o => !o.nom)) { show('Chaque ophtalmologue doit avoir un nom.'); openParam('oph'); return; }
+    { const vus = {}, dbl = PD.ophtalmos.find(o => { const k = ophCle(o.nom); if (vus[k]) return true; vus[k] = 1; });
+      if (dbl) { show(`« ${dbl.nom} » figure deux fois dans la liste des ophtalmologues.`); openParam('oph'); return; } }
     const U = PD.users;
     if (U.some(u => !u.prenom || !u.ini)) { show('Chaque utilisateur doit avoir un prénom et des initiales.'); openParam('usr'); return; }
     if (U.some(u => u._pinNew && !/^\d{6}$/.test(u._pinNew))) { show('Le code doit contenir exactement 6 chiffres.'); openParam('usr'); return; }
@@ -3670,7 +3781,7 @@ select.inp{appearance:auto}
     PARAM = JSON.parse(JSON.stringify(PD)); PARAM.magasins.forEach(m => delete m._ancien);
     renames.forEach(([a, b]) => renommerBoutique(a, b));
     BOUTIQUES.length = 0; PARAM.magasins.filter(m => m.actif).forEach(m => BOUTIQUES.push(m.nom));
-    saveParam(); setUser(PARAM.users.find(u => u.id === user.id));
+    saveParam(); setUser(PARAM.users.find(u => u.id === user.id)); remplirOph();
     if (!magasinsVisibles().includes(label.textContent) && label.textContent !== 'Toutes les boutiques') label.textContent = magasinsVisibles()[0];
     applyUser(); drawStoreMenu(); remplirListes(); PD = null; openParam(prTab);
     show(`Paramètres enregistrés${renames.length ? ` · ${renames.length} magasin(s) renommé(s) dans l'historique` : ''}`);
@@ -3692,6 +3803,7 @@ select.inp{appearance:auto}
     'Livrée': '{civilite} {nom}, merci d\'avoir choisi le {magasin}. N\'hésitez pas à revenir pour tout ajustement. À bientôt !',
     'Relance impayé': '{civilite} {nom}, il reste {montant_du} à régler sur votre achat {numero} du {date}. Vous pouvez passer au {magasin} ou régler par Airtel Money / Moov Money. Merci.',
     'Relance devis': '{civilite} {nom}, votre devis {numero} du {date} ({montant}) est toujours disponible au {magasin}. Souhaitez-vous que nous lancions la commande ?',
+    'Renouvellement': '{civilite} {nom}, votre dernière ordonnance date de plus de 2 ans. Pensez à faire contrôler votre vue : toute l\'équipe du {magasin} vous attend pour renouveler vos lunettes. À bientôt !',
   };
   let TPL = { ...TPL_DEF, ...ld0('tplWa', {}) }, waLog = ld0('waLog', []);
   const saveWa = () => { try { localStorage.setItem('tplWa', JSON.stringify(TPL)); localStorage.setItem('waLog', JSON.stringify(waLog)); } catch(_) {} };
@@ -3725,7 +3837,7 @@ select.inp{appearance:auto}
     if (!F('waTo').value) { e.preventDefault(); show('Ce client n\'a pas de numéro.'); return; }
     const entry = { date: new Date().toISOString(), par: user.nom, modele: F('waTpl').value, numero: waCtx.v.numero, client: waCtx.c ? waCtx.c.nom + ' ' + waCtx.c.prenom : waCtx.v.client || '', tel: F('waTo').value };
     waLog.push(entry); (waCtx.v.messages = waCtx.v.messages || []).push(entry); saveWa(); save(); saveR();
-    setTimeout(() => { F('dlgWa').hidden = true; if (!views.detail.hidden) openDetail(waCtx.v); if (!views.cmd.hidden) openCmd(); }, 300);
+    setTimeout(() => { F('dlgWa').hidden = true; if (!views.detail.hidden) openDetail(waCtx.v); if (!views.cmd.hidden) openCmd(); if (!views.stat.hidden) openStat(); }, 300);
   });
 
   // Étapes dans la page détail
@@ -4212,6 +4324,330 @@ select.inp{appearance:auto}
     if (pec) pm['Prise en charge'] = pec;
     F('tbMode').innerHTML = barTable(Object.entries(pm).sort((a, b) => b[1] - a[1]).map(([k, x]) => [k, x, null]), Object.values(pm).reduce((a, x) => a + x, 0));
   }
+
+  /* ================= Statistiques ================= */
+  let sxTab = 'vue', sxPrem = new Map(), sxDorm = 180;
+  const SX_PREC = { jour: 'hier', semaine: 'sem. préc.', mois: 'mois préc.', mprec: 'mois d\'avant', annee: '', perso: 'période préc.' };
+  function sxPeriode(){
+    const t = new Date(), y = t.getFullYear(), m = t.getMonth(), P = F('sxPer').value;
+    const d0 = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+    if (P === 'jour') return [d0(t), t];
+    if (P === 'semaine') { const l = d0(t); l.setDate(l.getDate() - ((l.getDay() + 6) % 7)); return [l, t]; }
+    if (P === 'mois') return [new Date(y, m, 1), t];
+    if (P === 'mprec') return [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59, 999)];
+    if (P === 'annee') return [new Date(y, 0, 1), t];
+    const du = F('sxDu').value ? new Date(F('sxDu').value + 'T00:00') : new Date(y, m, 1), au = F('sxAu').value ? new Date(F('sxAu').value + 'T23:59:59') : t;
+    return [du, au];
+  }
+  // même date décalée de n mois (un 31 devient le dernier jour d'un mois plus court)
+  const decMois = (d, n) => { const x = new Date(d), j = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() + n); x.setDate(Math.min(j, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x; };
+  function sxPrec(per, P){
+    const [a, b] = per;
+    if (P === 'mois') return [decMois(a, -1), decMois(b, -1)];
+    if (P === 'mprec') return [new Date(a.getFullYear(), a.getMonth() - 1, 1), new Date(a.getFullYear(), a.getMonth(), 0, 23, 59, 59, 999)];
+    if (P === 'annee') return null;   // l'année précédente = N-1
+    if (P === 'jour' || P === 'semaine') { const k = P === 'jour' ? 1 : 7; return per.map(d => { const x = new Date(d); x.setDate(x.getDate() - k); return x; }); }
+    const len = b - a; return [new Date(a - len - 1), new Date(a - 1)];
+  }
+  const sxN1 = per => per.map(d => decMois(d, -12));
+  const sxN = x => Math.round(x || 0).toLocaleString('fr-FR').replace(/ | /g, ' ');
+  const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const pcTxt = (a, b) => b ? pc(a, b) + ' %' : '—';
+  // cellules de tableau : texte affiché + valeur numérique pour l'export Excel
+  const cM = x => ({ h: money(x), n: Math.round(x || 0) }), cN = x => ({ h: sxN(x), n: Math.round(x || 0) }), cP = (a, b) => ({ h: pcTxt(a, b), n: b ? pc(a, b) : '' });
+  const sxV = (per, b) => toutesVentes().filter(({ v }) => (b ? v.boutique === b : enMagasin(v)) && dans(v.date, per));
+  const estLun = v => typeVente(v) === 'Lunettes';
+  const avecOrd = v => v.kind !== 'rapide' && v.ordonnance && (v.ordonnance.date || v.ordonnance.prescripteur || v.ordonnance.OD || v.ordonnance.OG);
+  const vendeurDe = v => v.vendeur || v.par || v.paiements?.[0]?.par || '—';
+  const SX_OPTS = [['photo', 'Photochromie'], ['teinte', 'Teinte'], ['ar', 'Antireflet'], ['aminci', 'Amincissement']];
+  // une option est « vendue » quand elle coûte plus que le choix de base de sa catégorie
+  const optPayante = (g, val) => { const L = CFG[g] || [], o = L.find(x => x.v === val); return !!o && (o.px || 0) > Math.min(...L.map(x => x.px || 0)); };
+  const aOption = v => !!v.verres && SX_OPTS.some(([g]) => optPayante(g, v.verres[g]));
+  function premiereVente(){ const m = new Map(); toutesVentes().forEach(({ v, c }) => { if (!c) return; const x = m.get(c.id); if (!x || v.date < x) m.set(c.id, v.date); }); return m; }
+  const nouveau = (v, c) => !!c && sxPrem.get(c.id) === v.date;
+  function sxMesures(per, b){
+    const V = sxV(per, b), r = { ca: 0, n: V.length, cout: 0, caCout: 0, nouveaux: 0, lun: 0, prog: 0, p2: 0, ord: 0, opt: 0, remise: 0, pec: 0, clients: new Set() };
+    V.forEach(({ v, c }) => { r.ca += v.net || 0; const k = coutVente(v); if (k > 0) { r.cout += k; r.caCout += v.net || 0; }
+      if (c) r.clients.add(c.id); if (nouveau(v, c)) r.nouveaux++;
+      if (estLun(v)) { r.lun++; if (v.verres?.type === 'prog') r.prog++; if (v.offre === 'paire2') r.p2++; if (aOption(v)) r.opt++; }
+      if (avecOrd(v)) r.ord++;
+      r.remise += Math.max(0, (v.total || 0) - (v.net || 0)); r.pec += v.pec?.montant || 0; });
+    r.panier = r.n ? r.ca / r.n : 0; r.marge = r.caCout ? r.caCout - r.cout : null; r.V = V;
+    return r;
+  }
+  // lignes de vente avec leur montant réel (remise globale répartie)
+  const sxLignes = V => { const L = []; V.forEach(({ v, c }) => { const r = v.total > 0 ? (v.net || 0) / v.total : 1; (v.lignes || []).forEach(l => L.push({ l, v, c, mt: (l.px || 0) * r, cat: catLigne(l, v) })); }); return L; };
+  const evoTxt = p => { const x = Math.abs(p); return x >= 10 || x < 0.05 ? String(Math.round(x)) : x.toFixed(1).replace('.', ','); };
+  function evo(a, b, lib, pts){
+    if (b == null || lib == null) return '';
+    if (pts) { if (a == null) return ''; const d = a - b; return `<span class="evo ${Math.abs(d) < 0.5 ? 'evo-eq' : d > 0 ? 'evo-up' : 'evo-dn'}">${d > 0.5 ? '▲' : d < -0.5 ? '▼' : '='} ${evoTxt(d)} pt <i>vs ${lib}</i></span>`; }
+    if (!b) return '';
+    const p = (a - b) / Math.abs(b) * 100;
+    return `<span class="evo ${Math.abs(p) < 0.5 ? 'evo-eq' : p > 0 ? 'evo-up' : 'evo-dn'}">${p > 0.5 ? '▲' : p < -0.5 ? '▼' : '='} ${evoTxt(p)} % <i>vs ${lib}</i></span>`;
+  }
+  // indicateur avec ses deux comparaisons (période précédente, même période l'an dernier)
+  const kpiE = (C, k, val, f, o = {}) => `<div class="s-stat ${o.cls || ''}"><span>${k}</span><b>${val}</b>${o.sub ? `<small>${o.sub}</small>` : ''}`
+    + (C.Mp ? evo(f(C.M), f(C.Mp), SX_PREC[C.P], o.pts) : '') + evo(f(C.M), f(C.Mn), 'N-1', o.pts) + '</div>';
+  function sxBars(rows, fmt = money, info){
+    if (!rows.length) return '<p class="muted" style="margin:0">Aucune donnée sur la période.</p>';
+    const T = rows.reduce((a, r) => a + r[1], 0), mx = Math.max(...rows.map(r => r[1]), 1);
+    return `<div class="bars sx-bars">${rows.map(([k, v, inf]) => `<div class="bar-row"><span class="bl" title="${esc(k)}">${esc(k)}</span><span class="bt"><span style="width:${Math.max(2, v / mx * 100)}%"></span></span><b>${fmt(v)}</b><small>${inf != null ? inf : info === false ? '' : pcTxt(v, T)}</small></div>`).join('')}</div>`;
+  }
+  const cell = (x, num) => { const o = x && typeof x === 'object' ? x : { h: x == null ? '' : x }; return `<td${num ? ' class="n"' : ''}${o.n !== undefined && o.n !== '' ? ` data-n="${o.n}"` : ''}>${o.h}</td>`; };
+  function sxTable(titre, cols, rows, o = {}){
+    return `<div class="tbl-wrap"><table class="s-tbl sx-tbl" data-sx-titre="${esc(titre)}"><thead><tr>${cols.map(([t, n]) => `<th${n ? ' class="n"' : ''}>${t}</th>`).join('')}</tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${r.map((x, i) => cell(x, cols[i] && cols[i][1])).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="muted">${o.vide || 'Aucune donnée sur la période.'}</td></tr>`}</tbody>
+      ${o.foot && rows.length ? `<tfoot><tr>${o.foot.map((x, i) => cell(x, cols[i] && cols[i][1])).join('')}</tr></tfoot>` : ''}</table></div>`;
+  }
+  const blk = (titre, html, note) => `<section class="blk"><h2>${titre}</h2>${note ? `<p class="sx-note">${note}</p>` : ''}${html}</section>`;
+  const grouper = (L, cle, val = () => 1) => { const m = {}; L.forEach(x => { const k = cle(x); if (k == null) return; m[k] = (m[k] || 0) + val(x); }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const optLib = (g, val) => opt(g, val).t || (val == null || val === '' ? '—' : String(val));
+  const marqueProd = (pid, des) => { const p = pid ? produits.find(x => x.id === pid) : null; return p ? (p.marque || p.nom || 'Sans marque') : null; };
+
+  // Graphique : chiffre d'affaires des 12 derniers mois comparé à l'année précédente
+  function sxGraph12(){
+    const t = new Date(), parMois = {};
+    toutesVentes().forEach(({ v }) => { if (!enMagasin(v)) return; const k = v.date.slice(0, 7); parMois[k] = (parMois[k] || 0) + (v.net || 0); });
+    const ym = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const M = []; for (let i = 11; i >= 0; i--) { const d = new Date(t.getFullYear(), t.getMonth() - i, 1), d1 = new Date(d.getFullYear() - 1, d.getMonth(), 1); M.push({ d, n: parMois[ym(d)] || 0, n1: parMois[ym(d1)] || 0 }); }
+    const W = 760, H = 180, gw = W / 12, mx = Math.max(1, ...M.map(x => Math.max(x.n, x.n1)));
+    const lib = d => d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+    return `<div class="row-head"><h2>Chiffre d'affaires des 12 derniers mois</h2><span class="legend"><span><i style="background:var(--line)"></i>Année précédente</span><span><i style="background:var(--primary)"></i>12 derniers mois</span></span></div>
+      <div class="chart"><svg viewBox="0 0 ${W} ${H + 22}" preserveAspectRatio="none" style="width:100%;height:210px" role="img" aria-label="Chiffre d'affaires mensuel comparé à l'année précédente">
+      <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--line)"/>
+      ${M.map((x, i) => { const h1 = x.n1 / mx * (H - 14), h = x.n / mx * (H - 14), x0 = i * gw + gw * .14, bw = gw * .34;
+        return `<rect x="${x0}" y="${H - h1}" width="${bw}" height="${h1}" fill="var(--line)" rx="2"><title>${lib(x.d)} ${x.d.getFullYear() - 1} : ${money(x.n1)}</title></rect>`
+          + `<rect x="${x0 + bw + gw * .04}" y="${H - h}" width="${bw}" height="${h}" fill="var(--primary)" rx="2"><title>${lib(x.d)} ${x.d.getFullYear()} : ${money(x.n)}${x.n1 ? ' (' + (x.n >= x.n1 ? '+' : '−') + evoTxt((x.n - x.n1) / x.n1 * 100) + ' %)' : ''}</title></rect>`
+          + `<text x="${i * gw + gw / 2}" y="${H + 15}" font-size="11" text-anchor="middle" fill="var(--muted)">${lib(x.d)}</text>`; }).join('')}
+      <text x="4" y="11" font-size="10" fill="var(--muted)">max ${money(mx)}</text></svg></div>`;
+  }
+
+  // Ophtalmologues : regroupe les ordonnances par prescripteur (référencé, nom libre ou non renseigné)
+  function sxOphAgg(V){
+    const m = new Map();
+    V.forEach(({ v, c }) => { if (!avecOrd(v)) return;
+      const o = ophDeOrd(v.ordonnance), libre = (v.ordonnance.prescripteur || '').trim();
+      const key = o ? 'o:' + o.id : ophCle(libre) ? 'n:' + ophCle(libre) : '-';
+      let x = m.get(key); if (!x) m.set(key, x = { key, oph: o, nom: o ? o.nom : libre || 'Prescripteur non renseigné', ord: 0, ca: 0, nouveaux: 0, prog: 0, lun: 0, clients: new Set(), der: '' });
+      x.ord++; x.ca += v.net || 0; if (c) x.clients.add(c.id); if (nouveau(v, c)) x.nouveaux++;
+      if (estLun(v)) { x.lun++; if (v.verres?.type === 'prog') x.prog++; }
+      const d = v.ordonnance.date || dayKey(v.date); if (d > x.der) x.der = d; });
+    return [...m.values()].sort((a, b) => (a.key === '-') - (b.key === '-') || b.ord - a.ord || b.ca - a.ca);
+  }
+
+  function sxVue(C){
+    const { M } = C, mg = droit('marges');
+    const k = kpiE(C, 'Chiffre d\'affaires', money(M.ca), x => x.ca, { cls: 'main', sub: `${M.n} vente${M.n > 1 ? 's' : ''}` })
+      + kpiE(C, 'Panier moyen', money(M.panier), x => x.panier)
+      + (mg ? kpiE(C, 'Marge', M.marge == null ? '—' : money(M.marge), x => x.marge || 0, { sub: M.marge == null ? 'aucun coût d\'achat connu' : `${pc(M.marge, M.caCout)} % · ventes avec coût connu` }) : '')
+      + kpiE(C, 'Ordonnances', sxN(M.ord), x => x.ord)
+      + kpiE(C, 'Nouveaux clients', sxN(M.nouveaux), x => x.nouveaux, { sub: `sur ${M.clients.size} client${M.clients.size > 1 ? 's' : ''} servi${M.clients.size > 1 ? 's' : ''}` })
+      + kpiE(C, 'Part de progressifs', pcTxt(M.prog, M.lun), x => x.lun ? x.prog / x.lun * 100 : null, { pts: true, sub: `${M.prog} sur ${M.lun} paire${M.lun > 1 ? 's' : ''}` })
+      + kpiE(C, 'Options vendues', pcTxt(M.opt, M.lun), x => x.lun ? x.opt / x.lun * 100 : null, { pts: true, sub: 'des paires avec au moins une option' })
+      + kpiE(C, '2ème paire', pcTxt(M.p2, M.lun), x => x.lun ? x.p2 / x.lun * 100 : null, { pts: true, sub: `${M.p2} vente${M.p2 > 1 ? 's' : ''}` });
+    const oph = sxOphAgg(M.V).filter(x => x.key !== '-').slice(0, 5).map(x => [x.nom, x.ord, `${x.ord ? pcTxt(x.ord, M.ord) : ''}`]);
+    const L = sxLignes(M.V);
+    const marques = grouper(L.filter(x => x.l.pid && ['Montures', 'Solaires'].includes(x.cat)), x => marqueProd(x.l.pid), x => x.mt).slice(0, 5);
+    const fam = grouper(L, x => x.cat, x => x.mt);
+    const vdr = grouper(M.V, ({ v }) => vendeurDe(v), ({ v }) => v.net || 0).slice(0, 5);
+    return `<div class="s-stats co-kpi">${k}</div><section class="blk">${sxGraph12()}</section>
+      <div class="sx-grid">${blk('Chiffre d\'affaires par famille', sxBars(fam))}${blk('Meilleurs prescripteurs', sxBars(oph, sxN), 'Nombre d\'ordonnances sur la période.')}
+      ${blk('Meilleures marques de montures', sxBars(marques))}${blk('Meilleurs vendeurs', sxBars(vdr))}</div>`;
+  }
+
+  function sxVentes(C){
+    const { M } = C, mg = droit('marges'), Lun = M.V.filter(({ v }) => estLun(v)), nL = Lun.length;
+    const types = grouper(Lun, ({ v }) => v.verres?.type === 'prog' ? 'Progressif' : optLib('type', v.verres?.type) || 'Unifocal').map(([k, n]) => [k, n]);
+    const gammes = grouper(Lun.filter(({ v }) => v.verres?.type === 'prog'), ({ v }) => optLib('gamme', v.verres.gamme).replace(/^Gamme /, ''));
+    const opts = SX_OPTS.map(([g, t]) => blk(t, sxBars(grouper(Lun, ({ v }) => optLib(g, v.verres?.[g])), sxN))).join('');
+    const offres = grouper(Lun, ({ v }) => optLib('offre', v.offre || 'aucune'));
+    const L = sxLignes(M.V);
+    // verres : par marque (montant des verres)
+    const verres = {}; L.filter(x => ['OD', 'OG', 'P2'].includes(x.l.k)).forEach(x => { const k = (x.v.verres?.marque || '').trim() || 'Marque non précisée'; const o = verres[k] = verres[k] || { ca: 0, ventes: new Set() }; o.ca += x.mt; o.ventes.add(x.v); });
+    const rv = Object.entries(verres).sort((a, b) => b[1].ca - a[1].ca).map(([k, o]) => [esc(k), cN(o.ventes.size), cM(o.ca), cP(o.ca, M.ca)]);
+    // montures et solaires : par marque, avec marge si le prix d'achat est connu
+    const mon = {}; L.filter(x => ['Montures', 'Solaires'].includes(x.cat)).forEach(x => { const p = x.l.pid ? produits.find(y => y.id === x.l.pid) : null;
+      const k = p ? (p.marque || 'Sans marque') : 'Hors stock'; const o = mon[k] = mon[k] || { q: 0, ca: 0, achat: 0, caAchat: 0 };
+      const q = x.l.qty || 1; o.q += q; o.ca += x.mt; if (p && p.achat) { o.achat += p.achat * q; o.caAchat += x.mt; } });
+    // lunettes dont la monture n'est pas une ligne de vente avec référence stock
+    M.V.forEach(({ v }) => { if (!estLun(v) || !v.monture?.pid || (v.lignes || []).some(l => l.k === 'MONTURE' && l.pid)) return; const p = produits.find(y => y.id === v.monture.pid); if (!p) return;
+      const k = p.marque || 'Sans marque', o = mon[k] = mon[k] || { q: 0, ca: 0, achat: 0, caAchat: 0 }; o.q++; });
+    const rm = Object.entries(mon).sort((a, b) => b[1].ca - a[1].ca).map(([k, o]) => [esc(k), cN(o.q), cM(o.ca), cM(o.q ? o.ca / o.q : 0), ...(mg ? [o.caAchat ? cM(o.caAchat - o.achat) : '—', o.caAchat ? cP(o.caAchat - o.achat, o.caAchat) : '—'] : [])]);
+    const fam = grouper(L, x => x.cat, x => x.mt);
+    return `<div class="s-stats co-kpi">${kpiE(C, 'Paires de lunettes', sxN(M.lun), x => x.lun)}${kpiE(C, 'Lentilles', sxN(M.V.filter(({ v }) => v.kind === 'lentille').length), x => x.V.filter(({ v }) => v.kind === 'lentille').length)}
+        ${kpiE(C, 'Ventes rapides', sxN(M.V.filter(({ v }) => v.kind === 'rapide').length), x => x.V.filter(({ v }) => v.kind === 'rapide').length)}
+        ${kpiE(C, 'Remises accordées', money(M.remise), x => x.remise, { sub: M.ca + M.remise ? `${pc(M.remise, M.ca + M.remise)} % du prix avant remise` : '' })}</div>
+      <div class="sx-grid">${blk('Unifocal / progressif', sxBars(types, sxN), `Sur ${nL} paire${nL > 1 ? 's' : ''} de lunettes.`)}${blk('Gammes progressives', sxBars(gammes, sxN))}${opts}${blk('Offres', sxBars(offres, sxN))}${blk('Chiffre d\'affaires par famille', sxBars(fam))}</div>
+      ${blk('Verres par marque', sxTable('Verres par marque', [['Marque'], ['Ventes', 1], ['CA verres', 1], ['Part du CA', 1]], rv))}
+      ${blk('Montures et solaires par marque', sxTable('Montures par marque', [['Marque'], ['Quantité', 1], ['CA', 1], ['Prix moyen', 1], ...(mg ? [['Marge', 1], ['Taux de marge', 1]] : [])], rm),
+        mg ? 'La marge est calculée sur les produits dont le prix d\'achat est renseigné.' : '')}`;
+  }
+
+  function sxOph(C){
+    const { M } = C, A = sxOphAgg(M.V), An = new Map(sxOphAgg(C.Mn.V).map(x => [x.key, x])), peut = user.role !== 'vendeur';
+    const ref = A.filter(x => x.oph), libres = A.filter(x => !x.oph && x.key !== '-'), sans = A.find(x => x.key === '-');
+    const renseigne = M.ord - (sans ? sans.ord : 0), refOrd = ref.reduce((a, x) => a + x.ord, 0);
+    const k = kpiE(C, 'Ordonnances', sxN(M.ord), x => x.ord, { cls: 'main' })
+      + `<div class="s-stat"><span>Prescripteur renseigné</span><b>${pcTxt(renseigne, M.ord)}</b><small>${renseigne} ordonnance${renseigne > 1 ? 's' : ''} sur ${M.ord}</small></div>`
+      + `<div class="s-stat"><span>Ophtalmos actifs</span><b>${ref.length}</b><small>ont envoyé au moins un patient</small></div>`
+      + `<div class="s-stat"><span>Nouveaux clients envoyés</span><b>${sxN(A.filter(x => x.key !== '-').reduce((a, x) => a + x.nouveaux, 0))}</b><small>première visite avec leur ordonnance</small></div>`;
+    const ligne = x => { const n1 = An.get(x.key);
+      return [`<b>${esc(x.nom)}</b>${x.oph ? '' : x.key === '-' ? '' : ` <span class="chip warn">non référencé</span>${peut ? ` <button class="ghost sm-btn" type="button" data-sx-addoph="${esc(x.nom)}">Ajouter à la liste</button>` : ''}`}`,
+        esc(x.oph ? [x.oph.etablissement, x.oph.ville].filter(Boolean).join(' · ') : ''), cN(x.ord), cP(x.ord, M.ord), cN(x.nouveaux), cM(x.ca), cM(x.ord ? x.ca / x.ord : 0), cP(x.prog, x.lun),
+        n1 ? { h: evo(x.ord, n1.ord, 'N-1').replace(/<i>.*?<\/i>/, '') || '=', n: n1.ord } : { h: '<span class="muted">—</span>' }, x.der ? fmtDate(x.der) : '—'];
+    };
+    const rows = [...ref, ...libres].map(ligne); if (sans) { const r = ligne(sans); r.cls = 'pt'; rows.push(r); }
+    const cols = [['Prescripteur'], ['Établissement'], ['Ordonnances', 1], ['Part', 1], ['Nouveaux clients', 1], ['CA généré', 1], ['Panier moyen', 1], ['Progressifs', 1], ['vs N-1', 1], ['Dernière ordonnance']];
+    const etab = grouper(ref, x => x.oph.etablissement || 'Établissement non précisé', x => x.ord);
+    // ophtalmos de la liste qui n'ont envoyé personne sur la période : date de leur dernière ordonnance
+    const dern = {}; toutesVentes().forEach(({ v }) => { if (!enMagasin(v) || !avecOrd(v)) return; const o = ophDeOrd(v.ordonnance); if (!o) return; const d = v.ordonnance.date || dayKey(v.date); if (!dern[o.id] || d > dern[o.id]) dern[o.id] = d; });
+    const silence = ophListe().filter(o => o.actif !== false && !ref.some(x => x.oph.id === o.id)).sort((a, b) => (dern[b.id] || '').localeCompare(dern[a.id] || ''))
+      .map(o => [`<b>${esc(o.nom)}</b>`, esc([o.etablissement, o.ville].filter(Boolean).join(' · ')), esc(o.tel ? fmtTel(digits(o.tel)) : ''), dern[o.id] ? fmtDate(dern[o.id]) : '<span class="muted">jamais</span>']);
+    return `<div class="s-stats co-kpi">${k}</div>
+      ${blk('Ordonnances par prescripteur', sxTable('Prescripteurs', cols, rows, { vide: 'Aucune ordonnance sur la période.' }),
+        `Les noms saisis sur les ordonnances sont reconnus même avec « Dr » ou sans accents. ${libres.length ? `${libres.length} nom${libres.length > 1 ? 's' : ''} saisi${libres.length > 1 ? 's' : ''} ne figure${libres.length > 1 ? 'nt' : ''} pas dans Paramètres › Ophtalmologues.` : ''}`)}
+      <div class="sx-grid">${blk('Par établissement', sxBars(etab, sxN))}${blk('Sans ordonnance sur la période', sxTable('Ophtalmos sans ordonnance', [['Ophtalmologue'], ['Établissement'], ['Téléphone'], ['Dernière ordonnance']], silence, { vide: ophListe().length ? 'Tous vos ophtalmologues ont envoyé des patients.' : 'Ajoutez vos ophtalmologues dans Paramètres › Ophtalmologues.' }), 'Ophtalmologues de votre liste qui n\'ont envoyé aucun patient sur la période.')}</div>`;
+  }
+
+  // Clients à relancer : dernière ordonnance de plus de 2 ans, aucun achat depuis
+  function aRelancer(){
+    const lim = Date.now() - 730 * 864e5, L = [];
+    clients.forEach(c => { const V = (c.historique || []).filter(v => v.type === 'vente' && v.numero); if (!V.length) return;
+      const der = V.reduce((a, v) => v.date > a.date ? v : a); if (!enMagasin(der)) return;
+      const ords = V.filter(avecOrd); if (!ords.length) return;
+      const dOrd = ords.map(v => v.ordonnance.date || dayKey(v.date)).sort().pop();
+      if (new Date(dOrd) > lim || new Date(der.date) > lim) return;
+      const rel = V.flatMap(v => (v.messages || []).filter(m => m.modele === 'Renouvellement')).map(m => m.date).sort().pop();
+      L.push({ c, der, dOrd, rel }); });
+    return L.sort((a, b) => b.dOrd.localeCompare(a.dOrd));
+  }
+  function sxClients(C){
+    const { M } = C, servis = [...M.clients].map(id => clients.find(c => c.id === id)).filter(Boolean);
+    const fideles = M.clients.size - new Set(M.V.filter(({ v, c }) => nouveau(v, c)).map(({ c }) => c.id)).size;
+    const tranche = c => { if (!c.naissance) return 'Âge non renseigné'; const a = age(c.naissance); return a < 20 ? 'Moins de 20 ans' : a < 40 ? '20 – 39 ans' : a < 55 ? '40 – 54 ans' : '55 ans et plus'; };
+    const ordreT = ['Moins de 20 ans', '20 – 39 ans', '40 – 54 ans', '55 ans et plus', 'Âge non renseigné'];
+    const ages = grouper(servis, tranche).sort((a, b) => ordreT.indexOf(a[0]) - ordreT.indexOf(b[0]));
+    const sexes = grouper(servis, c => c.sexe === 'F' ? 'Femmes' : c.sexe === 'H' ? 'Hommes' : 'Non renseigné');
+    const P = M.V.filter(({ v }) => v.pec), orgs = {}; P.forEach(({ v }) => { const k = v.pec.organisme || 'Autre'; const o = orgs[k] = orgs[k] || { n: 0, mt: 0, ca: 0 }; o.n++; o.mt += v.pec.montant || 0; o.ca += v.net || 0; });
+    const ro = Object.entries(orgs).sort((a, b) => b[1].mt - a[1].mt).map(([k, o]) => [esc(k), cN(o.n), cM(o.ca), cM(o.mt), cP(o.mt, o.ca)]);
+    const R = aRelancer();
+    const rr = R.slice(0, 300).map(x => [`<b>${esc(x.c.nom + ' ' + (x.c.prenom || ''))}</b>`, esc(x.c.tel ? fmtTel(digits(x.c.tel)) : '—'), fmtDate(x.dOrd), fmtDate(x.der.date), esc(x.der.boutique || ''),
+      x.rel ? fmtDate(x.rel) : '<span class="muted">—</span>', x.c.tel || x.c.tel2 ? `<button class="act wa-act" type="button" data-sx-wa="${esc(String(x.c.id))}">WhatsApp</button>` : '']);
+    return `<div class="s-stats co-kpi">${kpiE(C, 'Clients servis', sxN(M.clients.size), x => x.clients.size, { cls: 'main' })}${kpiE(C, 'Nouveaux clients', sxN(M.nouveaux), x => x.nouveaux)}
+        <div class="s-stat"><span>Clients fidèles</span><b>${sxN(fideles)}</b><small>déjà venus avant · ${pcTxt(fideles, M.clients.size)}</small></div>
+        ${kpiE(C, 'Part prise en charge', pcTxt(M.pec, M.ca), x => x.ca ? x.pec / x.ca * 100 : null, { pts: true, sub: `${money(M.pec)} payés par les assurances` })}
+        <div class="s-stat ${R.length ? 'warn-k' : ''}"><span>À relancer</span><b>${sxN(R.length)}</b><small>ordonnance de plus de 2 ans</small></div></div>
+      <div class="sx-grid">${blk('Âge des clients servis', sxBars(ages, sxN))}${blk('Femmes / hommes', sxBars(sexes, sxN))}</div>
+      ${blk('Assurances et mutuelles', sxTable('Assurances', [['Organisme'], ['Dossiers', 1], ['CA des ventes', 1], ['Pris en charge', 1], ['Part prise en charge', 1]], ro))}
+      ${blk('Clients à relancer', sxTable('Clients à relancer', [['Client'], ['Téléphone'], ['Dernière ordonnance'], ['Dernier achat'], ['Magasin'], ['Déjà relancé'], ['']], rr, { vide: 'Aucun client à relancer pour l\'instant.' }),
+        `Clients dont la dernière ordonnance a plus de 2 ans et qui n'ont rien acheté depuis (toutes périodes). Le bouton prépare le message « Renouvellement » (modifiable dans Commandes &amp; WhatsApp › Modèles).${R.length > 300 ? ' Les 300 plus récents sont affichés.' : ''}`)}`;
+  }
+
+  function sxVendeurs(C){
+    const { M } = C, mg = droit('marges'), m = {};
+    M.V.forEach(({ v, c }) => { const k = vendeurDe(v), o = m[k] = m[k] || { n: 0, ca: 0, lun: 0, prog: 0, opt: 0, p2: 0, rem: 0, brut: 0, cout: 0, caCout: 0, nouv: 0 };
+      o.n++; o.ca += v.net || 0; o.brut += v.total || v.net || 0; o.rem += Math.max(0, (v.total || 0) - (v.net || 0)); if (nouveau(v, c)) o.nouv++;
+      if (estLun(v)) { o.lun++; if (v.verres?.type === 'prog') o.prog++; if (aOption(v)) o.opt++; if (v.offre === 'paire2') o.p2++; }
+      const k2 = coutVente(v); if (k2 > 0) { o.cout += k2; o.caCout += v.net || 0; } });
+    const rows = Object.entries(m).sort((a, b) => b[1].ca - a[1].ca).map(([k, o]) => [`<b>${esc(k)}</b>`, cN(o.n), cM(o.ca), cP(o.ca, M.ca), cM(o.n ? o.ca / o.n : 0), cP(o.prog, o.lun), cP(o.opt, o.lun), cP(o.p2, o.lun), cP(o.rem, o.brut), cN(o.nouv), ...(mg ? [o.caCout ? cM(o.caCout - o.cout) : '—'] : [])]);
+    const cols = [['Vendeur'], ['Ventes', 1], ['CA', 1], ['Part', 1], ['Panier moyen', 1], ['Progressifs', 1], ['Options', 1], ['2ème paire', 1], ['Remise moyenne', 1], ['Nouveaux clients', 1], ...(mg ? [['Marge', 1]] : [])];
+    return blk('Performance par vendeur', sxTable('Vendeurs', cols, rows, { foot: ['Total', cN(M.n), cM(M.ca), '', cM(M.panier), cP(M.prog, M.lun), cP(M.opt, M.lun), cP(M.p2, M.lun), cP(M.remise, M.ca + M.remise), cN(M.nouveaux), ...(mg ? [M.marge == null ? '—' : cM(M.marge)] : [])] }),
+      'Progressifs, options et 2ème paire : en pourcentage des paires de lunettes vendues par chacun. Options : au moins une option payante (photochromie, teinte, antireflet, amincissement).');
+  }
+
+  function sxStock(C){
+    const { M } = C, mg = droit('marges'), B = boutiqueCour(), tous = B === 'Toutes les boutiques';
+    const P = produitsVisibles().filter(geresEnStock), qte = p => tous ? Object.values(p.stock || {}).reduce((a, x) => a + (x || 0), 0) : (p.stock || {})[B] || 0;
+    const vendus = V => { const m = {}; V.forEach(({ v }) => { let mp = false; (v.lignes || []).forEach(l => { if (!l.pid) return; m[l.pid] = (m[l.pid] || 0) + (l.qty || 1); if (l.k === 'MONTURE') mp = true; });
+      if (v.monture?.pid && !mp) m[v.monture.pid] = (m[v.monture.pid] || 0) + 1; }); return m; };
+    const enStock = P.filter(p => qte(p) > 0), unites = enStock.reduce((a, p) => a + qte(p), 0);
+    const vAchat = enStock.reduce((a, p) => a + (p.achat || 0) * qte(p), 0), vVente = enStock.reduce((a, p) => a + (p.prix || 0) * qte(p), 0);
+    // dernière vente de chaque produit (toutes périodes) et date d'entrée en stock
+    const derV = {}; toutesVentes().forEach(({ v }) => { if (!enMagasin(v)) return; const ids = (v.lignes || []).filter(l => l.pid).map(l => l.pid); if (v.monture?.pid) ids.push(v.monture.pid);
+      ids.forEach(id => { if (!derV[id] || v.date > derV[id]) derV[id] = v.date; }); });
+    const entree = {}; mvtsStock.forEach(m => { if ((tous || m.boutique === B) && m.qty > 0 && (!entree[m.pid] || m.date < entree[m.pid])) entree[m.pid] = m.date; });
+    const lim = Date.now() - sxDorm * 864e5, jours = d => Math.floor((Date.now() - new Date(d)) / 864e5);
+    const dorm = enStock.map(p => ({ p, d: derV[p.id] || entree[p.id] || null, jamais: !derV[p.id] })).filter(x => x.d && new Date(x.d) < lim).sort((a, b) => a.d.localeCompare(b.d));
+    const vd = vendus(M.V), top = Object.entries(vd).map(([id, q]) => [produits.find(p => p.id === id), q]).filter(([p]) => p && geresEnStock(p)).sort((a, b) => b[1] - a[1]).slice(0, 20);
+    const rupt = P.filter(p => qte(p) <= 0 && derV[p.id] && new Date(derV[p.id]) > Date.now() - 90 * 864e5).sort((a, b) => derV[b.id].localeCompare(derV[a.id]));
+    const parMag = tous && user.role === 'admin' ? BOUTIQUES.map(b => { const L = P.filter(p => (p.stock || {})[b] > 0); return [esc(b), cN(L.reduce((a, p) => a + p.stock[b], 0)), ...(mg ? [cM(L.reduce((a, p) => a + (p.achat || 0) * p.stock[b], 0))] : []), cM(L.reduce((a, p) => a + (p.prix || 0) * p.stock[b], 0))]; }) : null;
+    const dormVal = dorm.reduce((a, x) => a + (mg ? x.p.achat || 0 : x.p.prix || 0) * qte(x.p), 0);
+    return `<div class="s-stats co-kpi"><div class="s-stat main"><span>Articles en stock</span><b>${sxN(unites)}</b><small>${enStock.length} référence${enStock.length > 1 ? 's' : ''}</small></div>
+        ${mg ? `<div class="s-stat"><span>Valeur d'achat</span><b>${money(vAchat)}</b></div>` : ''}<div class="s-stat"><span>Valeur de vente</span><b>${money(vVente)}</b></div>
+        <div class="s-stat ${dorm.length ? 'warn-k' : ''}"><span>Produits qui dorment</span><b>${sxN(dorm.length)}</b><small>${money(dormVal)} ${mg ? 'au prix d\'achat' : 'au prix de vente'}</small></div>
+        <div class="s-stat ${rupt.length ? 'warn-k' : ''}"><span>Ruptures</span><b>${sxN(rupt.length)}</b><small>vendus ces 90 derniers jours</small></div></div>
+      ${parMag ? blk('Stock par magasin', sxTable('Stock par magasin', [['Magasin'], ['Articles', 1], ...(mg ? [['Valeur d\'achat', 1]] : []), ['Valeur de vente', 1]], parMag)) : ''}
+      ${blk('Meilleures ventes de la période', sxTable('Meilleures ventes', [['Code'], ['Produit'], ['Marque'], ['Vendus', 1], ['En stock', 1]], top.map(([p, q]) => [esc(p.code), esc(p.nom), esc(p.marque || ''), cN(q), cN(qte(p))]), { vide: 'Aucun produit en stock vendu sur la période.' }))}
+      <section class="blk"><div class="row-head"><h2>Produits qui dorment</h2><label class="muted" style="font-size:13px">Sans vente depuis <select class="inp sm" id="sxDorm">${[90, 180, 365].map(n => `<option value="${n}"${n === sxDorm ? ' selected' : ''}>${n === 365 ? '1 an' : n + ' jours'}</option>`).join('')}</select></label></div>
+        <p class="sx-note">Produits en stock sans aucune vente depuis la durée choisie (ou jamais vendus depuis leur entrée en stock). Pensez à les mettre en avant ou à les solder.</p>
+        ${sxTable('Produits qui dorment', [['Code'], ['Produit'], ['Marque'], ['En stock', 1], ['Dernière vente'], ['Jours', 1], [mg ? 'Valeur d\'achat' : 'Valeur de vente', 1]],
+          dorm.slice(0, 300).map(x => [esc(x.p.code), esc(x.p.nom), esc(x.p.marque || ''), cN(qte(x.p)), x.jamais ? '<span class="muted">jamais vendu</span>' : fmtDate(x.d), cN(jours(x.d)), cM((mg ? x.p.achat || 0 : x.p.prix || 0) * qte(x.p))]), { vide: 'Aucun produit ne dort : bravo !' })}</section>
+      ${blk('Ruptures à réapprovisionner', sxTable('Ruptures', [['Code'], ['Produit'], ['Marque'], ['Dernière vente']], rupt.map(p => [esc(p.code), esc(p.nom), esc(p.marque || ''), fmtDate(derV[p.id])]), { vide: 'Aucune rupture sur un produit vendu récemment.' }))}`;
+  }
+
+  function sxMagasins(C){
+    if (user.role !== 'admin') return '<p class="muted">Réservé à l\'administrateur général.</p>';
+    const mg = droit('marges'), noms = [...new Set([...BOUTIQUES, ...toutesVentes().filter(({ v }) => dans(v.date, C.per)).map(({ v }) => v.boutique).filter(Boolean)])];
+    const R = noms.map(b => ({ b, M: sxMesures(C.per, b), Mn: sxMesures(C.n1, b), Mp: C.prec ? sxMesures(C.prec, b) : null, pays: profilFiscal(b).pays || '—' }));
+    const tot = R.reduce((a, x) => a + x.M.ca, 0);
+    const rows = R.sort((a, b) => b.M.ca - a.M.ca).map(x => [`<b>${esc(x.b)}</b>`, esc(x.pays), cM(x.M.ca), cP(x.M.ca, tot), x.Mp ? { h: evo(x.M.ca, x.Mp.ca, '').replace(/ <i>.*?<\/i>/, '') || '—' } : '', { h: evo(x.M.ca, x.Mn.ca, '').replace(/ <i>.*?<\/i>/, '') || '—' },
+      cN(x.M.n), cM(x.M.panier), cN(x.M.ord), cP(x.M.prog, x.M.lun), cP(x.M.opt, x.M.lun), ...(mg ? [x.M.marge == null ? '—' : cM(x.M.marge)] : [])]);
+    const cols = [['Magasin'], ['Pays'], ['CA', 1], ['Part', 1], [C.prec ? 'vs ' + SX_PREC[C.P] : '', 1], ['vs N-1', 1], ['Ventes', 1], ['Panier moyen', 1], ['Ordonnances', 1], ['Progressifs', 1], ['Options', 1], ...(mg ? [['Marge', 1]] : [])];
+    const pays = grouper(R, x => x.pays, x => x.M.ca);
+    return `${blk('Comparaison des magasins', sxTable('Magasins', cols, rows), 'Tous les magasins sur la même période, indépendamment du magasin sélectionné en haut de l\'écran.')}
+      <div class="sx-grid">${blk('Chiffre d\'affaires par magasin', sxBars(R.map(x => [x.b, x.M.ca])))}${blk('Chiffre d\'affaires par pays', sxBars(pays))}</div>`;
+  }
+
+  function openStat(tab = sxTab){
+    if (!droit('stats')) { show('Statistiques réservées au responsable.'); return; }
+    const adm = user.role === 'admin';
+    F('sxTabs').querySelector('[data-sx="mag"]').hidden = !adm;
+    if (tab === 'mag' && !adm) tab = 'vue';
+    sxTab = tab; F('sxTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.sx === tab));
+    const P = F('sxPer').value, per = sxPeriode(), prec = sxPrec(per, P), n1 = sxN1(per);
+    sxPrem = premiereVente();
+    const C = { P, per, prec, n1, M: sxMesures(per), Mp: prec ? sxMesures(prec) : null, Mn: sxMesures(n1) };
+    F('sxSub').textContent = `${tab === 'mag' ? 'Tous les magasins' : boutiqueCour()} · ${perTxt(per)}`;
+    F('sxBody').innerHTML = ({ vue: sxVue, ven: sxVentes, oph: sxOph, cli: sxClients, vdr: sxVendeurs, stk: sxStock, mag: sxMagasins })[tab](C);
+    go('stat');
+  }
+  F('goStat').addEventListener('click', () => openStat());
+  F('sxTabs').addEventListener('click', e => { const b = e.target.closest('[data-sx]'); if (b) openStat(b.dataset.sx); });
+  F('sxPer').addEventListener('change', () => { F('sxPerso').hidden = F('sxPer').value !== 'perso'; openStat(); });
+  ['sxDu', 'sxAu'].forEach(id => F(id).addEventListener('change', () => openStat()));
+  F('sxBody').addEventListener('change', e => { if (e.target.id === 'sxDorm') { sxDorm = +e.target.value; openStat(); } });
+  F('sxBody').addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (d.sxWa) { const c = clients.find(x => String(x.id) === d.sxWa); if (!c) return; const V = (c.historique || []).filter(v => v.type === 'vente' && v.numero);
+      openWa(V.reduce((a, v) => v.date > a.date ? v : a), c, 'Renouvellement'); return; }
+    if (d.sxAddoph) { if (user.role === 'vendeur') return; const nom = d.sxAddoph.trim(); if (ophParNom(nom)) return;
+      PARAM.ophtalmos = [...ophListe(), { id: 'oph' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nom, etablissement: '', ville: '', tel: '', email: '', actif: true }];
+      saveParam(); remplirOph(); show(`${nom} ajouté à la liste des ophtalmologues (Paramètres › Ophtalmologues pour compléter).`); openStat(); }
+  });
+  // Export Excel : une feuille par tableau affiché
+  F('sxXls').addEventListener('click', async () => {
+    if (!window.XLSX) { show('Export Excel indisponible.'); return; }
+    const T = [...F('sxBody').querySelectorAll('table[data-sx-titre]')]; if (!T.length) { show('Aucun tableau à exporter sur cet onglet.'); return; }
+    const wb = XLSX.utils.book_new(), pris = new Set();
+    T.forEach(t => { const aoa = [...t.rows].map(r => [...r.cells].map(c => c.dataset.n !== undefined && c.dataset.n !== '' ? Number(c.dataset.n) : c.textContent.replace(/\s*Ajouter à la liste\s*/, '').replace(/WhatsApp/, '').trim()));
+      let n = t.dataset.sxTitre.replace(/[\[\]:*?\/\\]/g, ' ').slice(0, 31); while (pris.has(n)) n = n.slice(0, 28) + ' ' + pris.size; pris.add(n);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), n); });
+    const tabLib = F('sxTabs').querySelector('.tab.on').textContent;
+    try { await enregistrerFichier(new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nomFic(`Statistiques ${tabLib}_${boutiqueCour()}_${perTxt(sxPeriode())}`) + '.xlsx'); show('Fichier Excel enregistré'); }
+    catch (er) { show(er?.code === 'declined' ? 'Téléchargement annulé.' : 'Le fichier n\'a pas pu être enregistré.'); }
+  });
+  // Tuile de l'accueil : mois en cours comparé aux mêmes jours du mois précédent
+  function majTuileStat(){
+    const ok = droit('stats'); F('tStat').hidden = !ok; if (!ok) return;
+    const t = new Date(), per = [new Date(t.getFullYear(), t.getMonth(), 1), t], prec = [decMois(per[0], -1), decMois(t, -1)];
+    const V = sxV(per), ca = V.reduce((a, { v }) => a + (v.net || 0), 0), caP = sxV(prec).reduce((a, { v }) => a + (v.net || 0), 0);
+    F('tStatCa').textContent = money(ca);
+    const e = F('tStatEvo'); e.className = ''; 
+    if (caP) { const p = (ca - caP) / caP * 100; e.textContent = `${p >= 0 ? '+' : '−'}${evoTxt(p)} %`; e.className = p >= 0.5 ? 'evo-up' : p <= -0.5 ? 'evo-dn' : ''; } else e.textContent = '—';
+    F('tStatOrd').textContent = sxN(V.filter(({ v }) => avecOrd(v)).length);
+    const top = sxOphAgg(V).find(x => x.key !== '-'); F('tStatOph').textContent = top ? `${top.nom} (${top.ord})` : '—';
+  }
+  try { majTuileStat(); } catch(_) {}
 
   // --- Prises en charge et bordereaux
   const toutesPec = () => toutesVentes().filter(({ v }) => v.pec).map(({ v, c }) => ({ v, c, p: v.pec }));
