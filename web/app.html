@@ -132,7 +132,20 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 /* les tuiles gardent toute la largeur ; les post-it se placent dans la marge de droite quand l'écran est assez large, sinon sous les tuiles */
 .nt-side{display:grid;gap:14px;min-width:0;margin-top:28px}
 @media (min-width:1720px){.nt-side{position:absolute;top:0;margin-top:0;left:calc(100% + 40px);width:min(300px,calc((100vw - 1260px) / 2 - 64px))}}
-@media (max-width:1719.98px){.nt-list{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}
+/* écran moins large : languette sur le bord droit qui ouvre un panneau par-dessus la page */
+.nt-tab,.nt-close{display:none}
+@media (max-width:1719.98px){
+  .nt-tab{display:flex;align-items:center;gap:8px;position:fixed;right:0;top:42%;z-index:15;writing-mode:vertical-rl;transform:rotate(180deg);
+    background:var(--pi-y);color:var(--pi-ink);border:0;border-radius:0 10px 10px 0;padding:16px 9px;font:inherit;font-weight:700;font-size:14px;letter-spacing:.04em;cursor:pointer;box-shadow:2px 0 10px var(--pi-sh)}
+  .nt-tab:hover{padding-right:13px}
+  .nt-tab b{writing-mode:horizontal-tb;transform:rotate(180deg);background:var(--pin);color:#fff;border-radius:99px;min-width:20px;height:20px;padding:0 6px;font-size:11px;display:grid;place-items:center}
+  .nt-tab b.tot{background:var(--pi-ink);color:var(--pi-y)}
+  .nt-side{position:fixed;top:0;right:0;bottom:0;z-index:18;width:min(340px,92vw);margin:0;padding:20px 20px 32px;background:var(--bg);border-left:1px solid var(--line);
+    box-shadow:-12px 0 32px rgb(0 0 0 / .18);overflow-y:auto;align-content:start;transform:translateX(105%);transition:transform .22s ease;visibility:hidden}
+  .nt-side.open{transform:none;visibility:visible}
+  .nt-close{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:20px;cursor:pointer}
+  .nt-veil{position:fixed;inset:0;z-index:17;background:rgb(10 16 28 / .35)}
+}
 .nt-head{display:flex;align-items:center;gap:10px}
 .nt-head h2{font-size:19px;font-weight:600;margin:0}
 .nt-addbtn{margin-left:auto;width:36px;height:36px;border-radius:50%;border:0;background:var(--pi-y);color:var(--pi-ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px var(--pi-sh)}
@@ -878,10 +891,13 @@ select.inp{appearance:auto}
     </section>
 
   </div>
+  <button class="nt-tab" id="ntTab" type="button" aria-controls="tNotes" aria-expanded="false"><span>Post-it</span><b id="ntTabN" hidden></b></button>
+  <div class="nt-veil" id="ntVeil" hidden></div>
   <aside class="nt-side" id="tNotes" aria-labelledby="ntTitle">
     <div class="nt-head">
       <h2 id="ntTitle">Post-it</h2><span class="chip" id="ntNew" hidden></span>
       <button class="nt-addbtn" type="button" id="ntAdd" title="Nouvelle note" aria-label="Nouvelle note"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button>
+      <button class="nt-close" type="button" id="ntClose" aria-label="Fermer les post-it">×</button>
     </div>
     <form id="ntForm" class="nt-form postit" hidden autocomplete="off">
       <textarea id="ntTxt" rows="4" maxlength="2000" placeholder="Écrivez votre note…"></textarea>
@@ -2317,7 +2333,7 @@ select.inp{appearance:auto}
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
                   caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat') };
   function go(name){
-    if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); } catch(_) {}
+    if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
     if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); } catch(_) {}
     window.scrollTo(0, 0);
@@ -6159,6 +6175,8 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         <div class="nt-meta"><span>${esc(n.parNom || '')} · ${fmtDateTime(n.date)}</span></div>
         ${ntPeutGerer(n) ? `<div class="nt-act">${n.portee !== 'moi' && user.role !== 'vendeur' ? `<button type="button" data-nt-ep="${esc(n.id)}">${n.epingle ? 'Désépingler' : 'Épingler'}</button>` : ''}<button type="button" class="nt-del" data-nt-del="${esc(n.id)}">Retirer</button></div>` : ''}</li>`).join('')
       || '<li class="nt-empty">Aucun post-it pour l\'instant. Cliquez sur + pour laisser un message à l\'équipe ou une note pour vous-même.</li>';
+    F('ntTabN').hidden = !L.length; F('ntTabN').textContent = nv || L.length; F('ntTabN').className = nv ? '' : 'tot';
+    F('ntTab').title = nv ? `${nv} nouveau${nv > 1 ? 'x' : ''} post-it` : `${L.length} post-it`;
     F('ntMore').hidden = L.length <= MAX; F('ntMore').textContent = ntTout ? 'Réduire' : `Voir tous les post-it (${L.length})`;
   }
   // les notes affichées sont « lues » quand on quitte l'accueil
@@ -6188,6 +6206,12 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     saveNotes(); drawNotes();
   });
   F('ntMore').addEventListener('click', () => { ntTout = !ntTout; drawNotes(); });
+  // languette (écrans moins larges) : ouvre et ferme le panneau des post-it
+  const ntPanneau = o => { F('tNotes').classList.toggle('open', o); F('ntVeil').hidden = !o; F('ntTab').setAttribute('aria-expanded', String(o)); if (!o) { ntFermer(); ntMarquerLu(); drawNotes(); } };
+  F('ntTab').addEventListener('click', () => ntPanneau(!F('tNotes').classList.contains('open')));
+  F('ntClose').addEventListener('click', () => ntPanneau(false));
+  F('ntVeil').addEventListener('click', () => ntPanneau(false));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && F('tNotes').classList.contains('open')) ntPanneau(false); });
   try { drawNotes(); } catch(_) {}
   majTuileCaisse(); majTuileCmd();
   if (EN_LIGNE) F('mlSend').textContent = 'Envoyer';   // en ligne : l'e-mail part du serveur DIOPTRA, pas de Gmail
