@@ -695,6 +695,16 @@ select.inp{appearance:auto}
 .d-shop{margin-top:4px;font-size:13px}
 .d-ph{color:var(--paper-muted);font-style:italic;font-size:12px}
 .d-num{text-align:right}.d-num b{font-size:20px;letter-spacing:.06em;display:block}
+.d-dos{font-size:14px;margin:2px 0}.d-dos strong{font-size:20px;letter-spacing:.04em;border:2px solid var(--paper-ink);border-radius:6px;padding:1px 8px;margin-left:4px;display:inline-block}
+.d-cut{margin:34px 0 14px;border-top:2px dashed var(--paper-ink);position:relative;height:0;break-inside:avoid}
+.d-cut span{position:absolute;left:50%;top:-10px;translate:-50% 0;background:var(--paper);padding:0 10px;font-size:11px;white-space:nowrap}
+.d-etq{width:96mm;max-width:100%;min-height:34mm;border:1.5px solid var(--paper-ink);border-radius:6px;padding:8px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:4px 12px;align-items:center;break-inside:avoid}
+.d-etq-n{grid-row:1 / 3;display:grid;justify-items:center;border-right:1.5px solid var(--paper-ink);padding-right:12px}
+.d-etq-n small{font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.d-etq-n b{font-size:24px;letter-spacing:.02em;line-height:1.1;white-space:nowrap}
+.d-etq-i{display:grid;gap:1px;font-size:11px;line-height:1.3;min-width:0}
+.d-etq-i b{font-size:13px}.d-etq-i span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d-etq svg.bc{max-width:100%;height:30px}
 .d-client{display:flex;flex-direction:column;gap:2px;margin:18px 0;padding:12px 14px;background:var(--paper-tint);border-radius:6px}
 .d-client span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--paper-muted)}
 .d-client b{font-size:16px}
@@ -2425,7 +2435,12 @@ select.inp{appearance:auto}
 
   // Recherche globale : Entrée → Espace Client avec la recherche pré-remplie
   q.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { cq.value = q.value; q.value = ''; q.blur(); go('clients'); }
+    if (e.key === 'Enter') {
+      // numéro de dossier (étiquette de la péniche, lu à la douchette) ou de facture : ouvre directement la vente
+      const t = q.value.trim().toUpperCase();
+      if (t) for (const c of clients) { const v = (c.historique || []).find(x => x.type === 'vente' && ((x.dossier || '').toUpperCase() === t || (x.numero || '').toUpperCase() === t || (/^\d+$/.test(t) && (x.dossier || '').endsWith('-' + t.padStart(4, '0')))));
+        if (v) { q.value = ''; q.blur(); current = c; openDetail(v); return; } }
+      cq.value = q.value; q.value = ''; q.blur(); go('clients'); }
   });
 
   /* ================= Données clients ================= */
@@ -5679,6 +5694,16 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     return POSTE ? `${prefix}-${POSTE.code}-${y}-${String(n[key]).padStart(4, '0')}` : `${prefix}-${y}-${String(n[key]).padStart(4, '0')}`;
   }
 
+  // Numéro de dossier atelier : court, sans remise à zéro annuelle, unique grâce au code du poste (LBV1-0042)
+  function nextDossier(){
+    let n = {}; try { n = JSON.parse(localStorage.getItem('compteurs') || '{}'); } catch(_) {}
+    n.DOS = (n.DOS || 0) + 1;
+    try { localStorage.setItem('compteurs', JSON.stringify(n)); } catch(_) {}
+    return (POSTE ? POSTE.code + '-' : '') + String(n.DOS).padStart(4, '0');
+  }
+  // les ventes enregistrées avant cette fonction reçoivent leur numéro à la première impression de la fiche
+  const dossierDe = s => { if (!s.dossier && s.type === 'vente' && s.kind !== 'rapide') { s.dossier = nextDossier(); save(); } return s.dossier || ''; };
+
   /* ================= Encaissement ================= */
   let draft = null, pays = [];
   const MODES = { esp:'Espèces', cb:'Carte bancaire', airtel:'Airtel Money', moov:'Moov Money' };
@@ -5824,6 +5849,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (typeof newPec !== 'undefined' && newPec) { draft.pec = newPec; }
     if (ctx.mode !== 'solde') {
       draft.type = 'vente'; draft.numero = nextNum('FA'); figerFiscal(draft); draft.paiements = []; draft.vendeur = user.nom;
+      if (draft.kind !== 'rapide') draft.dossier = nextDossier();
       (current.historique = current.historique || []).push(draft);
       if (draft.monture?.pid) mvtStock(draft.monture.pid, draft.boutique, -1, 'Vente', draft.numero);
     }
@@ -5941,7 +5967,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     const isV = v.type === 'vente';
     F('detKind').textContent = `${isV ? 'Vente' : 'Devis'}${v.kind === 'lentille' ? ' lentilles' : ''} · ${current.nom} ${current.prenom}`;
     F('detTitle').innerHTML = `${v.numero} ${statusChip(v)}`;
-    F('detMeta').textContent = `${fmtDateTime(v.date)} · ${v.boutique || ''}${v.devis ? ' · issue du devis ' + v.devis : ''}`;
+    F('detMeta').textContent = `${fmtDateTime(v.date)} · ${v.boutique || ''}${v.dossier ? ' · dossier n° ' + v.dossier : ''}${v.devis ? ' · issue du devis ' + v.devis : ''}`;
     const resp = peutModifierVente(), respC = droit('corrCaisse');
     const lock = t => `<button class="act ghost-act" disabled title="Réservé au responsable">${t} · responsable</button>`;
     let a = '';
@@ -6061,10 +6087,20 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   // Sur facture et devis, la ligne OD / OG ne reprend que les verres (l'ordonnance est en haut)
   const desDoc = l => (l.k === 'OD' || l.k === 'OG') ? String(l.des || '').split(' · Sph ')[0] : l.des;
-  function docHead(s, titre){
+  function docHead(s, titre, dossier){
     return `<div class="d-head">${entete(s.boutique)}
-      <div class="d-num"><b>${titre}</b><div>N° ${s.numero}</div><div>${fmtDate(s.date)}</div></div></div>
+      <div class="d-num"><b>${titre}</b>${dossier ? `<div class="d-dos">Dossier n° <strong>${esc(dossier)}</strong></div>` : ''}<div>${dossier ? 'Facture ' : 'N° '}${s.numero}</div><div>${fmtDate(s.date)}</div></div></div>
       <div class="d-client"><span>Patient</span><b>${esc(current.nom)} ${esc(current.prenom)}</b><span>${current.naissance ? `${current.sexe === 'F' ? 'Née' : 'Né'} le ${fmtDate(current.naissance)} · ` : ''}${esc(fmtTel(digits(current.tel)))}${current.email ? ' · ' + esc(current.email) : ''}</span></div>`;
+  }
+  // Étiquette détachable en bas des fiches atelier, à coller à l'avant de la péniche
+  function etiquettePeniche(s, dos, details){
+    return `<div class="d-cut" aria-hidden="true"><span>✂ Découper et coller à l'avant de la péniche</span></div>
+      <div class="d-etq">
+        <div class="d-etq-n"><small>Dossier</small><b>${esc(dos)}</b></div>
+        <div class="d-etq-i"><b>${esc(current.nom)} ${esc(current.prenom)}</b>${details.filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}
+          <span>${fmtDate(s.date)} · ${esc((s.boutique || '').replace(/^Magasin /, ''))}${s.vendeur ? ' · ' + esc(s.vendeur) : ''}</span></div>
+        <svg class="bc" data-code="${esc(dos)}"></svg>
+      </div>`;
   }
   function docLines(s){
     return `<table class="d-lines"><thead><tr><th>Désignation</th><th class="r">Montant</th></tr></thead><tbody>${
@@ -6100,14 +6136,15 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     } else if (k === 'devis') {
       h = docHead(s, s.kind === 'lentille' ? 'DEVIS LENTILLES' : 'DEVIS') + rxMini(s) + docLines(s) + `</tbody></table><p class="d-note">Ce devis ne vaut pas facture.</p><div class="d-sign"><span>Signature du patient</span><span>Cachet du magasin</span></div>`;
     } else if (k === 'technique') {
-      const v = s.verres;
-      h = docHead(s, 'FICHE TECHNIQUE') + `<div class="d-sec">Ordonnance du ${fmtDate(s.ordonnance.date)}${s.ordonnance.prescripteur ? ' · ' + esc(s.ordonnance.prescripteur) : ''} · cylindre positif</div>`
+      const v = s.verres, dos = dossierDe(s);
+      h = docHead(s, 'FICHE TECHNIQUE', dos) + `<div class="d-sec">Ordonnance du ${fmtDate(s.ordonnance.date)}${s.ordonnance.prescripteur ? ' · ' + esc(s.ordonnance.prescripteur) : ''} · cylindre positif</div>`
         + rxTable(s.ordonnance)
         + `<div class="d-sec">Verres</div><p class="d-verres">${esc(ligneVerres(v))}</p><dl class="d-dl">
           <dt>Monture</dt><dd>${esc(s.monture.des || '—')}${v.percee ? ' · <b>percée</b>' : ''}</dd>
           ${s.offre === 'paire2' ? `<dt>2ème paire</dt><dd>${esc(p2Lib(s))} · ${p2Paye(s) ? 'supplément ' + money(s.paire2Px || 0) : 'offerte'}</dd>` : ''}
           ${s.lignes.filter(l => l.k === 'OPT').map(l => `<dt>Option</dt><dd>${esc(l.des)}</dd>`).join('')}
-        </dl>${s.commentaireAtelier ? `<div class="d-sec">Commentaire atelier</div><div class="d-atelier">${esc(s.commentaireAtelier)}</div>` : ''}<div class="d-sign"><span>Montage réalisé par</span><span>Contrôle final</span></div>`;
+        </dl>${s.commentaireAtelier ? `<div class="d-sec">Commentaire atelier</div><div class="d-atelier">${esc(s.commentaireAtelier)}</div>` : ''}<div class="d-sign"><span>Montage réalisé par</span><span>Contrôle final</span></div>`
+        + (dos ? etiquettePeniche(s, dos, [typeTxt(v) + (v.marque ? ' · ' + v.marque : ''), s.monture.des ? 'Monture : ' + s.monture.des + (v.percee ? ' (percée)' : '') : '', s.offre === 'paire2' ? '+ 2ème paire ' + p2Lib(s) : '']) : '');
     } else if (k === 'assurance' && s.pec) {
       const o = s.ordonnance, p = s.pec;
       h = `<div class="d-head">${entete(s.boutique)}
@@ -6124,14 +6161,15 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         + `<p class="d-words">Arrêtée la présente facture à la somme de <b>${enLettres(p.montant)} francs CFA</b> (${money(p.montant)}).</p>`
         + `<div class="d-sign"><span>Signature et cachet de l'opticien</span><span>Signature du patient</span></div>`;
     } else if (k === 'flent') {
-      const o = s.ordonnance;
-      h = docHead(s, 'FICHE LENTILLES') + `<div class="d-sec">Ordonnance lentilles du ${fmtDate(o.date)}${o.prescripteur ? ' · ' + esc(o.prescripteur) : ''}</div>`
+      const o = s.ordonnance, dos = dossierDe(s);
+      h = docHead(s, 'FICHE LENTILLES', dos) + `<div class="d-sec">Ordonnance lentilles du ${fmtDate(o.date)}${o.prescripteur ? ' · ' + esc(o.prescripteur) : ''}</div>`
         + lensTable(o)
         + `<div class="d-sec">Lentilles délivrées</div><table class="d-rx"><thead><tr><th></th><th>Marque / modèle</th><th>Renouvellement</th><th>Boîtes</th></tr></thead><tbody>${
           ['OD', 'OG'].map(E => { const p = s.lentilles?.[E]; return p && (p.marque || p.boites) ? `<tr><th>${E}</th><td>${esc(p.marque || '—')}</td><td>${esc(p.renouv)}</td><td>${p.boites}</td></tr>` : `<tr><th>${E}</th><td colspan="3">—</td></tr>`; }).join('')}</tbody></table>`
         + (s.lignes.some(l => l.k === 'OPT') ? `<div class="d-sec">Entretien</div><p>${s.lignes.filter(l => l.k === 'OPT').map(l => esc(l.des)).join(' · ')}</p>` : '')
         + `<p class="d-note">Rappel au patient : respecter la durée de port et le renouvellement indiqués, ne jamais rincer les lentilles à l'eau du robinet.</p>
-        <div class="d-sign"><span>Délivré par</span><span>Signature du patient</span></div>`;
+        <div class="d-sign"><span>Délivré par</span><span>Signature du patient</span></div>`
+        + (dos ? etiquettePeniche(s, dos, ['Lentilles · ' + ['OD', 'OG'].map(E => s.lentilles?.[E]?.marque).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(' / ')]) : '');
     } else if (k === 'reservation') {
       h = `<div class="d-res"><div class="d-brand">${esc(magasinDe(s.boutique).raison || PARAM.app.nom)} · ${esc(s.boutique)}</div>
         <h3>MONTURE RÉSERVÉE</h3>
@@ -6145,6 +6183,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         <p class="d-note">À attacher à la monture et ranger au tiroir des réservations. Passé cette date, la monture retourne en vente.</p></div>`;
     }
     F('dPaper').innerHTML = h;
+    if (h.includes('class="bc"')) renderBarcodes();
   }
 
   // Date limite de réservation : 1 mois après la création du devis
