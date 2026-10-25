@@ -666,6 +666,12 @@ tr.pt td{color:var(--muted)}
 .c-lines li.minus span:last-child{color:var(--ok);font-weight:700}
 .opt{color:var(--muted);font-weight:400}
 .pec-box{display:grid;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.pec-list{display:grid;gap:14px}
+.pec-item{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
+.pec-item .row-head b{font-size:14px}
+.pec-item .del{height:32px;width:32px}
+.pec-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px}
+.pec-lock{margin:0;padding-left:18px;display:grid;gap:4px}
 select.inp{appearance:auto}
 .modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .mode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 8px;display:grid;place-items:center}
@@ -2092,19 +2098,8 @@ select.inp{appearance:auto}
         <div id="pecEdit">
         <label class="check" style="margin-top:4px"><input type="checkbox" id="pecOn"> Le patient bénéficie d'une prise en charge</label>
         <div id="pecBox" hidden class="pec-box">
-          <div class="row2">
-            <div><label class="lbl" for="pecOrg">Organisme</label>
-              <select class="inp" id="pecOrg"></select></div>
-            <div id="pecAutreRow" hidden><label class="lbl" for="pecAutre">Nom de l'organisme</label><input class="inp" id="pecAutre"></div>
-          </div>
-          <div class="row2">
-            <div><label class="lbl" for="pecMat">N° d'adhérent / matricule</label><input class="inp" id="pecMat"></div>
-            <div><label class="lbl" for="pecBon">N° du bon de prise en charge <span class="opt">(facultatif)</span></label><input class="inp" id="pecBon"></div>
-          </div>
-          <div class="row2">
-            <div><label class="lbl" for="pecPct">Taux pris en charge (%)</label><input class="inp" id="pecPct" inputmode="numeric" placeholder="ex. 80"></div>
-            <div><label class="lbl" for="pecMt">Montant pris en charge (FCFA)</label><input class="inp" id="pecMt" inputmode="numeric"></div>
-          </div>
+          <div id="pecList" class="pec-list"></div>
+          <div class="pec-foot"><button class="ghost" type="button" id="pecPlus">+ Ajouter une autre prise en charge</button><span class="muted" id="pecTotS"></span></div>
         </div>
         </div>
       </section>
@@ -2459,6 +2454,12 @@ select.inp{appearance:auto}
   try { clients = JSON.parse(localStorage.getItem('clients') || 'null'); } catch(_) {}
   if (!Array.isArray(clients)) clients = EN_LIGNE ? [] : EXEMPLES.slice();
   function save(){ try { localStorage.setItem('clients', JSON.stringify(clients)); } catch(_) {} }
+  // Prises en charge : une vente peut en avoir plusieurs (plusieurs assurances / mutuelles sur le même dossier)
+  const pecsDe = v => !v ? [] : Array.isArray(v.pecs) ? v.pecs : v.pec ? [v.pec] : [];
+  const pecTot = v => pecsDe(v).reduce((a, p) => a + (p.montant || 0), 0);
+  const pecId = () => 'pec' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  { let chg = false; clients.forEach(c => (c.historique || []).forEach(v => { if (v.pec && !Array.isArray(v.pecs)) { v.pecs = [{ id: pecId(), ...v.pec }]; delete v.pec; chg = true; } }));
+    if (chg) save(); }
 
   const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]/g, '');
   const digits = s => (s || '').replace(/\D/g, '');
@@ -3105,13 +3106,13 @@ select.inp{appearance:auto}
     (s.journal = s.journal || []).push({ date: s.modifieLe, par: user.nom, role: user.role,
       ancienNet: avant.net, nouveauNet: s.net, details: diffVente(avant, s) });
     if (s.type === 'vente') {
-      if (s.pec && s.pec.taux) {
-        const nv = Math.round(s.net * s.pec.taux / 100);
-        if (nv !== s.pec.montant) s.journal[s.journal.length - 1].details.push(`Prise en charge ${s.pec.organisme} (${s.pec.taux} %) : ${money(s.pec.montant)} → ${money(nv)}`);
-        s.pec.montant = nv;
-      }
-      if (s.pec && s.pec.montant > s.net) s.pec.montant = s.net;
-      s.resteAcharge = s.net - (s.pec ? s.pec.montant : 0);
+      pecsDe(s).forEach(p => { if (!p.taux) return;
+        const nv = Math.round(s.net * p.taux / 100);
+        if (nv !== p.montant) s.journal[s.journal.length - 1].details.push(`Prise en charge ${p.organisme} (${p.taux} %) : ${money(p.montant)} → ${money(nv)}`);
+        p.montant = nv; });
+      // le total pris en charge ne dépasse jamais le montant de la vente
+      { let rest = s.net; pecsDe(s).forEach(p => { p.montant = Math.max(0, Math.min(p.montant || 0, rest)); rest -= p.montant; }); }
+      s.resteAcharge = s.net - pecTot(s);
       const diff = s.resteAcharge - (s.paye || 0);
       s.solde = Math.max(diff, 0); s.tropPercu = diff < 0 ? -diff : 0;
       s.statut = s.solde > 0 ? (s.paye > 0 ? 'Acompte' : 'À encaisser') : 'Soldée';
@@ -3267,7 +3268,7 @@ select.inp{appearance:auto}
         date: p.date, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : (v.client || 'Anonyme'), clientId: c ? c.id : v.clientId || null,
         type: v.kind === 'rapide' ? 'Vente rapide' : (i > 0 || dayKey(v.date) !== j) ? 'Règlement' : v.kind === 'lentille' ? 'Lentilles' : 'Vente',
         mode: p.mode, ref: p.ref, par: p.par || '', montant: p.montant, v }); });
-      if (v.pec && dayKey(v.pec.date || v.date) === j) pecs.push({ ...v.pec, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : '', v });
+      pecsDe(v).forEach(pc => { if (dayKey(pc.date || v.date) === j) pecs.push({ ...pc, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : '', v }); });
     };
     clients.forEach(c => (c.historique || []).forEach(v => take(v, c)));
     ventesRapides.forEach(v => take(v, null));
@@ -3608,7 +3609,6 @@ select.inp{appearance:auto}
 
   /* ================= Écran Paramètres ================= */
   function remplirListes(){
-    F('pecOrg').innerHTML = `<option value="">Choisir…</option>` + PARAM.organismes.map(o => `<option>${esc(o)}</option>`).join('') + `<option>Autre</option>`;
     const M = PARAM.motifs.includes('Dépôt en banque') ? PARAM.motifs : ['Dépôt en banque', ...PARAM.motifs];
     F('outMotif').innerHTML = M.map(o => `<option>${esc(o)}</option>`).join('');
   }
@@ -4035,7 +4035,7 @@ select.inp{appearance:auto}
     F('dMail').hidden = !(s && ((s.kind === 'z') || ((s.type === 'devis' || s.type === 'vente') && MAIL_DOCS.includes(docTab) && c && c.email)));
     F('dWaZ').hidden = !(s && s.kind === 'z');
   }
-  const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.trim();
+  const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${String(docTab || '').startsWith('assurance:') ? 'Facture assurance ' + (pecsDe(docSale)[+docTab.split(':')[1]]?.organisme || '') : DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.replace(/\s+/g, ' ').trim();
   async function docPdf(opts = {}){
     if (!window.html2canvas || !window.jspdf) throw { code: 'lib' };
     const el = F('dPaper'), ticket = el.classList.contains('ticket-paper');
@@ -4253,7 +4253,7 @@ select.inp{appearance:auto}
 
   // --- Journaux comptables (factures, clients, PEC, caisse) — vue détaillée ou globale
   const jNomCli = (v, c) => c ? `${c.nom} ${c.prenom}` : (v.client || 'Client de passage');
-  const jPartPec = v => v.pec ? v.pec.montant || 0 : 0;
+  const jPartPec = v => pecTot(v);
   const jPartCli = v => v.resteAcharge != null ? v.resteAcharge : (v.net || 0) - jPartPec(v);
   const jEncaisse = v => (v.paiements || []).reduce((a, p) => a + (p.montant || 0), 0);
   const perTxt = (per = periode()) => `du ${fmtDate(per[0].toISOString())} au ${fmtDate(per[1].toISOString())}`;
@@ -4352,14 +4352,14 @@ select.inp{appearance:auto}
           ['Mobile money', money((TM['Airtel Money'] || 0) + (TM['Moov Money'] || 0))], ['Sorties', money(TS)], ['Écarts de caisse', nbZ ? `${ecarts > 0 ? '+' : ''}${money(ecarts)}` : '—', ecarts ? 'warn-k' : '']] };
     }
     // jas : journal des PEC
-    const P = V.filter(({ v }) => v.pec && dans(v.date, per));
-    const G = new Map(); P.forEach(x => { const o = x.v.pec.organisme || '—'; if (!G.has(o)) G.set(o, []); G.get(o).push(x); });
+    const P = V.filter(({ v }) => dans(v.date, per)).flatMap(({ v, c }) => pecsDe(v).map(p => ({ v, c, p })));
+    const G = new Map(); P.forEach(x => { const o = x.p.organisme || '—'; if (!G.has(o)) G.set(o, []); G.get(o).push(x); });
     const H = glob ? ['Organisme', 'Dossiers', 'Montant PEC', 'Réglé', 'Reste à recevoir'] : ['Date', 'N° facture', 'Assuré', 'N° adhérent', 'N° bon', 'Montant PEC', 'Réglé', 'Reste à recevoir', 'Statut', 'Bordereau'];
     const rows = []; let TM = 0, TR = 0;
     [...G.keys()].sort().forEach(o => {
       if (!glob) rows.push({ type: 'grp', cells: [o] });
       let m = 0, r = 0; const X = G.get(o);
-      X.sort((a, b) => a.v.date.localeCompare(b.v.date)).forEach(({ v, c }) => { const p = v.pec, pr = p.paye || 0;
+      X.sort((a, b) => a.v.date.localeCompare(b.v.date)).forEach(({ v, c, p }) => { const pr = p.paye || 0;
         m += p.montant || 0; r += pr;
         if (!glob) rows.push({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), p.matricule || '', p.bon || '', p.montant || 0, pr, (p.montant || 0) - pr, pecStatut(p), p.bordereau || '—'] }); });
       rows.push(glob ? { cells: [o, String(X.length), m, r, m - r] } : { type: 'st', cells: ['', '', `Total ${o}`, '', '', m, r, m - r, '', ''] });
@@ -4465,7 +4465,7 @@ select.inp{appearance:auto}
     const per = periode(), V = toutesVentes().filter(({ v }) => enMagasin(v) && dans(v.date, per));
     const ca = V.reduce((a, { v }) => a + v.net, 0), n = V.length;
     const cout = V.reduce((a, { v }) => a + coutVente(v), 0), caAvecCout = V.filter(({ v }) => coutVente(v) > 0).reduce((a, { v }) => a + v.net, 0);
-    const pec = V.reduce((a, { v }) => a + (v.pec?.montant || 0), 0);
+    const pec = V.reduce((a, { v }) => a + pecTot(v), 0);
     let enc = 0; toutesVentes().forEach(({ v }) => { if (enMagasin(v)) (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) enc += p.montant; }); });
     const du = toutesVentes().filter(({ v }) => enMagasin(v)).reduce((a, { v }) => a + (v.solde || 0), 0);
     F('tbKpi').innerHTML = kpi('Chiffre d\'affaires', money(ca), `${n} vente${n > 1 ? 's' : ''}`, 'main') + kpi('Panier moyen', money(n ? ca / n : 0))
@@ -4540,7 +4540,7 @@ select.inp{appearance:auto}
       if (c) r.clients.add(c.id); if (nouveau(v, c)) r.nouveaux++;
       if (estLun(v)) { r.lun++; if (v.verres?.type === 'prog') r.prog++; if (v.offre === 'paire2') r.p2++; if (aOption(v)) r.opt++; }
       if (avecOrd(v)) r.ord++;
-      r.remise += Math.max(0, (v.total || 0) - (v.net || 0)); r.pec += v.pec?.montant || 0; });
+      r.remise += Math.max(0, (v.total || 0) - (v.net || 0)); r.pec += pecTot(v); });
     r.panier = r.n ? r.ca / r.n : 0; r.marge = r.caCout ? r.caCout - r.cout : null; r.V = V;
     return r;
   }
@@ -4697,7 +4697,7 @@ select.inp{appearance:auto}
     const ordreT = ['Moins de 20 ans', '20 – 39 ans', '40 – 54 ans', '55 ans et plus', 'Âge non renseigné'];
     const ages = grouper(servis, tranche).sort((a, b) => ordreT.indexOf(a[0]) - ordreT.indexOf(b[0]));
     const sexes = grouper(servis, c => c.sexe === 'F' ? 'Femmes' : c.sexe === 'H' ? 'Hommes' : 'Non renseigné');
-    const P = M.V.filter(({ v }) => v.pec), orgs = {}; P.forEach(({ v }) => { const k = v.pec.organisme || 'Autre'; const o = orgs[k] = orgs[k] || { n: 0, mt: 0, ca: 0 }; o.n++; o.mt += v.pec.montant || 0; o.ca += v.net || 0; });
+    const orgs = {}; M.V.forEach(({ v }) => pecsDe(v).forEach(p => { const k = p.organisme || 'Autre'; const o = orgs[k] = orgs[k] || { n: 0, mt: 0, ca: 0 }; o.n++; o.mt += p.montant || 0; o.ca += v.net || 0; }));
     const ro = Object.entries(orgs).sort((a, b) => b[1].mt - a[1].mt).map(([k, o]) => [esc(k), cN(o.n), cM(o.ca), cM(o.mt), cP(o.mt, o.ca)]);
     const R = aRelancer();
     const rr = R.slice(0, 300).map(x => [`<b>${esc(x.c.nom + ' ' + (x.c.prenom || ''))}</b>`, esc(x.c.tel ? fmtTel(digits(x.c.tel)) : '—'), fmtDate(x.dOrd), fmtDate(x.der.date), esc(x.der.boutique || ''),
@@ -4822,7 +4822,7 @@ select.inp{appearance:auto}
   try { majTuileStat(); } catch(_) {}
 
   // --- Prises en charge et bordereaux
-  const toutesPec = () => toutesVentes().filter(({ v }) => v.pec).map(({ v, c }) => ({ v, c, p: v.pec }));
+  const toutesPec = () => toutesVentes().flatMap(({ v, c }) => pecsDe(v).map(p => ({ v, c, p })));
   const pecStatut = p => p.paye >= p.montant ? 'Payée' : p.paye > 0 ? 'Payée partiellement' : p.bordereau ? 'Facturée' : 'À facturer';
   function drawPEC(){
     const all = toutesPec().filter(({ v }) => enMagasin(v));
@@ -5749,13 +5749,11 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       + (draft.remise ? `<li class="minus"><span>Remise 20 %</span><span>− ${money(draft.remise)}</span></li>` : '')
       + (draft.offre === 'paire2' && !p2Paye(draft) ? `<li class="minus"><span>2ème paire offerte · ${esc(p2Lib(draft))}</span><span>Offerte</span></li>` : '');
     F('cNet').textContent = money(draft.net);
-    F('pecOn').checked = false; F('pecBox').hidden = true;
-    ['pecOrg','pecAutre','pecMat','pecBon','pecMt','pecPct'].forEach(id => F(id).value = '');
-    F('pecAutreRow').hidden = true;
-    // Reprise : prise en charge déjà saisie → affichée en lecture seule
-    const fixed = c.mode === 'solde' && draft.pec;
+    F('pecOn').checked = false; F('pecBox').hidden = true; pecS = []; drawPecS();
+    // Reprise : prises en charge déjà saisies → affichées en lecture seule
+    const fixed = c.mode === 'solde' && pecsDe(draft).length > 0;
     F('pecLock').hidden = !fixed; F('pecEdit').hidden = !!fixed;
-    if (fixed) F('pecLock').innerHTML = `<b>${esc(draft.pec.organisme)}</b> · adhérent n° ${esc(draft.pec.matricule)}${draft.pec.bon ? ' · bon n° ' + esc(draft.pec.bon) : ''} · <b>${money(draft.pec.montant)}</b>`;
+    if (fixed) F('pecLock').innerHTML = `<ul class="pec-lock">${pecsDe(draft).map(p => `<li><b>${esc(p.organisme)}</b> · adhérent n° ${esc(p.matricule)}${p.bon ? ' · bon n° ' + esc(p.bon) : ''} · <b>${money(p.montant)}</b></li>`).join('')}</ul>`;
     // Reprise : paiements déjà reçus
     const prev = c.mode === 'solde' ? (draft.paiements || []) : [];
     F('cPrevBox').hidden = !prev.length;
@@ -5763,12 +5761,12 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     pays = [];
     if (c.mode === 'corr') {
       // Correction : prise en charge et paiements existants rechargés pour être modifiés
-      const p = draft.pec;
-      if (p) {
+      const L = pecsDe(draft);
+      if (L.length) {
         F('pecOn').checked = true; F('pecBox').hidden = false;
-        const known = [...F('pecOrg').options].some(o => o.value === p.organisme);
-        F('pecOrg').value = known ? p.organisme : 'Autre'; F('pecAutreRow').hidden = known; if (!known) F('pecAutre').value = p.organisme;
-        F('pecMat').value = p.matricule || ''; F('pecBon').value = p.bon || ''; F('pecPct').value = p.taux || ''; F('pecMt').value = p.montant || '';
+        pecS = L.map(p => { const known = PARAM.organismes.includes(p.organisme);
+          return { org: known ? p.organisme : 'Autre', autre: known ? '' : p.organisme, mat: p.matricule || '', bon: p.bon || '', pct: p.taux || '', mt: p.montant || 0, src: p }; });
+        drawPecS();
       }
       pays = (draft.paiements || []).map(x => ({ mode: Object.keys(MODES).find(k => MODES[k] === x.mode) || 'esp', mt: x.montant, ref: x.ref || '', recu: 0,
         dt: toLocalInput(x.date), par: x.par }));
@@ -5778,8 +5776,29 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
 
   const toLocalInput = iso => { const n = iso ? new Date(iso) : new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); return n.toISOString().slice(0, 16); };
-  const partPec = () => ctx.mode === 'solde' && draft.pec ? draft.pec.montant
-    : F('pecOn').checked ? Math.min(intOf(F('pecMt').value), draft.net) : 0;
+  // Saisie des prises en charge (plusieurs organismes possibles sur le même dossier)
+  let pecS = [];
+  const pecVide = () => ({ org: '', autre: '', mat: '', bon: '', pct: '', mt: 0, src: null });
+  const pecBrut = () => pecS.reduce((a, x) => a + (x.mt || 0), 0);
+  function drawPecS(){
+    const orgs = ['', ...PARAM.organismes, 'Autre'], n = pecS.length;
+    F('pecList').innerHTML = pecS.map((x, i) => `<div class="pec-item" data-i="${i}">
+      <div class="row-head"><b>${n > 1 ? `Prise en charge ${i + 1}` : 'Prise en charge'}</b>${n > 1 ? `<button class="del" type="button" data-pec-del="${i}" aria-label="Retirer cette prise en charge">×</button>` : ''}</div>
+      <div class="row2"><div><label class="lbl">Organisme</label><select class="inp" data-pk="org">${orgs.map(o => `<option value="${esc(o)}"${o === x.org ? ' selected' : ''}>${o ? esc(o) : 'Choisir…'}</option>`).join('')}</select></div>
+        <div${x.org === 'Autre' ? '' : ' hidden'}><label class="lbl">Nom de l'organisme</label><input class="inp" data-pk="autre" value="${esc(x.autre)}"></div></div>
+      <div class="row2"><div><label class="lbl">N° d'adhérent / matricule</label><input class="inp" data-pk="mat" value="${esc(x.mat)}"></div>
+        <div><label class="lbl">N° du bon de prise en charge <span class="opt">(facultatif)</span></label><input class="inp" data-pk="bon" value="${esc(x.bon)}"></div></div>
+      <div class="row2"><div><label class="lbl">Taux pris en charge (%)</label><input class="inp" data-pk="pct" inputmode="numeric" placeholder="ex. 80" value="${x.pct || ''}"></div>
+        <div><label class="lbl">Montant pris en charge (FCFA)</label><input class="inp" data-pk="mt" inputmode="numeric" value="${x.mt || ''}"></div></div>
+    </div>`).join('');
+    majPecSum();
+  }
+  function majPecSum(){
+    const t = pecBrut(); F('pecTotS').textContent = pecS.length > 1 ? `Total pris en charge : ${money(t)}` : '';
+    F('pecTotS').style.color = t > (draft?.net || 0) ? 'var(--pin)' : '';
+  }
+  const partPec = () => ctx.mode === 'solde' && pecsDe(draft).length ? pecTot(draft)
+    : F('pecOn').checked ? Math.min(pecBrut(), draft.net) : 0;
   function calcCaisse(){
     const pec = partPec(), reste = draft.net - pec;
     const deja = ctx.mode === 'solde' ? (draft.paye || 0) : 0;
@@ -5830,23 +5849,34 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   });
   F('payList').addEventListener('click', e => { const i = e.target.dataset.pdel; if (i == null) return; pays.splice(i, 1); drawPays(); calcCaisse(); });
 
-  F('pecOn').addEventListener('change', () => { F('pecBox').hidden = !F('pecOn').checked; calcCaisse(); if (F('pecOn').checked) F('pecOrg').focus(); });
-  F('pecOrg').addEventListener('change', () => { F('pecAutreRow').hidden = F('pecOrg').value !== 'Autre'; });
-  F('pecPct').addEventListener('input', () => { const p = Math.min(100, intOf(F('pecPct').value)); F('pecMt').value = p ? Math.round(draft.net * p / 100) : ''; calcCaisse(); });
-  F('pecMt').addEventListener('input', () => { F('pecPct').value = ''; calcCaisse(); });
+  F('pecOn').addEventListener('change', () => { F('pecBox').hidden = !F('pecOn').checked;
+    if (F('pecOn').checked && !pecS.length) { pecS = [pecVide()]; drawPecS(); }
+    calcCaisse(); if (F('pecOn').checked) F('pecList').querySelector('select')?.focus(); });
+  F('pecPlus').addEventListener('click', () => { pecS.push(pecVide()); drawPecS(); calcCaisse(); F('pecList').querySelector(`[data-i="${pecS.length - 1}"] select`).focus(); });
+  F('pecList').addEventListener('input', e => {
+    const it = e.target.closest('[data-i]'), k = e.target.dataset.pk; if (!it || !k) return; const x = pecS[it.dataset.i];
+    if (k === 'pct') { x.pct = Math.min(100, intOf(e.target.value)) || ''; x.mt = x.pct ? Math.round(draft.net * x.pct / 100) : 0; it.querySelector('[data-pk="mt"]').value = x.mt || ''; }
+    else if (k === 'mt') { x.mt = intOf(e.target.value); x.pct = ''; it.querySelector('[data-pk="pct"]').value = ''; }
+    else x[k] = e.target.value;
+    majPecSum(); calcCaisse();
+  });
+  F('pecList').addEventListener('change', e => { if (e.target.dataset.pk === 'org') { const it = e.target.closest('[data-i]'); pecS[it.dataset.i].org = e.target.value;
+    it.querySelector('[data-pk="autre"]').parentElement.hidden = e.target.value !== 'Autre'; } });
+  F('pecList').addEventListener('click', e => { const i = e.target.dataset.pecDel; if (i == null) return; pecS.splice(i, 1); drawPecS(); calcCaisse(); });
   F('backVente').addEventListener('click', () => ctx.mode === 'new' ? go('vente') : ctx.mode === 'lent' ? go('lent') : ctx.mode === 'devis' ? openFiche(current.id) : openDetail(draft));
 
   F('encaisser').addEventListener('click', () => {
     if (ctx.mode !== 'corr' && caisseFermee()) { show('La caisse du jour est clôturée (Z). Rouvrez-la depuis Caisse du Jour pour encaisser.'); return; }
     const c = calcCaisse();
-    if (!(ctx.mode === 'solde' && draft.pec) && F('pecOn').checked) {
-      const org = F('pecOrg').value === 'Autre' ? F('pecAutre').value.trim() : F('pecOrg').value;
-      const miss = [];
-      if (!org) miss.push('l\'organisme'); if (!F('pecMat').value.trim()) miss.push('le n° d\'adhérent'); if (!c.pec) miss.push('le montant pris en charge');
-      if (miss.length) { show('Prise en charge : indiquez ' + miss.join(', ')); return; }
-      var newPec = { organisme: org, matricule: F('pecMat').value.trim(), bon: F('pecBon').value.trim(), montant: c.pec,
-        statut: draft.pec?.statut || 'À facturer', numeroFacture: draft.pec?.numeroFacture || null, taux: intOf(F('pecPct').value) || null,
-        date: draft.pec?.date || new Date().toISOString(), par: draft.pec?.par || user.nom };
+    let newPecs = null;
+    if (!(ctx.mode === 'solde' && pecsDe(draft).length) && F('pecOn').checked && pecS.length) {
+      for (let i = 0; i < pecS.length; i++) { const x = pecS[i], org = x.org === 'Autre' ? x.autre.trim() : x.org, miss = [];
+        if (!org) miss.push('l\'organisme'); if (!x.mat.trim()) miss.push('le n° d\'adhérent'); if (!x.mt) miss.push('le montant pris en charge');
+        if (miss.length) { show(`${pecS.length > 1 ? `Prise en charge ${i + 1}` : 'Prise en charge'} : indiquez ${miss.join(', ')}`); return; } }
+      if (pecBrut() > draft.net) { show(`Le total des prises en charge (${money(pecBrut())}) dépasse le montant de la vente (${money(draft.net)}).`); return; }
+      const now = new Date().toISOString();
+      newPecs = pecS.map(x => ({ ...(x.src || {}), id: x.src?.id || pecId(), organisme: x.org === 'Autre' ? x.autre.trim() : x.org, matricule: x.mat.trim(), bon: x.bon.trim(),
+        montant: x.mt, taux: x.pct || null, statut: x.src?.statut || 'À facturer', numeroFacture: x.src?.numeroFacture || null, date: x.src?.date || now, par: x.src?.par || user.nom }));
     }
     if (pays.some(p => p.mt <= 0)) { show('Un paiement a un montant vide : complétez-le ou retirez-le.'); return; }
     if (pays.some(p => p.mode !== 'esp' && !p.ref.trim())) { show('Indiquez la référence des paiements carte et mobile money.'); return; }
@@ -5855,17 +5885,16 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
 
     if (ctx.mode === 'corr') {
       if (!droit('corrCaisse')) { show('Seul le responsable peut corriger la caisse.'); return; }
-      const avantPec = draft.pec ? JSON.parse(JSON.stringify(draft.pec)) : null, avantPay = draft.paiements || [];
-      const apresPec = F('pecOn').checked ? newPec : null;
-      if (apresPec && !apresPec.numeroFacture) apresPec.numeroFacture = draft.numero;
+      const avantPec = JSON.parse(JSON.stringify(pecsDe(draft))), avantPay = draft.paiements || [];
+      const apresPec = F('pecOn').checked && newPecs ? newPecs : [];
+      apresPec.forEach(x => { if (!x.numeroFacture) x.numeroFacture = draft.numero; });
       const details = [];
-      const pecTxt = x => x ? `${x.organisme} ${money(x.montant)} (adh. ${x.matricule}${x.bon ? ', bon ' + x.bon : ''})` : 'aucune';
-      if (JSON.stringify(avantPec && [avantPec.organisme, avantPec.montant, avantPec.matricule, avantPec.bon]) !== JSON.stringify(apresPec && [apresPec.organisme, apresPec.montant, apresPec.matricule, apresPec.bon]))
-        details.push(`Prise en charge : ${pecTxt(avantPec)} → ${pecTxt(apresPec)}`);
+      const pecTxt = L => L.length ? L.map(x => `${x.organisme} ${money(x.montant)} (adh. ${x.matricule}${x.bon ? ', bon ' + x.bon : ''})`).join(' + ') : 'aucune';
+      if (pecTxt(avantPec) !== pecTxt(apresPec)) details.push(`Prise en charge : ${pecTxt(avantPec)} → ${pecTxt(apresPec)}`);
       const payTxt = L => L.length ? L.map(x => `${x.mode} ${money(x.montant)} le ${fmtDateTime(x.date)}${x.ref ? ' réf. ' + x.ref : ''}`).join(' + ') : 'aucun';
       if (payTxt(avantPay) !== payTxt(nouveaux)) details.push(`Paiements : ${payTxt(avantPay)} → ${payTxt(nouveaux)}`);
       if (!details.length) { show('Aucune correction à enregistrer.'); return; }
-      draft.pec = apresPec; if (!apresPec) delete draft.pec;
+      if (apresPec.length) draft.pecs = apresPec; else delete draft.pecs; delete draft.pec;
       draft.paiements = nouveaux;
       draft.resteAcharge = c.reste; draft.paye = c.paye; draft.solde = Math.max(c.solde, 0); draft.tropPercu = 0;
       draft.statut = draft.solde > 0 ? (draft.paye > 0 ? 'Acompte' : 'À encaisser') : 'Soldée';
@@ -5874,7 +5903,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       save(); openDocs(draft); show(`Caisse de ${draft.numero} corrigée`);
       return;
     }
-    if (typeof newPec !== 'undefined' && newPec) { draft.pec = newPec; }
+    if (newPecs) { draft.pecs = newPecs; delete draft.pec; }
     if (ctx.mode !== 'solde') {
       draft.type = 'vente'; draft.numero = nextNum('FA'); figerFiscal(draft); draft.paiements = []; draft.vendeur = user.nom;
       if (draft.kind !== 'rapide') { poserDossier(draft); setTimeout(attribuerDossiers, 0); }
@@ -6023,19 +6052,19 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     F('detComBox').hidden = v.kind === 'lentille';
     F('detCom').value = v.commentaire || ''; F('detComAt').value = v.commentaireAtelier || ''; F('detComOk').hidden = true;
     F('detPecBox').hidden = !isV;
-    F('detPec').innerHTML = v.pec ? `<b>${esc(v.pec.organisme)}</b> · adhérent n° ${esc(v.pec.matricule)}${v.pec.bon ? ' · bon n° ' + esc(v.pec.bon) : ''}${v.pec.taux ? ' · ' + v.pec.taux + ' %' : ''}
-      · <b>${money(v.pec.montant)}</b> · facture ${v.numero} <span class="chip warn">${v.pec.statut}</span>` : `<span class="muted">Aucune prise en charge.</span>`;
+    F('detPec').innerHTML = pecsDe(v).length ? pecsDe(v).map(p => `<div><b>${esc(p.organisme)}</b> · adhérent n° ${esc(p.matricule)}${p.bon ? ' · bon n° ' + esc(p.bon) : ''}${p.taux ? ' · ' + p.taux + ' %' : ''}
+      · <b>${money(p.montant)}</b> · facture ${v.numero} <span class="chip warn">${pecStatut(p)}</span></div>`).join('') : `<span class="muted">Aucune prise en charge.</span>`;
     F('detPayBox').hidden = !isV;
     F('detPays').innerHTML = (v.paiements || []).map(p => `<li><span>${p.date ? fmtDateTime(p.date) + ' · ' : ''}<b>${esc(p.mode)}</b>${p.ref ? ' · réf. ' + esc(p.ref) : ''}${p.par ? ' · ' + esc(p.par) : ''}</span><span>${money(p.montant)}</span></li>`).join('')
       || `<li><span>Aucun paiement.</span></li>`;
     F('detLogBox').hidden = !(v.journal && v.journal.length);
     F('detLog').innerHTML = logHtml(v).replace('<details class="journal">', '<details class="journal" open>');
 
-    const pec = v.pec ? v.pec.montant : 0;
+    const pec = pecTot(v);
     F('detTot').innerHTML = `<li><span>Total</span><span>${money(v.total)}</span></li>`
       + (v.remise ? `<li class="minus"><span>Remise 20 %</span><span>− ${money(v.remise)}</span></li>` : '')
       + `<li class="sec"><span><b style="color:var(--ink)">Net</b></span><span><b>${money(v.net)}</b></span></li>`
-      + (isV ? `<li class="minus"><span>Prise en charge</span><span>− ${money(pec)}</span></li>
+      + (isV ? (pecsDe(v).length > 1 ? pecsDe(v).map(p => `<li class="minus"><span>Prise en charge ${esc(p.organisme)}</span><span>− ${money(p.montant)}</span></li>`).join('') : `<li class="minus"><span>Prise en charge</span><span>− ${money(pec)}</span></li>`) + `
         <li><span>Part patient</span><span>${money(v.resteAcharge)}</span></li><li><span>Payé</span><span>${money(v.paye || 0)}</span></li>` : '')
       + (voirMarges() && coutVente(v) > 0 ? `<li class="sec"><span>Coût d'achat</span><span>${money(coutVente(v))}</span></li>
         <li><span><b style="color:var(--ink)">Marge</b></span><span><b>${money(v.net - coutVente(v))}</b>${v.net ? ' · ' + Math.round((v.net - coutVente(v)) / v.net * 100) + ' %' : ''}</span></li>` : '');
@@ -6062,12 +6091,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   /* ================= Documents à imprimer ================= */
   let docSale = null;
   const DOCS = { journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
-  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', s.kind === 'lentille' ? 'flent' : 'technique', ...(s.pec ? ['assurance'] : [])];
+  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', s.kind === 'lentille' ? 'flent' : 'technique', ...pecsDe(s).map((p, i) => 'assurance:' + i)];
   function openDocs(s, kinds = docsFor(s)){
     docSale = s;
     F('dBack').textContent = s.kind === 'journal' ? 'Retour à la comptabilité' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
     F('dTitle').textContent = s.kind === 'journal' ? `${s.titre} · ${s.sous}` : s.kind === 'z' && s.provisoire ? `Point de caisse · ${hhmm(s.date)}` : s.kind === 'bord' ? `Bordereau ${s.numero}` : s.kind === 'etiq' ? s.titre : s.kind === 'z' ? `Clôture ${s.numero}` : s.kind === 'rapide' ? `Vente rapide ${s.numero} encaissée` : s.type === 'devis' ? `Devis ${s.numero} ${s.modifieLe ? 'modifié' : 'créé'}` : `Vente ${s.numero} ${s.modifieLe ? 'modifiée' : 'encaissée'}`;
-    F('dTabs').innerHTML = kinds.map((k, i) => `<button class="tab${i ? '' : ' on'}" data-doc="${k}">${DOCS[k]}</button>`).join('');
+    const libDoc = k => k.startsWith('assurance:') ? (pecsDe(s).length > 1 ? 'Facture ' + (pecsDe(s)[+k.split(':')[1]]?.organisme || 'assurance') : DOCS.assurance) : DOCS[k];
+    F('dTabs').innerHTML = kinds.map((k, i) => `<button class="tab${i ? '' : ' on'}" data-doc="${k}">${esc(libDoc(k))}</button>`).join('');
     showDoc(kinds[0]);
     go('docs');
   }
@@ -6155,13 +6185,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     F('dPaper').classList.remove('ticket-paper');
     if (k === 'facture') {
       h = docHead(s, 'FACTURE') + rxMini(s) + docLines(s)
-        + (s.pec ? `<tr><td>Prise en charge ${esc(s.pec.organisme)}${s.pec.bon ? ' · bon n° ' + esc(s.pec.bon) : ''}</td><td class="r">− ${money(s.pec.montant)}</td></tr>` : '')
+        + pecsDe(s).map(p => `<tr><td>Prise en charge ${esc(p.organisme)}${p.bon ? ' · bon n° ' + esc(p.bon) : ''}</td><td class="r">− ${money(p.montant)}</td></tr>`).join('')
         + `<tr class="b"><td>Part patient</td><td class="r">${money(s.resteAcharge)}</td></tr>`
         + s.paiements.map(p => `<tr><td>Payé${p.date ? ' le ' + fmtDateTime(p.date) : ''} · ${p.mode}${p.ref ? ' · réf. ' + esc(p.ref) : ''}</td><td class="r">${money(p.montant)}</td></tr>`).join('')
         + (s.tropPercu ? `<tr class="b"><td>Trop-perçu à rendre au patient</td><td class="r">${money(s.tropPercu)}</td></tr>`
                        : `<tr class="b"><td>${s.solde ? 'Reste dû' : 'Soldée'}</td><td class="r">${money(s.solde)}</td></tr>`) + `</tbody></table>`
         + (s.modifieLe ? `<p class="d-note">Facture modifiée le ${fmtDate(s.modifieLe)}.</p>` : '')
-        + (s.pec ? `<p class="d-note">Assuré : n° ${esc(s.pec.matricule)} · ${esc(s.pec.organisme)}</p>` : '');
+        + pecsDe(s).map(p => `<p class="d-note">Assuré : n° ${esc(p.matricule)} · ${esc(p.organisme)}</p>`).join('');
     } else if (k === 'devis') {
       h = docHead(s, s.kind === 'lentille' ? 'DEVIS LENTILLES' : 'DEVIS') + rxMini(s) + docLines(s) + `</tbody></table><p class="d-note">Ce devis ne vaut pas facture.</p><div class="d-sign"><span>Signature du patient</span><span>Cachet du magasin</span></div>`;
     } else if (k === 'technique') {
@@ -6174,8 +6204,9 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
           ${s.lignes.filter(l => l.k === 'OPT').map(l => `<dt>Option</dt><dd>${esc(l.des)}</dd>`).join('')}
         </dl>${s.commentaireAtelier ? `<div class="d-sec">Commentaire atelier</div><div class="d-atelier">${esc(s.commentaireAtelier)}</div>` : ''}<div class="d-sign"><span>Montage réalisé par</span><span>Contrôle final</span></div>`
         + (dos ? etiquettePeniche(s, dos, [typeTxt(v) + (v.marque ? ' · ' + v.marque : ''), s.monture.des ? 'Monture : ' + s.monture.des + (v.percee ? ' (percée)' : '') : '', s.offre === 'paire2' ? '+ 2ème paire ' + p2Lib(s) : '']) : '');
-    } else if (k === 'assurance' && s.pec) {
-      const o = s.ordonnance, p = s.pec;
+    } else if (k.startsWith('assurance') && pecsDe(s)[+(k.split(':')[1] || 0)]) {
+      // facture d'un organisme : seul le montant pris en charge par cet organisme apparaît
+      const o = s.ordonnance, p = pecsDe(s)[+(k.split(':')[1] || 0)];
       h = `<div class="d-head">${entete(s.boutique)}
           <div class="d-num"><b>FACTURE ASSURANCE</b><div>N° ${s.numero}</div><div>${fmtDate(s.date)}</div><div class="d-ph" style="font-style:normal">Part assurance de la facture ${s.numero}</div></div></div>
         <div class="d-two">
@@ -6185,8 +6216,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
             <span>N° d'adhérent : <b style="font-size:13px">${esc(p.matricule)}</b>${p.bon ? ` · Bon de PEC n° <b style="font-size:13px">${esc(p.bon)}</b>` : ''}</span></div>
         </div>`
         + rxMini(s) + docLines(s)
-        + `<tr><td>Part restant à la charge du patient</td><td class="r">${money(s.resteAcharge)}</td></tr>`
-        + `<tr class="b big"><td>Montant à régler par ${esc(p.organisme)}</td><td class="r">${money(p.montant)}</td></tr></tbody></table>`
+        + `<tr class="b big"><td>Montant à régler par ${esc(p.organisme)}${p.taux ? ` (${p.taux} %)` : ''}</td><td class="r">${money(p.montant)}</td></tr></tbody></table>`
         + `<p class="d-words">Arrêtée la présente facture à la somme de <b>${enLettres(p.montant)} francs CFA</b> (${money(p.montant)}).</p>`
         + `<div class="d-sign"><span>Signature et cachet de l'opticien</span><span>Signature du patient</span></div>`;
     } else if (k === 'flent') {
@@ -6290,13 +6320,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   /* ================= Prises en charge (assurances / mutuelles) ================= */
   function openPec(){
     const all = [];
-    clients.forEach(c => (c.historique || []).forEach(s => { if (s.pec) all.push({ c, s }); }));
+    clients.forEach(c => (c.historique || []).forEach(s => pecsDe(s).forEach(p => all.push({ c, s, p }))));
     all.sort((a, b) => b.s.date.localeCompare(a.s.date));
-    const tot = all.reduce((a, x) => a + x.s.pec.montant, 0);
+    const tot = all.reduce((a, x) => a + (x.p.montant || 0), 0);
     F('pecSum').innerHTML = `<b>${all.length}</b> prise${all.length > 1 ? 's' : ''} en charge · <b>${money(tot)}</b> à facturer aux organismes`;
-    F('pecRows').innerHTML = all.map(({ c, s }) => `<tr><td>${fmtDate(s.date)}</td><td class="name"><b>${esc(c.nom)}</b> ${esc(c.prenom)}</td>
-      <td>${esc(s.pec.organisme)}</td><td>${esc(s.pec.matricule)}</td><td>${esc(s.pec.bon || '—')}</td><td>${s.numero}</td>
-      <td style="text-align:right">${money(s.pec.montant)}</td><td><span class="chip warn">${s.pec.statut}</span></td></tr>`).join('');
+    F('pecRows').innerHTML = all.map(({ c, s, p }) => `<tr><td>${fmtDate(s.date)}</td><td class="name"><b>${esc(c.nom)}</b> ${esc(c.prenom)}</td>
+      <td>${esc(p.organisme)}</td><td>${esc(p.matricule)}</td><td>${esc(p.bon || '—')}</td><td>${s.numero}</td>
+      <td style="text-align:right">${money(p.montant)}</td><td><span class="chip warn">${pecStatut(p)}</span></td></tr>`).join('');
     F('pecEmpty').hidden = all.length > 0;
     go('pec');
   }

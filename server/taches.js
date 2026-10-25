@@ -24,7 +24,7 @@ function journee(D, b, j) {
   const take = (v, c) => {
     if (!v || v.type !== 'vente' || (v.boutique || '') !== b) return;
     (v.paiements || []).forEach(p => { if (p.date && jourDe(p.date) === j) enc.push({ date: p.date, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : (v.client || 'Anonyme'), mode: p.mode, montant: p.montant || 0 }); });
-    if (v.pec && jourDe(v.pec.date || v.date) === j) pecs.push({ organisme: v.pec.organisme, montant: v.pec.montant || 0, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : '' });
+    (Array.isArray(v.pecs) ? v.pecs : v.pec ? [v.pec] : []).forEach(p => { if (jourDe(p.date || v.date) === j) pecs.push({ organisme: p.organisme, montant: p.montant || 0, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : '' }); });
   };
   D.clients.forEach(c => (c.historique || []).forEach(v => take(v, c)));
   D.ventesRapides.forEach(v => take(v, null));
