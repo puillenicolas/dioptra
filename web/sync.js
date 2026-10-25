@@ -412,6 +412,8 @@
       etat: () => ({ etat: S.etat, attente: S.attente, derniere: S.derniere, erreur: S.erreur, since: S.meta.since }),
       // e-mail envoyé par le serveur (pièces jointes en base64)
       envoyerMail: corps => api('/api/mail', corps, S.meta.jeton).catch(enLigneSinon('Pas de connexion internet : l\'e-mail n\'a pas pu partir. Réessayez quand la connexion revient.')),
+      // numéros de dossier atelier attribués par le serveur (un compteur par magasin)
+      numerosDossier: demandes => api('/api/dossiers', { demandes }, S.meta.jeton),
       connexionAdmin: (email, motdepasse) => api('/api/connexion', { email, motdepasse }).catch(enLigneSinon('Pas de connexion internet.')),
       listePostes: session => api('/api/postes', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
       posteActif: (session, id, actif) => api('/api/postes/' + encodeURIComponent(id) + '/actif', { actif }, session).catch(enLigneSinon('Pas de connexion internet.')),

@@ -74,3 +74,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS envois_cle ON envois (org_id, type, cle) WHERE
 -- Types de comptes : administrateur (tout) ou activation (activer des postes dans certains magasins seulement)
 ALTER TABLE comptes ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'admin';
 ALTER TABLE comptes ADD COLUMN IF NOT EXISTS magasins jsonb NOT NULL DEFAULT '[]';
+
+-- Numéros de dossier atelier : un compteur par magasin (0001, 0002…), attribué par le serveur.
+-- La clé (org, vente) rend la demande rejouable : un poste qui redemande reçoit le même numéro.
+CREATE TABLE IF NOT EXISTS dossiers (
+  org_id      text NOT NULL REFERENCES organisations(id),
+  magasin     text NOT NULL,
+  vente       text NOT NULL,
+  num         integer NOT NULL,
+  cree_le     timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (org_id, vente)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS dossiers_num ON dossiers (org_id, magasin, num);

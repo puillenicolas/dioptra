@@ -223,6 +223,27 @@ function construire(opts = {}) {
 
   // ---------- E-mail et lecture automatique ----------
   const SV = require('./services');
+  // Numéros de dossier : compteur propre à chaque magasin, demande rejouable (même vente → même numéro)
+  app.post('/api/dossiers', { preHandler: poste }, async (req, rep) => {
+    const L = (req.body || {}).demandes;
+    if (!Array.isArray(L) || L.length > 200 || L.some(d => !d || typeof d.vente !== 'string' || !d.vente || d.vente.length > 100 || typeof d.magasin !== 'string' || !d.magasin || d.magasin.length > 200))
+      return err(rep, 400, 'Demande de numéros invalide.');
+    const org = req.poste.org_id, numeros = {}, cx = await pool.connect();
+    try {
+      for (const d of L) {
+        await cx.query('BEGIN');
+        await cx.query('SELECT pg_advisory_xact_lock(hashtext($1))', [org + '|' + d.magasin]);
+        let { rows } = await cx.query('SELECT num FROM dossiers WHERE org_id = $1 AND vente = $2', [org, d.vente]);
+        if (!rows.length) ({ rows } = await cx.query(
+          `INSERT INTO dossiers (org_id, magasin, vente, num)
+           SELECT $1, $2, $3, COALESCE(MAX(num), 0) + 1 FROM dossiers WHERE org_id = $1 AND magasin = $2 RETURNING num`, [org, d.magasin, d.vente]));
+        await cx.query('COMMIT');
+        numeros[d.vente] = rows[0].num;
+      }
+    } catch (e) { await cx.query('ROLLBACK').catch(() => {}); throw e; }
+    finally { cx.release(); }
+    return { numeros };
+  });
   app.get('/api/sante', async () => ({ ok: true, version: 1, mail: SV.mailConfigure(), ia: SV.iaConfiguree() }));
   app.post('/api/mail', { preHandler: poste }, async (req, rep) => {
     const { to, subject, body, replyTo, attachments = [] } = req.body || {};

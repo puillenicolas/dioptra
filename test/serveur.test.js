@@ -4,7 +4,7 @@ const { construire, creerOrganisation } = require('../server/app');
 const { migrer, pool } = require('../server/db');
 (async () => {
   await migrer();
-  await pool.query('TRUNCATE donnees, postes, sessions, comptes, organisations, envois CASCADE');
+  await pool.query('TRUNCATE dossiers, donnees, postes, sessions, comptes, organisations, envois CASCADE');
   const app = construire();
   const post = (url, body, tok) => app.inject({ method: 'POST', url, payload: body, headers: tok ? { authorization: 'Bearer ' + tok } : {} }).then(r => ({ code: r.statusCode, ...r.json() }));
   await creerOrganisation({ nom: 'Fashion Vision', email: 'nico@fv.ga', motdepasse: 'motdepasse-solide', nomAdmin: 'Nicolas' });
@@ -43,6 +43,13 @@ const { migrer, pool } = require('../server/db');
   assert.equal(r4.changes.length, 0);
   // magasins visibles à la connexion
   assert.deepEqual((await post('/api/connexion', { email: 'nico@fv.ga', motdepasse: 'motdepasse-solide' })).magasins, [{ nom: 'Libreville', code: 'LBV' }]);
+  // numéros de dossier : un compteur par magasin, demande rejouable
+  let dn = await post('/api/dossiers', { demandes: [{ vente: 'FA-LBV1-2026-0001', magasin: 'Libreville' }, { vente: 'FA-LBV1-2026-0002', magasin: 'Libreville' }, { vente: 'FA-AKA1-2026-0001', magasin: 'Akanda' }] }, p1.jeton);
+  assert.deepEqual(dn.numeros, { 'FA-LBV1-2026-0001': 1, 'FA-LBV1-2026-0002': 2, 'FA-AKA1-2026-0001': 1 });
+  dn = await post('/api/dossiers', { demandes: [{ vente: 'FA-AKA1-2026-0002', magasin: 'Libreville' }, { vente: 'FA-LBV1-2026-0001', magasin: 'Libreville' }] }, p2.jeton);
+  assert.deepEqual(dn.numeros, { 'FA-AKA1-2026-0002': 3, 'FA-LBV1-2026-0001': 1 });
+  assert.equal((await post('/api/dossiers', { demandes: [{ vente: '' }] }, p1.jeton)).code, 400);
+  assert.deepEqual((await post('/api/dossiers', { demandes: [{ vente: 'FA-LBV1-2026-0001', magasin: 'Libreville' }] }, q.jeton)).numeros, { 'FA-LBV1-2026-0001': 1 }, 'compteur séparé par opticien');
   // poste désactivé
   await post('/api/postes/' + p2.poste.id + '/actif', { actif: false }, cx.session);
   assert.equal((await post('/api/sync', { since: 0 }, p2.jeton)).code, 401);
