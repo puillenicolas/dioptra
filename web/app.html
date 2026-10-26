@@ -769,8 +769,11 @@ select.inp{appearance:auto}
 .ft-grid{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
 .ft-verres{margin:0;font-size:12.5px;font-weight:600;border:1px solid var(--paper-line);border-radius:4px;padding:1.5mm 2.5mm}
 .ft-l{margin:1mm 0 0;font-size:10.5px}
-.ft-com{flex:1;min-height:12mm;border:1.5px solid var(--paper-ink);border-radius:4px;padding:2mm 3mm;font-size:12px;white-space:pre-wrap}
+.ft-com{flex:none;height:13mm;overflow:hidden;border:1.5px solid var(--paper-ink);border-radius:4px;padding:2mm 3mm;font-size:12px;white-space:pre-wrap}
 .ft-ctrl{width:100%;border-collapse:collapse;font-size:10.5px}
+.ft-pay{width:100%;border-collapse:collapse;font-size:10.5px;align-self:start}
+.ft-pay td{border-bottom:1px solid var(--paper-line);padding:.8mm 1mm;font-size:10.5px}.ft-pay td.r{text-align:right;white-space:nowrap}
+.ft-pay tr.t td{border-bottom:0;border-top:1.5px solid var(--paper-ink);font-size:11px}
 .ft-ctrl th,.ft-ctrl td{border:1px solid var(--paper-line);padding:0 2mm;height:6.2mm;text-align:left}
 .ft-ctrl thead th{height:auto;padding:1mm 2mm;font-size:9px;background:var(--paper-tint)}
 .ft-ctrl td.bx{text-align:center;font-size:13px;width:10mm}
@@ -6316,6 +6319,21 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
             <div><div class="ft-sec">Monture</div>
               <p class="ft-verres">${esc(s.monture?.des || '—')}${v.percee ? ' · <b>PERCÉE</b>' : ''}</p>
               ${pm ? `<p class="ft-l">${[pm.code && 'Code ' + pm.code, pm.marque, pm.modele && pm.modele !== pm.nom ? pm.modele : '', pm.couleur, pm.taille].filter(Boolean).map(esc).join(' · ')}</p>` : ''}</div>
+          </div>
+          <div class="ft-sec">Règlement</div>
+          <div class="ft-grid ft-regl">
+            <table class="ft-pay"><tbody>
+              <tr><td>Total${s.remise ? ' après remise' : ''}</td><td class="r"><b>${money(s.net)}</b></td></tr>
+              ${s.remise ? `<tr><td>Remise accordée</td><td class="r">${money(s.remise)}</td></tr>` : ''}
+              ${pecsDe(s).map(x => `<tr><td>Prise en charge ${esc(x.organisme)}${x.taux ? ' (' + x.taux + ' %)' : ''}</td><td class="r">− ${money(x.montant)}</td></tr>`).join('')}
+              <tr><td>Part patient</td><td class="r"><b>${money(s.resteAcharge != null ? s.resteAcharge : s.net - pecTot(s))}</b></td></tr>
+              <tr class="t"><td>Reste à payer</td><td class="r"><b>${money(s.solde || 0)}</b>${(s.solde || 0) > 0 ? '' : ' · soldé'}</td></tr>
+            </tbody></table>
+            <table class="ft-pay"><tbody>
+              ${(s.paiements || []).length ? s.paiements.map(x => `<tr><td>${x.date ? fmtDate(x.date) : ''} · ${esc(x.mode)}${x.ref ? ' · ' + esc(x.ref) : ''}</td><td class="r">${money(x.montant)}</td></tr>`).join('')
+                : '<tr><td colspan="2" class="muted">Aucun paiement enregistré.</td></tr>'}
+              ${(s.paiements || []).length > 1 ? `<tr class="t"><td>Total encaissé</td><td class="r"><b>${money(s.paye || 0)}</b></td></tr>` : ''}
+            </tbody></table>
           </div>
           <div class="ft-sec">Commentaire atelier</div>
           <div class="ft-com">${s.commentaireAtelier ? esc(s.commentaireAtelier) : ''}</div>
