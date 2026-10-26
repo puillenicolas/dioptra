@@ -746,11 +746,46 @@ select.inp{appearance:auto}
 .d-res{max-width:420px;margin:0 auto;border:2px dashed var(--paper-ink);padding:24px;border-radius:8px}
 .d-res h3{font-size:22px;letter-spacing:.06em;margin:10px 0 16px}
 
+@page ft{size:A4;margin:0}
+/* Fiche technique : A4 réel, pliée en deux (moitié haute : fiche ; moitié basse : contrôle, appel, étiquette) */
+.paper.a4-exact{width:210mm;max-width:none;height:297mm;padding:0;overflow:hidden;font-size:11px;line-height:1.35}
+.ft{height:297mm;display:flex;flex-direction:column}
+.ft-haut,.ft-bas{height:148.5mm;flex:none;box-sizing:border-box;padding:8mm 12mm 5mm;overflow:hidden;display:flex;flex-direction:column;gap:2.2mm}
+.ft-pli{height:0;border-top:1px dashed var(--paper-muted);position:relative;flex:none}
+.ft-pli span{position:absolute;right:12mm;top:-7px;background:var(--paper);padding:0 6px;font-size:9px;color:var(--paper-muted);text-transform:uppercase;letter-spacing:.1em}
+.ft-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4mm;border-bottom:2px solid var(--paper-ink);padding-bottom:2mm}
+.ft-mag{display:grid;font-size:10px}.ft-mag b{font-size:12px}
+.ft-titre{font-size:17px;font-weight:700;letter-spacing:.08em;text-align:center}
+.ft-dos{justify-self:end;display:grid;justify-items:end;border:2px solid var(--paper-ink);border-radius:6px;padding:1mm 3mm}
+.ft-dos small{font-size:8.5px;text-transform:uppercase;letter-spacing:.1em}.ft-dos b{font-size:22px;line-height:1.05;letter-spacing:.02em}
+.ft-head2{grid-template-columns:auto 1fr}.ft-head2 .ft-titre{text-align:left;font-size:14px}.ft-rap{justify-self:end;font-size:11px}
+.ft-pat{display:flex;flex-wrap:wrap;gap:1mm 5mm;align-items:baseline;background:var(--paper-tint);border-radius:4px;padding:2mm 3mm}
+.ft-pat b{font-size:16px;text-transform:uppercase}.ft-pat span{font-size:10.5px}
+.ft-sec{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-top:1mm}.ft-sec i{font-weight:400;text-transform:none;letter-spacing:0;color:var(--paper-muted);margin-left:2mm}
+.ft-rx{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.ft-rx th,.ft-rx td{border:1px solid var(--paper-line);padding:1.3mm 1mm;text-align:center}
+.ft-rx thead th{font-size:9px;font-weight:600;background:var(--paper-tint)}.ft-rx tbody th{font-size:12px;width:9mm}
+.ft-rx tbody td{font-weight:600;font-size:13px}
+.ft-grid{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.ft-verres{margin:0;font-size:12.5px;font-weight:600;border:1px solid var(--paper-line);border-radius:4px;padding:1.5mm 2.5mm}
+.ft-l{margin:1mm 0 0;font-size:10.5px}
+.ft-com{flex:1;min-height:12mm;border:1.5px solid var(--paper-ink);border-radius:4px;padding:2mm 3mm;font-size:12px;white-space:pre-wrap}
+.ft-ctrl{width:100%;border-collapse:collapse;font-size:10.5px}
+.ft-ctrl th,.ft-ctrl td{border:1px solid var(--paper-line);padding:0 2mm;height:6.2mm;text-align:left}
+.ft-ctrl thead th{height:auto;padding:1mm 2mm;font-size:9px;background:var(--paper-tint)}
+.ft-ctrl td.bx{text-align:center;font-size:13px;width:10mm}
+.ft-ctrl th:nth-child(3),.ft-ctrl th:nth-child(4){width:20mm}
+.ft-app th:nth-child(n){width:auto}
+.ft-sig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;margin-top:3mm}
+.ft-sig span{border-top:1px solid var(--paper-ink);padding-top:1mm;font-size:9px;margin-top:9mm}
+.ft-bas .d-cut{margin:auto 0 3mm}
+.ft-bas .d-etq{flex:none}
 @media print{
   body{background:#fff}
   body *{visibility:hidden}
   #dPaper,#dPaper *{visibility:visible}
   #dPaper{position:absolute;left:0;top:0;width:100%;box-shadow:none;padding:0}
+  #dPaper.a4-exact{page:ft;width:210mm;height:297mm}
   .topbar,body::before{display:none}
 }
 
@@ -4071,7 +4106,8 @@ select.inp{appearance:auto}
       pdf = new jspdf.jsPDF({ unit: 'mm', format: [80, H + 8] }); pdf.addImage(img, 'JPEG', 4, 4, W, H);
     } else {
       pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4' }); const W = 190, H = canvas.height * W / canvas.width, pageH = 277;
-      if (H <= pageH) pdf.addImage(img, 'JPEG', 10, 10, W, H);
+      if (el.classList.contains('a4-exact')) pdf.addImage(img, 'JPEG', 0, 0, 210, 297);   // fiche technique : taille réelle (pliure, étiquette)
+      else if (H <= pageH) pdf.addImage(img, 'JPEG', 10, 10, W, H);
       else { let y = 0; while (y < H) { if (y) pdf.addPage(); pdf.addImage(img, 'JPEG', 10, 10 - y, W, H); y += pageH; } }
     }
     if (opts.print) pdf.autoPrint();   // à l'ouverture, le lecteur PDF lance directement l'impression
@@ -6196,17 +6232,17 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   function showDoc(k){
     showDoc0(k);
-    if (PARAM.app.pied && !['etiq'].includes(k)) F('dPaper').insertAdjacentHTML('beforeend', `<p class="d-foot">${esc(PARAM.app.pied)}</p>`);
+    if (PARAM.app.pied && !['etiq', 'technique'].includes(k)) F('dPaper').insertAdjacentHTML('beforeend', `<p class="d-foot">${esc(PARAM.app.pied)}</p>`);
   }
   function showDoc0(k){
-    docTab = k; try { majDocMail(); } catch(_) {}
+    docTab = k; F('dPaper').classList.remove('a4-exact'); try { majDocMail(); } catch(_) {}
     const s = docSale; let h = '';
     if (s.kind === 'journal') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = journalHtml(s); return; }
     if (s.kind === 'bord') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = bordereauHtml(s); return; }
     if (s.kind === 'etiq') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = etiquettesHtml(s); renderBarcodes(); return; }
     if (s.kind === 'z') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = rapportZHtml(s); return; }
     if (s.kind === 'rapide') { F('dPaper').innerHTML = k === 'ticket' ? ticketHtml(s) : factureRapideHtml(s); F('dPaper').classList.toggle('ticket-paper', k === 'ticket'); return; }
-    F('dPaper').classList.remove('ticket-paper');
+    F('dPaper').classList.remove('ticket-paper', 'a4-exact');
     if (k === 'facture') {
       h = docHead(s, 'FACTURE') + rxMini(s) + docLines(s)
         + pecsDe(s).map(p => `<tr><td>Prise en charge ${esc(p.organisme)}${p.bon ? ' · bon n° ' + esc(p.bon) : ''}</td><td class="r">− ${money(p.montant)}</td></tr>`).join('')
@@ -6219,15 +6255,57 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     } else if (k === 'devis') {
       h = docHead(s, s.kind === 'lentille' ? 'DEVIS LENTILLES' : 'DEVIS') + rxMini(s) + docLines(s) + `</tbody></table><p class="d-note">Ce devis ne vaut pas facture.</p><div class="d-sign"><span>Signature du patient</span><span>Cachet du magasin</span></div>`;
     } else if (k === 'technique') {
-      const v = s.verres, dos = dossierDe(s);
-      h = docHead(s, 'FICHE TECHNIQUE', dos) + `<div class="d-sec">Ordonnance du ${fmtDate(s.ordonnance.date)}${s.ordonnance.prescripteur ? ' · ' + esc(s.ordonnance.prescripteur) : ''} · cylindre positif</div>`
-        + rxTable(s.ordonnance)
-        + `<div class="d-sec">Verres</div><p class="d-verres">${esc(ligneVerres(v))}</p><dl class="d-dl">
-          <dt>Monture</dt><dd>${esc(s.monture.des || '—')}${v.percee ? ' · <b>percée</b>' : ''}</dd>
-          ${s.offre === 'paire2' ? `<dt>2ème paire</dt><dd>${esc(p2Lib(s))} · ${p2Paye(s) ? 'supplément ' + money(s.paire2Px || 0) : 'offerte'}</dd>` : ''}
-          ${s.lignes.filter(l => l.k === 'OPT').map(l => `<dt>Option</dt><dd>${esc(l.des)}</dd>`).join('')}
-        </dl>${s.commentaireAtelier ? `<div class="d-sec">Commentaire atelier</div><div class="d-atelier">${esc(s.commentaireAtelier)}</div>` : ''}<div class="d-sign"><span>Montage réalisé par</span><span>Contrôle final</span></div>`
-        + (dos ? etiquettePeniche(s, dos, [typeTxt(v) + (v.marque ? ' · ' + v.marque : ''), s.monture.des ? 'Monture : ' + s.monture.des + (v.percee ? ' (percée)' : '') : '', s.offre === 'paire2' ? '+ 2ème paire ' + p2Lib(s) : '']) : '');
+      // Feuille A4 pliée en deux pour la péniche : moitié haute = fiche technique complète,
+      // moitié basse = contrôle et appel du client, puis l'étiquette détachable tout en bas.
+      const v = s.verres || {}, o = s.ordonnance || {}, dos = dossierDe(s), c = current;
+      const pm = s.monture?.pid ? produits.find(x => x.id === s.monture.pid) : null;
+      const cell = (k2, f) => { const e2 = o[k2]; return e2 ? f(e2) : '—'; };
+      const ligneOeil = k2 => `<tr><th>${k2}</th><td>${cell(k2, e2 => d2(e2.s))}</td><td>${cell(k2, e2 => e2.c ? d2(e2.c) : '—')}</td><td>${cell(k2, e2 => e2.c ? e2.a + '°' : '—')}</td><td>${cell(k2, e2 => e2.add != null ? d2(e2.add) : '—')}</td>
+        <td>${cell(k2, e2 => mm(e2.epl))}</td><td>${cell(k2, e2 => mm(e2.epp))}</td><td>${cell(k2, e2 => mm(e2.h))}</td><td>${cell(k2, e2 => e2.pr != null ? mm(e2.pr) + ' Δ' + (e2.pra != null ? ' ' + e2.pra + '°' : '') : '—')}</td></tr>`;
+      const opts = (s.lignes || []).filter(l => l.k === 'OPT').map(l => l.des).filter(Boolean);
+      const tels = [c.tel, c.tel2].filter(Boolean).map(t => fmtTel(digits(t)));
+      const ctrl = ['Verres commandés', 'Verres reçus', 'Contrôle des verres (puissances, axes)', 'Montage', 'Contrôle final (centrage, hauteurs, serrage)', 'Nettoyage et ajustage'];
+      h = `<div class="ft">
+        <section class="ft-haut">
+          <div class="ft-head">
+            <div class="ft-mag"><b>${esc(magasinDe(s.boutique).raison || PARAM.app.nom)}</b><span>${esc(s.boutique || '')}</span></div>
+            <div class="ft-titre">FICHE TECHNIQUE</div>
+            <div class="ft-dos"><small>Dossier${s.dossierProv ? ' provisoire' : ''}</small><b>${esc(dos)}</b></div>
+          </div>
+          <div class="ft-pat"><b>${esc(c.nom)} ${esc(c.prenom)}</b><span>${c.naissance ? `${age(c.naissance)} ans · ` : ''}${esc(tels.join(' / '))}</span>
+            <span>Vente du ${fmtDate(s.date)} · facture ${esc(s.numero)}${s.vendeur ? ' · ' + esc(s.vendeur) : ''}</span></div>
+          <div class="ft-sec">Ordonnance du ${o.date ? fmtDate(o.date) : '—'}${o.prescripteur ? ' · ' + esc(o.prescripteur) : ''} <i>cylindre positif</i></div>
+          <table class="ft-rx"><thead><tr><th></th><th>Sphère</th><th>Cylindre</th><th>Axe</th><th>Addition</th><th>½ EP loin</th><th>½ EP près</th><th>Hauteur</th><th>Prisme</th></tr></thead>
+            <tbody>${ligneOeil('OD')}${ligneOeil('OG')}</tbody></table>
+          <div class="ft-grid">
+            <div><div class="ft-sec">Verres</div><p class="ft-verres">${esc(ligneVerres(v))}</p>
+              ${v.ref && verresAchat.find(r => r.id === v.ref) ? `<p class="ft-l">Réf. catalogue : ${esc(vaNom(verresAchat.find(r => r.id === v.ref)))}</p>` : ''}
+              ${s.offre === 'paire2' ? `<p class="ft-l"><b>2ème paire</b> : ${esc(p2Lib(s))}${p2Paye(s) ? '' : ' (offerte)'}</p>` : ''}
+              ${opts.length ? `<p class="ft-l"><b>Options</b> : ${opts.map(esc).join(' · ')}</p>` : ''}</div>
+            <div><div class="ft-sec">Monture</div>
+              <p class="ft-verres">${esc(s.monture?.des || '—')}${v.percee ? ' · <b>PERCÉE</b>' : ''}</p>
+              ${pm ? `<p class="ft-l">${[pm.code && 'Code ' + pm.code, pm.marque, pm.modele && pm.modele !== pm.nom ? pm.modele : '', pm.couleur, pm.taille].filter(Boolean).map(esc).join(' · ')}</p>` : ''}</div>
+          </div>
+          <div class="ft-sec">Commentaire atelier</div>
+          <div class="ft-com">${s.commentaireAtelier ? esc(s.commentaireAtelier) : ''}</div>
+        </section>
+        <div class="ft-pli"><span>pliure</span></div>
+        <section class="ft-bas">
+          <div class="ft-head ft-head2"><div class="ft-titre">CONTRÔLE ET APPEL</div><div class="ft-rap"><b>${esc(c.nom)} ${esc(c.prenom)}</b> · dossier ${esc(dos)}</div></div>
+          <table class="ft-ctrl"><thead><tr><th>Étape</th><th>Fait</th><th>Date</th><th>Par</th><th>Observations</th></tr></thead>
+            <tbody>${ctrl.map(x => `<tr><td>${x}</td><td class="bx">☐</td><td></td><td></td><td></td></tr>`).join('')}</tbody></table>
+          <div class="ft-grid">
+            <div><div class="ft-sec">Appel du client</div>
+              <p class="ft-l">Tél. : <b>${esc(tels.join(' / ') || '—')}</b></p>
+              <table class="ft-ctrl ft-app"><thead><tr><th>Date / heure</th><th>Joint</th><th>Message</th><th>Pas de réponse</th><th>Par</th></tr></thead>
+                <tbody>${[1, 2, 3].map(() => `<tr><td></td><td class="bx">☐</td><td class="bx">☐</td><td class="bx">☐</td><td></td></tr>`).join('')}</tbody></table></div>
+            <div><div class="ft-sec">Retrait</div>
+              <p class="ft-l">Reste à payer : <b>${money(s.solde || 0)}</b>${pecsDe(s).length ? ` · PEC ${pecsDe(s).map(x => esc(x.organisme)).join(', ')}` : ''}</p>
+              <div class="ft-sig"><span>Date de retrait</span><span>Remis par</span><span>Signature du client</span></div></div>
+          </div>
+          ${dos ? etiquettePeniche(s, dos, []) : ''}
+        </section>
+      </div>`;
     } else if (k.startsWith('assurance') && pecsDe(s)[+(k.split(':')[1] || 0)]) {
       // facture d'un organisme : seul le montant pris en charge par cet organisme apparaît
       const o = s.ordonnance, p = pecsDe(s)[+(k.split(':')[1] || 0)];
@@ -6266,6 +6344,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         <p class="d-note">À attacher à la monture et ranger au tiroir des réservations. Passé cette date, la monture retourne en vente.</p></div>`;
     }
     F('dPaper').innerHTML = h;
+    F('dPaper').classList.toggle('a4-exact', k === 'technique');
     if (h.includes('class="bc"')) renderBarcodes();
     // étiquette de péniche : nom et prénom aussi grands que possible sans déborder
     F('dPaper').querySelectorAll('.d-etq').forEach(etq => {
