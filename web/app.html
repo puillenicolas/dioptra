@@ -4427,8 +4427,12 @@ select.inp{appearance:auto}
         rows.push({ type: 'tt', cells: ['Total', ...(tous ? [''] : []), String(L.length), ...tot] });
       } else {
         H = ['Date', 'N° facture', 'Client', ...mag, ...fin];
-        rows = L.map(({ v, c, T }) => ({ cells: [fmtDate(v.date), v.numero, jNomCli(v, c), ...(tous ? [v.boutique || ''] : []), ...val([{ v, T }])] }));
-        rows.push({ type: 'tt', cells: ['Total', nbTxt(L.length), '', ...(tous ? [''] : []), ...tot] });
+        // factures annulées (vente remise en devis) : listées à leur date, sans montant
+        const A = []; clients.forEach(c => (c.historique || []).forEach(d => { const fa = d.factureAnnulee;
+          if (fa && (tous || d.boutique === boutiqueCour()) && dans(fa.dateFacture, per)) A.push({ d: fa.dateFacture, cells: [fmtDate(fa.dateFacture), fa.numero + ' (annulée)', jNomCli(d, c) + ' · remise en devis ' + d.numero, ...(tous ? [d.boutique || ''] : []), ...fin.map(() => 0)] }); }));
+        rows = [...L.map(({ v, c, T }) => ({ d: v.date, cells: [fmtDate(v.date), v.numero, jNomCli(v, c), ...(tous ? [v.boutique || ''] : []), ...val([{ v, T }])] })), ...A]
+          .sort((x, y) => x.d.localeCompare(y.d)).map(x => ({ cells: x.cells }));
+        rows.push({ type: 'tt', cells: ['Total', nbTxt(L.length) + (A.length ? ` · ${A.length} annulée${A.length > 1 ? 's' : ''}` : ''), '', ...(tous ? [''] : []), ...tot] });
       }
       return { k, titre, per, H, num: H.length - fin.length, rows,
         kpi: [['Factures', String(L.length)], ['Total HT', money(tot[0])], ['Taxes', money(tot.slice(1, 1 + noms.length).reduce((a, x) => a + x, 0))], ['Total TTC', money(tot[1 + noms.length])], ['Reste dû clients', money(tot[tot.length - 1])]] };
@@ -6178,6 +6182,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       a += resp ? `<button class="act ghost-act" data-act="edit">Modifier la vente</button>` : lock('Modifier la vente');
       a += respC ? `<button class="act ghost-act" data-act="corr">Caisse</button>` : lock('Caisse');
       if (v.solde > 0) a += `<button class="act" data-act="solde">Encaisser le reste (${money(v.solde)})</button>`;
+      if (v.kind !== 'rapide' && peutRemettreEnDevis(v)) a += resp ? `<button class="act ghost-act" data-act="redevis">Remettre en devis</button>` : lock('Remettre en devis');
     } else if (v.statut !== 'Accepté') {
       a += `<button class="act ghost-act" data-act="edit">Modifier le devis</button><button class="act" data-act="accept">Accepter le devis</button>`;
     }
@@ -6232,7 +6237,24 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     else if (act === 'solde') reprendreVente(v);
     else if (act === 'accept') accepterDevis(v);
     else if (act === 'docs') openDocs(v);
+    else if (act === 'redevis') { if (!peutModifierVente()) { show('Réservé au responsable.'); return; } remettreEnDevis(v); }
   });
+  // Vente sans aucun encaissement → redevient un devis. La facture n'est pas effacée : elle reste dans le journal
+  // des factures avec la mention « annulée » (numérotation continue pour la comptabilité).
+  const peutRemettreEnDevis = v => v.type === 'vente' && !(v.paiements || []).some(p => p.montant) && !(v.paye > 0)
+    && !pecsDe(v).some(p => p.bordereau || p.paye > 0);
+  function remettreEnDevis(v){
+    if (!peutRemettreEnDevis(v)) { show('Impossible : un encaissement ou une prise en charge facturée existe déjà sur cette vente.'); return; }
+    if (!confirm(`Remettre la vente ${v.numero} en devis ?\n\nLa facture ${v.numero} sera annulée (elle reste visible dans le journal des factures avec la mention « annulée »), la monture revient en stock et un nouveau numéro de devis est attribué.`)) return;
+    const fa = v.numero, now = new Date().toISOString();
+    if (v.monture?.pid) mvtStock(v.monture.pid, v.boutique, 1, 'Remise en devis', fa);
+    v.factureAnnulee = { numero: fa, dateFacture: v.date, date: now, par: user.nom, net: v.net, dossier: v.dossier || '' };
+    ['paiements', 'paye', 'solde', 'resteAcharge', 'statut', 'tropPercu', 'etapes', 'dossier', 'dossierProv', 'pecs', 'pec', 'devis'].forEach(k => delete v[k]);
+    v.type = 'devis'; v.numero = nextNum('DV'); v.date = now;
+    (v.journal = v.journal || []).push({ date: now, par: user.nom, role: user.role, ancienNet: v.net, nouveauNet: v.net, details: [`Vente ${fa} remise en devis ${v.numero} (facture ${fa} annulée)`] });
+    save(); try { majTuileCmd(); } catch(_) {}
+    openDetail(v); show(`Vente ${fa} remise en devis ${v.numero}`);
+  }
 
   /* ================= Documents à imprimer ================= */
   let docSale = null;
