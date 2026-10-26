@@ -2204,6 +2204,7 @@ select.inp{appearance:auto}
       <button class="ghost" id="dBack">Retour à la vente</button>
       <button class="ghost" id="dMail" hidden>Envoyer par e-mail</button>
       <button class="ghost wa-out" id="dWaZ" hidden>WhatsApp</button>
+      <button class="ghost wa-out" id="dWaDoc" hidden>Envoyer par WhatsApp</button>
       <button class="ghost" id="dPdf">Télécharger le PDF</button>
       <button class="save" id="dPrint">Imprimer</button>
     </div>
@@ -4055,6 +4056,7 @@ select.inp{appearance:auto}
     'Livrée': '{civilite} {nom}, merci d\'avoir choisi le {magasin}. N\'hésitez pas à revenir pour tout ajustement. À bientôt !',
     'Relance impayé': '{civilite} {nom}, il reste {montant_du} à régler sur votre achat {numero} du {date}. Vous pouvez passer au {magasin} ou régler par Airtel Money / Moov Money. Merci.',
     'Relance devis': '{civilite} {nom}, votre devis {numero} du {date} ({montant}) est toujours disponible au {magasin}. Souhaitez-vous que nous lancions la commande ?',
+    'Envoi devis': '{civilite} {nom}, voici votre devis {numero} du {date} établi au {magasin} :\n{articles}\nTotal : {montant}.\nLe devis détaillé est joint en PDF. Nous restons à votre disposition pour toute question.',
     'Renouvellement': '{civilite} {nom}, votre dernière ordonnance date de plus de 2 ans. Pensez à faire contrôler votre vue : toute l\'équipe du {magasin} vous attend pour renouveler vos lunettes. À bientôt !',
   };
   let TPL = { ...TPL_DEF, ...ld0('tplWa', {}) }, waLog = ld0('waLog', []);
@@ -4064,7 +4066,7 @@ select.inp{appearance:auto}
   const waHref = (t, txt) => `https://wa.me/${waNum(t)}?text=${encodeURIComponent(txt)}`;
   function remplir(tpl, v, c){
     const civ = c ? (c.sexe === 'F' ? 'Bonjour Madame' : 'Bonjour Monsieur') : 'Bonjour';
-    const art = (v.lignes || []).map(l => `• ${l.label}${l.k === 'OD' || l.k === 'OG' ? '' : ' ' + l.des} : ${money(l.px)}`).join('\n');
+    const art = (v.lignes || []).filter(l => l.px || (l.des && l.des !== '—')).map(l => `• ${l.label}${l.k === 'OD' || l.k === 'OG' ? '' : ' ' + l.des} : ${money(l.px)}`).join('\n');
     return tpl.replace(/\{civilite\}/g, civ).replace(/\{prenom\}/g, c?.prenom || '').replace(/\{nom\}/g, c?.nom || v.client || '')
       .replace(/\{numero\}/g, v.numero || '').replace(/\{date\}/g, v.date ? fmtDate(v.date) : '').replace(/\{montant\}/g, money(v.net))
       .replace(/\{montant_du\}/g, money(v.solde || 0)).replace(/\{reste\}/g, v.solde > 0 ? ` Reste à régler : ${money(v.solde)}.` : '')
@@ -4117,6 +4119,7 @@ select.inp{appearance:auto}
     const s = docSale, c = s && docClient(s);
     F('dMail').hidden = !(s && ((s.kind === 'z') || ((s.type === 'devis' || s.type === 'vente') && MAIL_DOCS.includes(docTab) && c && c.email)));
     F('dWaZ').hidden = !(s && s.kind === 'z');
+    F('dWaDoc').hidden = !(s && s.type === 'devis' && docTab === 'devis');
   }
   const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${String(docTab || '').startsWith('assurance:') ? 'Facture assurance ' + (pecsDe(docSale)[+docTab.split(':')[1]]?.organisme || '') : DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.replace(/\s+/g, ' ').trim();
   async function docPdf(opts = {}){
@@ -4144,6 +4147,26 @@ select.inp{appearance:auto}
   const nomFichier = () => docNom().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') + '.pdf';
 
   F('dWaZ').addEventListener('click', () => openWaCaisse(docSale));
+  // Devis par WhatsApp : sur tablette / téléphone, partage direct du PDF (choisir WhatsApp) ;
+  // sur ordinateur, le PDF est téléchargé puis WhatsApp s'ouvre avec le message prêt (il reste à joindre le PDF).
+  F('dWaDoc').addEventListener('click', async () => {
+    const s = docSale, c = docClient(s); if (!s) return;
+    F('dWaDoc').disabled = true;
+    try {
+      let blob = null; try { blob = await docPdf({ mail: true }); } catch(_) {}
+      if (blob) {
+        const file = new File([blob], nomFichier(), { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], text: remplir(TPL['Envoi devis'] || '', s, c) });
+            const entry = { date: new Date().toISOString(), par: user.nom, modele: 'Envoi devis', numero: s.numero, client: c ? c.nom + ' ' + c.prenom : '', tel: c?.tel || '' };
+            waLog.push(entry); (s.messages = s.messages || []).push(entry); saveWa(); save(); show('Devis partagé'); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        try { await enregistrerFichier(blob, nomFichier()); show('PDF du devis téléchargé : joignez-le dans la conversation WhatsApp.'); } catch(_) {}
+      }
+      openWa(s, c, 'Envoi devis');
+    } finally { F('dWaDoc').disabled = false; }
+  });
   F('dPdf').addEventListener('click', async () => {
     const dl = await (window.claude?.use ? window.claude.use('downloads').catch(() => null) : null);
     if (!dl) {   // version en ligne : téléchargement direct par le navigateur
