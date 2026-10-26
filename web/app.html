@@ -2516,13 +2516,13 @@ select.inp{appearance:auto}
         <td>${esc(fmtTel(digits(c.tel)))}</td>
         <td class="col-mail muted">${esc(c.email) || '—'}</td></tr>`;
     }).join('');
-    const n = list.length;
+    const n = list.length, vis = clients.filter(c => clientVisible(c)), nbVis = vis.length;
     count.innerHTML = query.trim()
       ? `<b>${n}</b> résultat${n > 1 ? 's' : ''} pour « ${esc(query.trim())} »`
-      : `<b>${clients.length}</b> client${clients.length > 1 ? 's' : ''}`;
+      : `<b>${nbVis}</b> client${nbVis > 1 ? 's' : ''}${boutiqueCour() === 'Toutes les boutiques' ? ' · tous les magasins' : ' · ' + esc(boutiqueCour())}`;
     empty.hidden = n > 0;
-    emptyMsg.textContent = clients.length ? 'Aucun client ne correspond à cette recherche.' : 'Aucun client pour l\'instant.';
-    demoTag.hidden = !clients.some(c => c.exemple);
+    emptyMsg.textContent = nbVis ? 'Aucun client ne correspond à cette recherche.' : 'Aucun client pour l\'instant dans ce magasin.';
+    demoTag.hidden = !vis.some(c => c.exemple);
   }
   cq.addEventListener('input', () => { lastCreated = null; render(); });
   rows.addEventListener('click', e => {
