@@ -705,7 +705,7 @@ select.inp{appearance:auto}
 .d-cut{margin:34px 0 14px;border-top:2px dashed var(--paper-ink);position:relative;height:0;break-inside:avoid}
 .d-cut span{position:absolute;left:50%;top:-10px;translate:-50% 0;background:var(--paper);padding:0 10px;font-size:11px;white-space:nowrap}
 /* étiquette de péniche : 85 × 30 mm ; zone de texte de 77 mm de large (4 mm de marge à gauche et à droite, 5 mm en haut et en bas) */
-.d-etq{box-sizing:border-box;width:85mm;height:30mm;border:1px solid var(--paper-ink);border-radius:4px;padding:5mm 4mm;display:flex;flex-direction:column;justify-content:center;gap:0;break-inside:avoid;overflow:hidden}
+.d-etq{box-sizing:border-box;width:calc(85mm * var(--ft-k, 1));height:calc(30mm * var(--ft-k, 1));border:1px solid var(--paper-ink);border-radius:4px;padding:calc(5mm * var(--ft-k, 1)) calc(4mm * var(--ft-k, 1));display:flex;flex-direction:column;justify-content:center;gap:0;break-inside:avoid;overflow:hidden}
 .d-etq-h{display:flex;align-items:baseline;gap:6px;border-bottom:1px solid var(--paper-ink);padding-bottom:1px;margin-bottom:2px;flex:none}
 .d-etq-h b{font-size:11px;letter-spacing:.02em;line-height:1.1}.d-etq-h small{font-size:8px}.d-etq-h span{margin-left:auto;font-size:8px}
 .d-etq-nom{font-weight:800;text-transform:uppercase;line-height:1.02;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;flex:none}
@@ -780,12 +780,15 @@ select.inp{appearance:auto}
 .ft-sig span{border-top:1px solid var(--paper-ink);padding-top:1mm;font-size:9px;margin-top:9mm}
 .ft-bas .d-cut{margin:auto 0 3mm}
 .ft-bas .d-etq{flex:none}
+.calib{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 auto 14px;max-width:794px}
+.calib label{display:inline-flex;align-items:center;gap:6px}.calib .inp{width:80px}
 @media print{
   body{background:#fff}
   body *{visibility:hidden}
   #dPaper,#dPaper *{visibility:visible}
   #dPaper{position:absolute;left:0;top:0;width:100%;box-shadow:none;padding:0}
   #dPaper.a4-exact{page:ft;width:210mm;height:297mm}
+  #dCalib{display:none!important}
   .topbar,body::before{display:none}
 }
 
@@ -2191,6 +2194,12 @@ select.inp{appearance:auto}
     </div>
   </div>
   <div class="tabs" id="dTabs"></div>
+  <div class="calib" id="dCalib" hidden>
+    <span>Pour imprimer en <b>taille réelle</b> : échelle 100 % (pas « Ajuster à la page »), marges « Aucune ».</span>
+    <label>Largeur de l'étiquette mesurée après impression <input class="inp sm" id="dCalibMm" inputmode="decimal" placeholder="85"> mm</label>
+    <button class="ghost sm-btn" type="button" id="dCalibOk">Corriger</button><button class="ghost sm-btn" type="button" id="dCalibRaz">Réinitialiser</button>
+    <span class="muted" id="dCalibSt"></span>
+  </div>
   <div class="paper-wrap"><article class="paper" id="dPaper"></article></div>
 </main>
 
@@ -4106,7 +4115,10 @@ select.inp{appearance:auto}
       pdf = new jspdf.jsPDF({ unit: 'mm', format: [80, H + 8] }); pdf.addImage(img, 'JPEG', 4, 4, W, H);
     } else {
       pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4' }); const W = 190, H = canvas.height * W / canvas.width, pageH = 277;
-      if (el.classList.contains('a4-exact')) pdf.addImage(img, 'JPEG', 0, 0, 210, 297);   // fiche technique : taille réelle (pliure, étiquette)
+      if (el.classList.contains('a4-exact')) {   // fiche technique : taille réelle (pliure, étiquette), sans mise à l'échelle par le lecteur PDF
+        pdf.addImage(img, 'JPEG', 0, 0, 210, 297);
+        try { pdf.viewerPreferences({ PrintScaling: 'None' }); } catch(_) {}
+      }
       else if (H <= pageH) pdf.addImage(img, 'JPEG', 10, 10, W, H);
       else { let y = 0; while (y < H) { if (y) pdf.addPage(); pdf.addImage(img, 'JPEG', 10, 10 - y, W, H); y += pageH; } }
     }
@@ -6230,6 +6242,20 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         ${s.offre === 'paire2' && !p2Paye(s) ? `<tr><td>2ème paire offerte (${esc(p2Lib(s))})</td><td class="r">Offerte</td></tr>` : ''}
         ${lignesTaxes(s)}`;
   }
+  // Réglage d'impression de ce poste : certaines imprimantes réduisent la page (marges non imprimables).
+  // On mesure l'étiquette imprimée (85 mm attendus) et on agrandit l'étiquette d'autant (la pliure reste au milieu de la feuille).
+  const calibK = () => { let k = 1; try { k = +localStorage.getItem('calibFT') || 1; } catch(_) {} return k > 0.8 && k < 1.25 ? k : 1; };
+  function appliquerCalib(){
+    const k = calibK();
+    document.documentElement.style.setProperty('--ft-k', k);
+    F('dCalibSt').textContent = k !== 1 ? `Correction active sur ce poste : ${(k * 100).toFixed(1).replace('.', ',')} %` : '';
+  }
+  F('dCalibOk').addEventListener('click', () => {
+    const m = dec(F('dCalibMm').value); if (!(m > 60 && m < 110)) { show('Indiquez la largeur mesurée en millimètres (ex. 78).'); return; }
+    const k = calibK() * 85 / m; try { localStorage.setItem('calibFT', String(k)); } catch(_) {}
+    F('dCalibMm').value = ''; appliquerCalib(); if (docTab) showDoc(docTab); show('Réglage enregistré pour ce poste. Réimprimez pour vérifier.');
+  });
+  F('dCalibRaz').addEventListener('click', () => { try { localStorage.removeItem('calibFT'); } catch(_) {} appliquerCalib(); if (docTab) showDoc(docTab); show('Réglage d\'impression réinitialisé'); });
   function showDoc(k){
     showDoc0(k);
     if (PARAM.app.pied && !['etiq', 'technique'].includes(k)) F('dPaper').insertAdjacentHTML('beforeend', `<p class="d-foot">${esc(PARAM.app.pied)}</p>`);
@@ -6345,12 +6371,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     }
     F('dPaper').innerHTML = h;
     F('dPaper').classList.toggle('a4-exact', k === 'technique');
+    F('dCalib').hidden = k !== 'technique'; appliquerCalib();
     if (h.includes('class="bc"')) renderBarcodes();
     // étiquette de péniche : nom et prénom aussi grands que possible sans déborder
     F('dPaper').querySelectorAll('.d-etq').forEach(etq => {
       const nom = etq.querySelector('.d-etq-nom'), pre = etq.querySelector('.d-etq-pre');
       const fit = (el, max) => { if (!el) return; let f = max; el.style.fontSize = f + 'px'; while (f > 9 && el.scrollWidth > el.clientWidth + 1) el.style.fontSize = (--f) + 'px'; };
-      fit(nom, 36); fit(pre, 24);
+      const kk = calibK(); fit(nom, Math.round(36 * kk)); fit(pre, Math.round(24 * kk));
       // la hauteur utile (20 mm) doit contenir l'en-tête, le nom et le prénom
       const h = () => [...etq.children].reduce((a, c) => a + c.getBoundingClientRect().height, 0), max = etq.clientHeight - 2 * etq.clientHeight * 5 / 30;
       let g = 0; while (h() > max && g++ < 30) [nom, pre].forEach(el => { if (el) el.style.fontSize = Math.max(9, parseFloat(el.style.fontSize) - 1) + 'px'; });
