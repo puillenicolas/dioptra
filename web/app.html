@@ -777,6 +777,9 @@ select.inp{appearance:auto}
 .ft-eq th{width:20mm;font-size:11px;background:var(--paper-tint)}
 .ft-eq td{font-weight:600}.ft-eq td.r{text-align:right;white-space:nowrap;width:28mm;font-weight:700}
 .ft-eq tr.mon td:not(.r){font-weight:500}
+.ft-eq tfoot th,.ft-eq tfoot td{border:0;background:none;font-weight:500;padding:.8mm 2mm}
+.ft-eq tfoot td:first-of-type{text-align:right}
+.ft-eq tfoot tr.tot td{font-weight:800;font-size:12.5px;border-top:1.5px solid var(--paper-ink)}
 .ft-pay td{border-bottom:1px solid var(--paper-line);padding:.8mm 1mm;font-size:10.5px}.ft-pay td.r{text-align:right;white-space:nowrap}
 .ft-pay tr.t td{border-bottom:0;border-top:1.5px solid var(--paper-ink);font-size:11px}
 .ft-ctrl th,.ft-ctrl td{border:1px solid var(--paper-line);padding:0 2mm;height:6.2mm;text-align:left}
@@ -6323,12 +6326,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
               : l.k === 'P2' ? esc(p2Lib(s)) + (p2Paye(s) ? '' : ' (offerte)') : esc(desDoc(l) || '');
             return `<tr class="${mon ? 'mon' : ''}"><th>${esc(lib)}</th><td>${det}</td><td class="r">${money(l.px)}</td></tr>`; }).join('')}
             ${s.offre === 'paire2' && !(s.lignes || []).some(l => l.k === 'P2') ? `<tr><th>2ème paire</th><td>${esc(p2Lib(s))} (offerte)</td><td class="r">Offerte</td></tr>` : ''}
-          </tbody></table>
+          </tbody><tfoot>
+            ${s.remise ? `<tr><th></th><td>Sous-total</td><td class="r">${money(s.total)}</td></tr><tr><th></th><td>Remise</td><td class="r">− ${money(s.remise)}</td></tr>` : ''}
+            <tr class="tot"><th></th><td>Total</td><td class="r">${money(s.net)}</td></tr>
+          </tfoot></table>
           <div class="ft-sec">Règlement</div>
           <div class="ft-grid ft-regl">
             <table class="ft-pay"><tbody>
-              <tr><td>Total${s.remise ? ' après remise' : ''}</td><td class="r"><b>${money(s.net)}</b></td></tr>
-              ${s.remise ? `<tr><td>Remise accordée</td><td class="r">${money(s.remise)}</td></tr>` : ''}
               ${pecsDe(s).map(x => `<tr><td>Prise en charge ${esc(x.organisme)}${x.taux ? ' (' + x.taux + ' %)' : ''}</td><td class="r">− ${money(x.montant)}</td></tr>`).join('')}
               <tr><td>Part patient</td><td class="r"><b>${money(s.resteAcharge != null ? s.resteAcharge : s.net - pecTot(s))}</b></td></tr>
               <tr class="t"><td>Reste à payer</td><td class="r"><b>${money(s.solde || 0)}</b>${(s.solde || 0) > 0 ? '' : ' · soldé'}</td></tr>
