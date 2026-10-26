@@ -749,7 +749,7 @@ select.inp{appearance:auto}
 @page ft{size:A4;margin:0}
 /* Fiche technique : A4 réel, pliée en deux (moitié haute : fiche ; moitié basse : contrôle, appel, étiquette) */
 .paper.a4-exact{width:210mm;max-width:none;height:297mm;padding:0;overflow:hidden;font-size:11px;line-height:1.35}
-.ft{height:297mm;display:flex;flex-direction:column}
+.ft{height:297mm;display:flex;flex-direction:column;position:relative}
 .ft-haut,.ft-bas{height:148.5mm;flex:none;box-sizing:border-box;padding:8mm 12mm 5mm;overflow:hidden;display:flex;flex-direction:column;gap:2.2mm}
 .ft-pli{height:0;border-top:1px dashed var(--paper-muted);position:relative;flex:none}
 .ft-pli span{position:absolute;right:12mm;top:-7px;background:var(--paper);padding:0 6px;font-size:9px;color:var(--paper-muted);text-transform:uppercase;letter-spacing:.1em}
@@ -778,7 +778,11 @@ select.inp{appearance:auto}
 .ft-app th:nth-child(n){width:auto}
 .ft-sig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;margin-top:3mm}
 .ft-sig span{border-top:1px solid var(--paper-ink);padding-top:1mm;font-size:9px;margin-top:9mm}
-.ft-bas .d-cut{margin:auto 0 3mm}
+.ft-bas{padding-bottom:calc(30mm * var(--ft-k, 1) + 3mm)}
+.ft-decoupe{margin-top:auto;font-size:9.5px;color:var(--paper-muted)}
+/* étiquette dans le coin bas gauche : seuls le haut et le côté droit sont à découper */
+.d-etq.coin{position:absolute;left:0;bottom:0;border:0;border-radius:0;border-top:1.5px dashed var(--paper-ink);border-right:1.5px dashed var(--paper-ink);overflow:visible}
+.d-ciseau{position:absolute;right:-7px;top:-10px;font-size:12px;line-height:1;background:var(--paper);transform:rotate(90deg)}
 .ft-bas .d-etq{flex:none}
 .calib{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 auto 14px;max-width:794px}
 .calib label{display:inline-flex;align-items:center;gap:6px}.calib .inp{width:80px}
@@ -6223,11 +6227,12 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       <div class="d-client"><span>Patient</span><b>${esc(current.nom)} ${esc(current.prenom)}</b><span>${current.naissance ? `${current.sexe === 'F' ? 'Née' : 'Né'} le ${fmtDate(current.naissance)} · ` : ''}${esc(fmtTel(digits(current.tel)))}${current.email ? ' · ' + esc(current.email) : ''}</span></div>`;
   }
   // Étiquette détachable en bas des fiches atelier, à coller à l'avant de la péniche
-  function etiquettePeniche(s, dos, details){
+  // coin = true : étiquette dans le coin bas gauche de la feuille (bords de la feuille = bords de l'étiquette, 2 coupes seulement)
+  function etiquettePeniche(s, dos, details, coin){
     // taille de police qui fait tenir le texte sur une ligne de l'étiquette (environ 88 mm utiles)
     const taille = (t, max) => Math.max(10, Math.min(max, Math.floor(250 / (0.75 * Math.max(1, String(t || '').length)))));
-    return `<div class="d-cut" aria-hidden="true"><span>✂ Découper et coller à l'avant de la péniche</span></div>
-      <div class="d-etq">
+    return `${coin ? '' : `<div class="d-cut" aria-hidden="true"><span>✂ Découper et coller à l'avant de la péniche</span></div>`}
+      <div class="d-etq${coin ? ' coin' : ''}">${coin ? '<span class="d-ciseau" aria-hidden="true">✂</span>' : ''}
         <div class="d-etq-h"><b>N° ${esc(dos)}</b>${s.dossierProv ? '<small>provisoire</small>' : ''}<span>${fmtDate(s.date)}</span></div>
         <div class="d-etq-nom" style="font-size:${taille(current.nom, 36)}px">${esc(current.nom)}</div>
         ${current.prenom ? `<div class="d-etq-pre" style="font-size:${taille(current.prenom, 24)}px">${esc(current.prenom)}</div>` : ''}
@@ -6329,8 +6334,9 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
               <p class="ft-l">Reste à payer : <b>${money(s.solde || 0)}</b>${pecsDe(s).length ? ` · PEC ${pecsDe(s).map(x => esc(x.organisme)).join(', ')}` : ''}</p>
               <div class="ft-sig"><span>Date de retrait</span><span>Remis par</span><span>Signature du client</span></div></div>
           </div>
-          ${dos ? etiquettePeniche(s, dos, []) : ''}
+          ${dos ? `<p class="ft-l ft-decoupe">✂ Découper l'étiquette le long des pointillés (le bord gauche et le bas de la feuille forment ses deux autres côtés), puis la glisser à l'avant de la péniche.</p>` : ''}
         </section>
+        ${dos ? etiquettePeniche(s, dos, [], true) : ''}
       </div>`;
     } else if (k.startsWith('assurance') && pecsDe(s)[+(k.split(':')[1] || 0)]) {
       // facture d'un organisme : seul le montant pris en charge par cet organisme apparaît
