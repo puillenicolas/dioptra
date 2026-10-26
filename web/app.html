@@ -4122,6 +4122,12 @@ select.inp{appearance:auto}
     F('dWaDoc').hidden = !(s && s.type === 'devis' && docTab === 'devis');
   }
   const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${String(docTab || '').startsWith('assurance:') ? 'Facture assurance ' + (pecsDe(docSale)[+docTab.split(':')[1]]?.organisme || '') : DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.replace(/\s+/g, ' ').trim();
+  // Image du document affiché (PNG pour le presse-papiers, JPEG pour le partage)
+  async function docImage(type = 'image/png'){
+    if (!window.html2canvas) throw { code: 'lib' };
+    const canvas = await html2canvas(F('dPaper'), { scale: 1.6, backgroundColor: '#ffffff', useCORS: true });
+    return new Promise((ok, ko) => canvas.toBlob(b => b ? ok(b) : ko(new Error('image')), type, 0.85));
+  }
   async function docPdf(opts = {}){
     if (!window.html2canvas || !window.jspdf) throw { code: 'lib' };
     const el = F('dPaper'), ticket = el.classList.contains('ticket-paper');
@@ -4153,18 +4159,25 @@ select.inp{appearance:auto}
     const s = docSale, c = docClient(s); if (!s) return;
     F('dWaDoc').disabled = true;
     try {
-      let blob = null; try { blob = await docPdf({ mail: true }); } catch(_) {}
-      if (blob) {
-        const file = new File([blob], nomFichier(), { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], text: remplir(TPL['Envoi devis'] || '', s, c) });
-            const entry = { date: new Date().toISOString(), par: user.nom, modele: 'Envoi devis', numero: s.numero, client: c ? c.nom + ' ' + c.prenom : '', tel: c?.tel || '' };
-            waLog.push(entry); (s.messages = s.messages || []).push(entry); saveWa(); save(); show('Devis partagé'); return; }
-          catch (e) { if (e && e.name === 'AbortError') return; }
-        }
-        try { await enregistrerFichier(blob, nomFichier()); show('PDF du devis téléchargé : joignez-le dans la conversation WhatsApp.'); } catch(_) {}
+      const txt = remplir(TPL['Envoi devis'] || '', s, c), noter = () => {
+        const entry = { date: new Date().toISOString(), par: user.nom, modele: 'Envoi devis', numero: s.numero, client: c ? c.nom + ' ' + c.prenom : '', tel: c?.tel || '' };
+        waLog.push(entry); (s.messages = s.messages || []).push(entry); saveWa(); save(); };
+      // 1. tablette / téléphone : partage direct du PDF, ou de l'image JPEG si le PDF n'est pas accepté
+      if (navigator.canShare) {
+        let pdf = null, jpg = null; try { pdf = await docPdf({ mail: true }); } catch(_) {}
+        const fPdf = pdf && new File([pdf], nomFichier(), { type: 'application/pdf' });
+        let fichier = fPdf && navigator.canShare({ files: [fPdf] }) ? fPdf : null;
+        if (!fichier) { try { jpg = await docImage('image/jpeg'); } catch(_) {}
+          const fJpg = jpg && new File([jpg], nomFichier().replace(/\.pdf$/, '.jpg'), { type: 'image/jpeg' });
+          if (fJpg && navigator.canShare({ files: [fJpg] })) fichier = fJpg; }
+        if (fichier) { try { await navigator.share({ files: [fichier], text: txt }); noter(); show('Devis partagé'); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
       }
+      // 2. ordinateur : l'image du devis est copiée, il suffit de la coller (Ctrl+V) dans la conversation WhatsApp
+      let copie = false;
+      try { if (navigator.clipboard && window.ClipboardItem) { const png = await docImage('image/png'); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); copie = true; } } catch(_) {}
+      if (!copie) { try { await enregistrerFichier(await docPdf({ mail: true }), nomFichier()); } catch(_) {} }
       openWa(s, c, 'Envoi devis');
+      F('waTitle').textContent += copie ? ' · image du devis copiée : collez-la (Ctrl+V) dans la conversation' : ' · PDF téléchargé : joignez-le dans la conversation';
     } finally { F('dWaDoc').disabled = false; }
   });
   F('dPdf').addEventListener('click', async () => {
