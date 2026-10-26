@@ -772,6 +772,11 @@ select.inp{appearance:auto}
 .ft-com{flex:none;height:13mm;overflow:hidden;border:1.5px solid var(--paper-ink);border-radius:4px;padding:2mm 3mm;font-size:12px;white-space:pre-wrap}
 .ft-ctrl{width:100%;border-collapse:collapse;font-size:10.5px}
 .ft-pay{width:100%;border-collapse:collapse;font-size:10.5px;align-self:start}
+.ft-eq{width:100%;border-collapse:collapse}
+.ft-eq th,.ft-eq td{border:1px solid var(--paper-line);padding:1.2mm 2mm;font-size:11.5px;text-align:left;vertical-align:middle}
+.ft-eq th{width:20mm;font-size:11px;background:var(--paper-tint)}
+.ft-eq td{font-weight:600}.ft-eq td.r{text-align:right;white-space:nowrap;width:28mm;font-weight:700}
+.ft-eq tr.mon td:not(.r){font-weight:500}
 .ft-pay td{border-bottom:1px solid var(--paper-line);padding:.8mm 1mm;font-size:10.5px}.ft-pay td.r{text-align:right;white-space:nowrap}
 .ft-pay tr.t td{border-bottom:0;border-top:1.5px solid var(--paper-ink);font-size:11px}
 .ft-ctrl th,.ft-ctrl td{border:1px solid var(--paper-line);padding:0 2mm;height:6.2mm;text-align:left}
@@ -6311,15 +6316,14 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
           <div class="ft-sec">Ordonnance du ${o.date ? fmtDate(o.date) : '—'}${o.prescripteur ? ' · ' + esc(o.prescripteur) : ''} <i>cylindre positif</i></div>
           <table class="ft-rx"><thead><tr><th></th><th>Sphère</th><th>Cylindre</th><th>Axe</th><th>Addition</th><th>½ EP loin</th><th>½ EP près</th><th>Hauteur</th><th>Prisme</th></tr></thead>
             <tbody>${ligneOeil('OD')}${ligneOeil('OG')}</tbody></table>
-          <div class="ft-grid">
-            <div><div class="ft-sec">Verres</div><p class="ft-verres">${esc(ligneVerres(v))}</p>
-              ${v.ref && verresAchat.find(r => r.id === v.ref) ? `<p class="ft-l">Réf. catalogue : ${esc(vaNom(verresAchat.find(r => r.id === v.ref)))}</p>` : ''}
-              ${s.offre === 'paire2' ? `<p class="ft-l"><b>2ème paire</b> : ${esc(p2Lib(s))}${p2Paye(s) ? '' : ' (offerte)'}</p>` : ''}
-              ${opts.length ? `<p class="ft-l"><b>Options</b> : ${opts.map(esc).join(' · ')}</p>` : ''}</div>
-            <div><div class="ft-sec">Monture</div>
-              <p class="ft-verres">${esc(s.monture?.des || '—')}${v.percee ? ' · <b>PERCÉE</b>' : ''}</p>
-              ${pm ? `<p class="ft-l">${[pm.code && 'Code ' + pm.code, pm.marque, pm.modele && pm.modele !== pm.nom ? pm.modele : '', pm.couleur, pm.taille].filter(Boolean).map(esc).join(' · ')}</p>` : ''}</div>
-          </div>
+          <div class="ft-sec">Équipement${v.ref && verresAchat.find(r => r.id === v.ref) ? ` <i>réf. catalogue : ${esc(vaNom(verresAchat.find(r => r.id === v.ref)))}</i>` : ''}</div>
+          <table class="ft-eq"><tbody>${(s.lignes || []).map(l => {
+            const mon = l.k === 'MONTURE', lib = { OD: 'OD', OG: 'OG', MONTURE: 'Monture', P2: '2ème paire', OPT: 'Option' }[l.k] || l.label || '';
+            const det = mon ? [esc(s.monture?.des || l.des || '—'), pm ? [pm.code && 'code ' + pm.code, pm.couleur, pm.taille].filter(Boolean).map(esc).join(' · ') : '', v.percee ? '<b>PERCÉE</b>' : ''].filter(Boolean).join(' · ')
+              : l.k === 'P2' ? esc(p2Lib(s)) + (p2Paye(s) ? '' : ' (offerte)') : esc(desDoc(l) || '');
+            return `<tr class="${mon ? 'mon' : ''}"><th>${esc(lib)}</th><td>${det}</td><td class="r">${money(l.px)}</td></tr>`; }).join('')}
+            ${s.offre === 'paire2' && !(s.lignes || []).some(l => l.k === 'P2') ? `<tr><th>2ème paire</th><td>${esc(p2Lib(s))} (offerte)</td><td class="r">Offerte</td></tr>` : ''}
+          </tbody></table>
           <div class="ft-sec">Règlement</div>
           <div class="ft-grid ft-regl">
             <table class="ft-pay"><tbody>
