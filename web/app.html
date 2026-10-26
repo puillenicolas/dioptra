@@ -2399,6 +2399,9 @@ select.inp{appearance:auto}
   function choisirBoutique(n, silencieux){
     label.textContent = n; try { localStorage.setItem('boutique', n); } catch(_) {}
     drawStoreMenu(); if (!silencieux) show('Boutique : ' + n);
+    try { if (!views.clients.hidden) render();
+      if (current && !clientVisible(current) && ['fiche', 'vente', 'lent', 'suivi', 'detail', 'caisse', 'docs'].some(k => !views[k].hidden)) { current = null; go('clients'); }
+    } catch(_) {}
     try { majTuileCaisse(); majTuileStat(); drawNotes(); if (!document.getElementById('v-stat').hidden) openStat(); if (!document.getElementById('v-cj').hidden) openCJ(); if (!document.getElementById('v-stock').hidden) openStock(); if (!document.getElementById('v-compta').hidden) openCompta(); } catch(_) {}
   }
   btn.addEventListener('click', e => { e.stopPropagation(); userMenu.hidden = true; menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
@@ -2432,7 +2435,7 @@ select.inp{appearance:auto}
       // numéro de dossier (étiquette de la péniche, lu à la douchette) ou de facture : ouvre directement la vente
       const t = q.value.trim().toUpperCase();
       if (t) { const td = /^\d{1,6}$/.test(t) ? t.padStart(4, '0') : t, M = [];
-        clients.forEach(c => (c.historique || []).forEach(x => { if (x.type === 'vente' && ((x.dossier || '').toUpperCase() === td || (x.numero || '').toUpperCase() === t)) M.push([x, c]); }));
+        clients.forEach(c => clientVisible(c) && (c.historique || []).forEach(x => { if (x.type === 'vente' && ((x.dossier || '').toUpperCase() === td || (x.numero || '').toUpperCase() === t)) M.push([x, c]); }));
         // même numéro de dossier dans plusieurs magasins : celui du magasin sélectionné d'abord
         const h = M.find(([x]) => x.boutique === boutiqueCour()) || M[0];
         if (h && (M.length === 1 || h[0].boutique === boutiqueCour() || !/^\d/.test(t))) { q.value = ''; q.blur(); current = h[1]; openDetail(h[0]); return; } }
@@ -2460,6 +2463,17 @@ select.inp{appearance:auto}
   const pecId = () => 'pec' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   { let chg = false; clients.forEach(c => (c.historique || []).forEach(v => { if (v.pec && !Array.isArray(v.pecs)) { v.pecs = [{ id: pecId(), ...v.pec }]; delete v.pec; chg = true; } }));
     if (chg) save(); }
+  // Clients cloisonnés par magasin : un client est visible dans les magasins où il est rattaché
+  // (magasin de création, magasins où il a acheté ou reçu un devis). « Toutes les boutiques » (administrateur) voit tout.
+  { let chg = false; clients.forEach(c => { if (!Array.isArray(c.magasins)) { c.magasins = [...new Set((c.historique || []).map(v => v.boutique).filter(Boolean))]; chg = true; } });
+    if (chg) save(); }
+  const clientVisible = (c, b = boutiqueCour()) => {
+    if (!c) return false;
+    if (b === 'Toutes les boutiques') return user.role === 'admin';
+    if (!(c.magasins || []).length && !(c.historique || []).some(v => v.boutique)) return true;   // ancien client sans magasin connu
+    return (c.magasins || []).includes(b) || (c.historique || []).some(v => v.boutique === b);
+  };
+  const rattacherClient = (c, b = boutiqueCour()) => { if (c && b && b !== 'Toutes les boutiques' && !(c.magasins || []).includes(b)) { c.magasins = [...(c.magasins || []), b]; return true; } return false; };
 
   const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]/g, '');
   const digits = s => (s || '').replace(/\D/g, '');
@@ -2489,7 +2503,7 @@ select.inp{appearance:auto}
 
   function render(){
     const query = cq.value;
-    const list = clients.filter(c => match(c, query)).sort((a, b) => (a.nom + a.prenom).localeCompare(b.nom + b.prenom, 'fr'));
+    const list = clients.filter(c => clientVisible(c) && match(c, query)).sort((a, b) => (a.nom + a.prenom).localeCompare(b.nom + b.prenom, 'fr'));
     const words = query.trim().split(/\s+/).filter(Boolean);
     rows.innerHTML = list.map(c => {
       const w = words.find(x => !/^\d/.test(x)) || '';
@@ -2592,12 +2606,21 @@ select.inp{appearance:auto}
 
     // Même numéro déjà utilisé : on prévient, un second clic confirme (numéro familial partagé, par ex.)
     const twin = clients.find(c => digits(c.tel) === tel);
+    if (twin && !clientVisible(twin)) {
+      // client d'un autre magasin : second clic = rattacher sa fiche à ce magasin plutôt que créer un doublon
+      if (dupConfirmed !== 'r' + tel) {
+        setMsg('tel', `Ce numéro est celui de ${twin.nom} ${twin.prenom}, déjà client d'un autre magasin (${(twin.magasins || []).join(', ') || '—'}). Cliquez à nouveau sur « Créer le client » pour rattacher sa fiche et son historique à ce magasin.`, 'warn');
+        dupConfirmed = 'r' + tel; return;
+      }
+      rattacherClient(twin); save(); closeNew(); cq.value = ''; openFiche(twin.id); show(`${twin.nom} ${twin.prenom} est maintenant aussi client de ce magasin`); return;
+    }
     if (twin && dupConfirmed !== tel) {
       setMsg('tel', `Ce numéro est déjà utilisé par ${twin.nom} ${twin.prenom}. Cliquez à nouveau sur « Créer le client » pour confirmer.`, 'warn');
       dupConfirmed = tel; return;
     }
 
-    const c = { id: 'c' + Date.now(), nom: nom.toUpperCase(), prenom: cap(prenom), sexe, tel, tel2: tel2 || '', email, commentaire, naissance: naissance || null, creeLe: new Date().toISOString() };
+    const c = { id: 'c' + Date.now(), nom: nom.toUpperCase(), prenom: cap(prenom), sexe, tel, tel2: tel2 || '', email, commentaire, naissance: naissance || null, creeLe: new Date().toISOString(),
+      magasins: boutiqueCour() !== 'Toutes les boutiques' ? [boutiqueCour()] : [] };
     clients.push(c); save();
     closeNew();
     lastCreated = c.id; cq.value = '';
@@ -3485,14 +3508,14 @@ select.inp{appearance:auto}
 
   function openRapide(){
     cart = []; rpays = []; F('rClient').value = ''; F('rRem').value = ''; F('rQ').value = ''; rCat = 'Tous';
-    F('rClients').innerHTML = clients.map(c => `<option value="${esc(c.nom + ' ' + c.prenom + ' · ' + fmtTel(digits(c.tel)))}"></option>`).join('');
+    F('rClients').innerHTML = clients.filter(c => clientVisible(c)).map(c => `<option value="${esc(c.nom + ' ' + c.prenom + ' · ' + fmtTel(digits(c.tel)))}"></option>`).join('');
     F('rClientInfo').textContent = 'Vente anonyme.';
     drawCats(); drawProds(); drawCart(); drawToday();
     go('rapide'); F('rQ').focus();
   }
   F('goRapide').addEventListener('click', openRapide);
 
-  const clientFromInput = () => { const v = F('rClient').value.trim(); return clients.find(c => `${c.nom} ${c.prenom} · ${fmtTel(digits(c.tel))}` === v) || null; };
+  const clientFromInput = () => { const v = F('rClient').value.trim(); return clients.find(c => clientVisible(c) && `${c.nom} ${c.prenom} · ${fmtTel(digits(c.tel))}` === v) || null; };
   F('rClient').addEventListener('input', () => {
     const v = F('rClient').value.trim(), c = clientFromInput();
     F('rClientInfo').textContent = !v ? 'Vente anonyme.' : c ? `Client enregistré : la vente apparaîtra dans son suivi.` : 'Nom libre : imprimé sur le ticket, sans fiche client.';
