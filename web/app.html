@@ -2074,7 +2074,7 @@ select.inp{appearance:auto}
       </details>
       <div class="tot"><span>Net à payer</span><b id="recapTot">0 FCFA</b></div>
       <div class="marge" id="recapMarge" hidden></div>
-      <div class="go"><button class="save" id="validate">Valider la vente</button></div>
+      <div class="go"><button class="save" id="validate">Valider la vente</button><button class="ghost" id="validateDevis" type="button">Créer un devis</button></div>
     </aside>
   </div>
 </main>
@@ -3089,6 +3089,8 @@ select.inp{appearance:auto}
     mode = m; editing = existing;
     F('vKind').textContent = existing ? `Modification · ${m === 'devis' ? 'Devis' : 'Vente'} ${existing.numero}` : m === 'devis' ? 'Devis' : 'Vente';
     F('validate').textContent = existing ? 'Enregistrer les modifications' : m === 'devis' ? 'Créer le devis' : 'Valider la vente';
+    // depuis une vente : possibilité d'en faire plutôt un devis (et inversement, depuis un devis, de valider la vente)
+    F('validateDevis').hidden = !!existing; F('validateDevis').textContent = m === 'devis' ? 'Valider plutôt la vente' : 'Créer un devis';
     const c = current;
     F('vName').textContent = `${c.nom} ${c.prenom}`;
     F('vMeta').textContent = `${c.sexe === 'H' ? 'Homme' : 'Femme'}${c.naissance ? ' · ' + ageTxt(c) : ''} · ${fmtTel(digits(c.tel))}${c.tel2 ? ' / ' + fmtTel(digits(c.tel2)) : ''}`;
@@ -3141,6 +3143,12 @@ select.inp{appearance:auto}
     if (v.prixPaire != null) { pxManuel = true; F('pxVerres').value = Number(v.prixPaire).toLocaleString('fr-FR').replace(/ | /g, ' '); }
   }
 
+  F('validateDevis').addEventListener('click', () => {
+    const avant = mode; mode = avant === 'devis' ? 'vente' : 'devis';
+    F('validate').click();
+    // si la saisie est incomplète, on reste sur l'écran dans le mode d'origine
+    if (!views.vente.hidden) mode = avant;
+  });
   F('validate').addEventListener('click', () => {
     updateRx();
     const errs = [];
