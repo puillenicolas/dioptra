@@ -4165,7 +4165,8 @@ select.inp{appearance:auto}
   // sur ordinateur, le PDF est téléchargé puis WhatsApp s'ouvre avec le message prêt (il reste à joindre le PDF).
   // Les fichiers (PDF, JPEG, PNG) sont préparés dès l'affichage du devis : au clic, le partage part tout de suite
   // (les navigateurs refusent d'ouvrir le partage si le clic date de plus de quelques secondes).
-  let waPrep = null;
+  let waPrep = null, partageEnCours = false;
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(() => { partageEnCours = false; }, 1500); });
   function prepWa(){
     const s = docSale; waPrep = null;
     if (!(s && s.type === 'devis' && docTab === 'devis')) return;
@@ -4198,7 +4199,15 @@ select.inp{appearance:auto}
       const fPdf = P.pdfB && new File([P.pdfB], nom, { type: 'application/pdf' });
       if (fPdf && navigator.canShare({ files: [fPdf] })) files = [fPdf];
       else if (P.jpgB) { const f = new File([P.jpgB], nom.replace(/\.pdf$/, '.jpg'), { type: 'image/jpeg' }); if (navigator.canShare({ files: [f] })) files = [f]; }
-      if (files) { navigator.share({ files, text: txt }).then(() => { noter(); show('Devis partagé'); }).catch(e => { if (!e || e.name !== 'AbortError') ordinateur(); }); return; }
+      if (files) {
+        if (partageEnCours) { show('Un partage précédent est encore ouvert : fermez-le puis réessayez.'); partageEnCours = false; return; }
+        partageEnCours = true;
+        navigator.share({ files, text: txt })
+          .then(() => { noter(); show('Devis partagé'); })
+          .catch(e => { if (!e || e.name !== 'AbortError') { show(`Partage direct impossible (${e && e.name || 'erreur'}) : envoi par la fenêtre WhatsApp.`); ordinateur(); } })
+          .finally(() => { partageEnCours = false; prepWa(); });   // fichiers neufs pour le prochain envoi
+        return;
+      }
       if (!P.pdfB && !P.jpgB && /Android|iPhone|iPad/i.test(navigator.userAgent)) { show('Le devis se prépare, réessayez dans une seconde.'); return; }
     }
     ordinateur();
