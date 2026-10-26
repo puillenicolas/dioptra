@@ -4064,21 +4064,29 @@ select.inp{appearance:auto}
     'Livrée': '{civilite} {nom}, merci d\'avoir choisi le {magasin}. N\'hésitez pas à revenir pour tout ajustement. À bientôt !',
     'Relance impayé': '{civilite} {nom}, il reste {montant_du} à régler sur votre achat {numero} du {date}. Vous pouvez passer au {magasin} ou régler par Airtel Money / Moov Money. Merci.',
     'Relance devis': '{civilite} {nom}, votre devis {numero} du {date} ({montant}) est toujours disponible au {magasin}. Souhaitez-vous que nous lancions la commande ?',
-    'Envoi devis': '{civilite} {nom}, voici votre devis {numero} du {date} établi au {magasin} :\n{articles}\nTotal : {montant}.\nLe devis détaillé est joint en PDF. Nous restons à votre disposition pour toute question.',
+    'Envoi devis': '{civilite} {nom},\nvoici le récapitulatif de votre devis {numero} du {date} ({magasin}) :\n\n{detail}\n\nTotal : {montant}\n\nNous restons à votre disposition pour toute question.',
+    'Envoi facture': '{civilite} {nom},\nvoici le récapitulatif de votre facture {numero} du {date} ({magasin}) :\n\n{detail}\n\nTotal : {montant}\n{reglement}\n\nMerci de votre confiance.',
     'Renouvellement': '{civilite} {nom}, votre dernière ordonnance date de plus de 2 ans. Pensez à faire contrôler votre vue : toute l\'équipe du {magasin} vous attend pour renouveler vos lunettes. À bientôt !',
   };
   let TPL = { ...TPL_DEF, ...ld0('tplWa', {}) }, waLog = ld0('waLog', []);
+  if (/joint en PDF/.test(TPL['Envoi devis'] || '')) TPL['Envoi devis'] = TPL_DEF['Envoi devis'];   // ancien modèle (avec pièce jointe)
   const saveWa = () => { try { localStorage.setItem('tplWa', JSON.stringify(TPL)); localStorage.setItem('waLog', JSON.stringify(waLog)); } catch(_) {} };
   // Numéro gabonais à 9 chiffres (0XX XX XX XX) → +241 sans le 0
   const waNum = t => { let d = digits(t); if (d.startsWith('00')) d = d.slice(2); if (d.startsWith('241')) return d; if (d.length === 9 && d[0] === '0') return '241' + d.slice(1); if (d.length === 8) return '241' + d; return d; };
   const waHref = (t, txt) => `https://wa.me/${waNum(t)}?text=${encodeURIComponent(txt)}`;
   function remplir(tpl, v, c){
     const civ = c ? (c.sexe === 'F' ? 'Bonjour Madame' : 'Bonjour Monsieur') : 'Bonjour';
+    const libL = l => ({ OD: 'Verre droit (OD)', OG: 'Verre gauche (OG)', MONTURE: 'Monture', P2: '2ème paire', OPT: 'Option', LENT: 'Lentilles' }[l.k] || l.label || 'Article');
+    const detail = (v.lignes || []).filter(l => l.px || (l.des && l.des !== '—')).map(l => { const d = l.k === 'P2' ? p2Lib(v) : desDoc(l);
+      return `• ${libL(l)}${d && d !== '—' ? ' : ' + d : ''}${l.qty > 1 ? ' × ' + l.qty : ''} — ${money(l.px)}`; }).join('\n')
+      + (v.remise ? `\n• Remise : − ${money(v.remise)}` : '') + (v.offre === 'paire2' && !p2Paye(v) ? `\n• 2ème paire offerte (${p2Lib(v)})` : '');
+    const reglement = [...pecsDe(v).map(p => `Pris en charge par ${p.organisme} : ${money(p.montant)}`), v.paye ? `Déjà réglé : ${money(v.paye)}` : '',
+      v.type === 'vente' ? ((v.solde || 0) > 0 ? `Reste à payer : ${money(v.solde)}` : 'Facture entièrement réglée.') : ''].filter(Boolean).join('\n');
     const art = (v.lignes || []).filter(l => l.px || (l.des && l.des !== '—')).map(l => `• ${l.label}${l.k === 'OD' || l.k === 'OG' ? '' : ' ' + l.des} : ${money(l.px)}`).join('\n');
     return tpl.replace(/\{civilite\}/g, civ).replace(/\{prenom\}/g, c?.prenom || '').replace(/\{nom\}/g, c?.nom || v.client || '')
       .replace(/\{numero\}/g, v.numero || '').replace(/\{date\}/g, v.date ? fmtDate(v.date) : '').replace(/\{montant\}/g, money(v.net))
       .replace(/\{montant_du\}/g, money(v.solde || 0)).replace(/\{reste\}/g, v.solde > 0 ? ` Reste à régler : ${money(v.solde)}.` : '')
-      .replace(/\{magasin\}/g, v.boutique || boutiqueCour()).replace(/\{articles\}/g, art);
+      .replace(/\{magasin\}/g, v.boutique || boutiqueCour()).replace(/\{articles\}/g, art).replace(/\{detail\}/g, detail).replace(/\{reglement\}/g, reglement);
   }
 
   // Fenêtre d'envoi : choix du numéro, du modèle, message modifiable, puis ouverture de WhatsApp
@@ -4127,7 +4135,8 @@ select.inp{appearance:auto}
     const s = docSale, c = s && docClient(s);
     F('dMail').hidden = !(s && ((s.kind === 'z') || ((s.type === 'devis' || s.type === 'vente') && MAIL_DOCS.includes(docTab) && c && c.email)));
     F('dWaZ').hidden = !(s && s.kind === 'z');
-    F('dWaDoc').hidden = !(s && s.type === 'devis' && docTab === 'devis');
+    F('dWaDoc').hidden = !(s && ((s.type === 'devis' && docTab === 'devis') || (s.type === 'vente' && ['facture', 'frapide'].includes(docTab))));
+    F('dWaDoc').textContent = s && s.type === 'devis' ? 'Envoyer le devis par WhatsApp' : 'Envoyer la facture par WhatsApp';
   }
   const docNom = () => docSale.kind === 'journal' ? `${docSale.titre} ${docSale.sous}` : docSale.kind === 'z' ? (docSale.provisoire ? `Point de caisse du ${fmtDate(docSale.date)}` : `Rapport Z ${docSale.numero}`) : `${String(docTab || '').startsWith('assurance:') ? 'Facture assurance ' + (pecsDe(docSale)[+docTab.split(':')[1]]?.organisme || '') : DOCS[docTab] || 'Document'} ${docSale.numero || ''}`.replace(/\s+/g, ' ').trim();
   // Image du document affiché (PNG pour le presse-papiers, JPEG pour le partage)
@@ -4161,56 +4170,10 @@ select.inp{appearance:auto}
   const nomFichier = () => docNom().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') + '.pdf';
 
   F('dWaZ').addEventListener('click', () => openWaCaisse(docSale));
-  // Devis par WhatsApp : sur tablette / téléphone, partage direct du PDF (choisir WhatsApp) ;
-  // sur ordinateur, le PDF est téléchargé puis WhatsApp s'ouvre avec le message prêt (il reste à joindre le PDF).
-  // Les fichiers (PDF, JPEG, PNG) sont préparés dès l'affichage du devis : au clic, le partage part tout de suite
-  // (les navigateurs refusent d'ouvrir le partage si le clic date de plus de quelques secondes).
-  let waPrep = null, partageEnCours = false;
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(() => { partageEnCours = false; }, 1500); });
-  function prepWa(){
-    const s = docSale; waPrep = null;
-    if (!(s && s.type === 'devis' && docTab === 'devis')) return;
-    setTimeout(() => { if (docSale !== s || docTab !== 'devis') return;
-      const P = waPrep = { s, pdf: docPdf({ mail: true }).catch(() => null) };
-      P.pdf.then(b => { P.pdfB = b;
-        P.jpg = docImage('image/jpeg').catch(() => null); P.jpg.then(x => { P.jpgB = x; });
-        P.png = docImage('image/png').catch(() => null); P.png.then(x => { P.pngB = x; }); }); }, 400);
-  }
+  // Devis / facture par WhatsApp : message texte avec un récapitulatif clair (sans pièce jointe)
   F('dWaDoc').addEventListener('click', () => {
     const s = docSale, c = docClient(s); if (!s) return;
-    const txt = remplir(TPL['Envoi devis'] || '', s, c), nom = nomFichier(), P = waPrep && waPrep.s === s ? waPrep : null;
-    const noter = () => { const entry = { date: new Date().toISOString(), par: user.nom, modele: 'Envoi devis', numero: s.numero, client: c ? c.nom + ' ' + c.prenom : '', tel: c?.tel || '' };
-      waLog.push(entry); (s.messages = s.messages || []).push(entry); saveWa(); save(); };
-    const ordinateur = () => {
-      // l'image du devis est copiée : il suffit de la coller (Ctrl+V) dans la conversation WhatsApp
-      openWa(s, c, 'Envoi devis');
-      const titre = F('waTitle').textContent, note = t => { F('waTitle').textContent = titre + ' · ' + t; };
-      try {
-        if (!navigator.clipboard || !window.ClipboardItem) throw 0;
-        const png = (P && P.png ? P.png : docImage('image/png')).then(b => b || docImage('image/png'));
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
-          .then(() => note('image du devis copiée : collez-la (Ctrl+V) dans la conversation'))
-          .catch(() => { (P && P.pdfB ? Promise.resolve(P.pdfB) : docPdf({ mail: true })).then(b => enregistrerFichier(b, nom)).then(() => note('PDF téléchargé : joignez-le dans la conversation')).catch(() => {}); });
-      } catch(_) { (P && P.pdfB ? Promise.resolve(P.pdfB) : docPdf({ mail: true })).then(b => enregistrerFichier(b, nom)).then(() => note('PDF téléchargé : joignez-le dans la conversation')).catch(() => {}); }
-    };
-    // tablette / téléphone : partage direct du PDF, ou de l'image JPEG si le PDF n'est pas accepté
-    if (navigator.canShare && P) {
-      let files = null;
-      const fPdf = P.pdfB && new File([P.pdfB], nom, { type: 'application/pdf' });
-      if (fPdf && navigator.canShare({ files: [fPdf] })) files = [fPdf];
-      else if (P.jpgB) { const f = new File([P.jpgB], nom.replace(/\.pdf$/, '.jpg'), { type: 'image/jpeg' }); if (navigator.canShare({ files: [f] })) files = [f]; }
-      if (files) {
-        if (partageEnCours) { show('Un partage précédent est encore ouvert : fermez-le puis réessayez.'); partageEnCours = false; return; }
-        partageEnCours = true;
-        navigator.share({ files, text: txt })
-          .then(() => { noter(); show('Devis partagé'); })
-          .catch(e => { if (!e || e.name !== 'AbortError') { show(`Partage direct impossible (${e && e.name || 'erreur'}) : envoi par la fenêtre WhatsApp.`); ordinateur(); } })
-          .finally(() => { partageEnCours = false; prepWa(); });   // fichiers neufs pour le prochain envoi
-        return;
-      }
-      if (!P.pdfB && !P.jpgB && /Android|iPhone|iPad/i.test(navigator.userAgent)) { show('Le devis se prépare, réessayez dans une seconde.'); return; }
-    }
-    ordinateur();
+    openWa(s, c, s.type === 'devis' ? 'Envoi devis' : 'Envoi facture');
   });
   F('dPdf').addEventListener('click', async () => {
     const dl = await (window.claude?.use ? window.claude.use('downloads').catch(() => null) : null);
@@ -6363,7 +6326,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   });
   F('dCalibRaz').addEventListener('click', () => { try { localStorage.removeItem('calibFT'); } catch(_) {} appliquerCalib(); if (docTab) showDoc(docTab); show('Réglage d\'impression réinitialisé'); });
   function showDoc(k){
-    showDoc0(k); try { prepWa(); } catch(_) {}
+    showDoc0(k);
     if (PARAM.app.pied && !['etiq', 'technique'].includes(k)) F('dPaper').insertAdjacentHTML('beforeend', `<p class="d-foot">${esc(PARAM.app.pied)}</p>`);
   }
   function showDoc0(k){
