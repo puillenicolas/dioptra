@@ -704,11 +704,12 @@ select.inp{appearance:auto}
 .d-dos{font-size:14px;margin:2px 0}.d-dos em{font-size:11px}.d-dos strong{font-size:20px;letter-spacing:.04em;border:2px solid var(--paper-ink);border-radius:6px;padding:1px 8px;margin-left:4px;display:inline-block}
 .d-cut{margin:34px 0 14px;border-top:2px dashed var(--paper-ink);position:relative;height:0;break-inside:avoid}
 .d-cut span{position:absolute;left:50%;top:-10px;translate:-50% 0;background:var(--paper);padding:0 10px;font-size:11px;white-space:nowrap}
-.d-etq{width:96mm;max-width:100%;min-height:34mm;border:1.5px solid var(--paper-ink);border-radius:6px;padding:6px 10px 8px;display:grid;align-content:start;gap:0;break-inside:avoid;overflow:hidden}
-.d-etq-h{display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--paper-ink);padding-bottom:3px;margin-bottom:4px}
-.d-etq-h b{font-size:16px;letter-spacing:.02em}.d-etq-h small{font-size:10px}.d-etq-h span{margin-left:auto;font-size:10px}
-.d-etq-nom{font-weight:800;text-transform:uppercase;line-height:1.05;white-space:nowrap;overflow:hidden;letter-spacing:-.01em}
-.d-etq-pre{font-weight:600;line-height:1.1;white-space:nowrap;overflow:hidden}
+/* étiquette de péniche : 77 × 30 mm, marge de 5 mm de chaque côté (zone utile 67 × 20 mm) */
+.d-etq{box-sizing:border-box;width:77mm;height:30mm;border:1px solid var(--paper-ink);border-radius:4px;padding:5mm;display:flex;flex-direction:column;justify-content:center;gap:0;break-inside:avoid;overflow:hidden}
+.d-etq-h{display:flex;align-items:baseline;gap:6px;border-bottom:1px solid var(--paper-ink);padding-bottom:1px;margin-bottom:2px;flex:none}
+.d-etq-h b{font-size:11px;letter-spacing:.02em;line-height:1.1}.d-etq-h small{font-size:8px}.d-etq-h span{margin-left:auto;font-size:8px}
+.d-etq-nom{font-weight:800;text-transform:uppercase;line-height:1.02;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;flex:none}
+.d-etq-pre{font-weight:600;line-height:1.05;white-space:nowrap;overflow:hidden;flex:none}
 .d-client{display:flex;flex-direction:column;gap:2px;margin:18px 0;padding:12px 14px;background:var(--paper-tint);border-radius:6px}
 .d-client span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--paper-muted)}
 .d-client b{font-size:16px}
@@ -6176,12 +6177,12 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   // Étiquette détachable en bas des fiches atelier, à coller à l'avant de la péniche
   function etiquettePeniche(s, dos, details){
     // taille de police qui fait tenir le texte sur une ligne de l'étiquette (environ 88 mm utiles)
-    const taille = (t, max) => Math.max(14, Math.min(max, Math.floor(330 / (0.75 * Math.max(1, String(t || '').length)))));
+    const taille = (t, max) => Math.max(10, Math.min(max, Math.floor(250 / (0.75 * Math.max(1, String(t || '').length)))));
     return `<div class="d-cut" aria-hidden="true"><span>✂ Découper et coller à l'avant de la péniche</span></div>
       <div class="d-etq">
         <div class="d-etq-h"><b>N° ${esc(dos)}</b>${s.dossierProv ? '<small>provisoire</small>' : ''}<span>${fmtDate(s.date)}</span></div>
-        <div class="d-etq-nom" style="font-size:${taille(current.nom, 46)}px">${esc(current.nom)}</div>
-        ${current.prenom ? `<div class="d-etq-pre" style="font-size:${taille(current.prenom, 34)}px">${esc(current.prenom)}</div>` : ''}
+        <div class="d-etq-nom" style="font-size:${taille(current.nom, 36)}px">${esc(current.nom)}</div>
+        ${current.prenom ? `<div class="d-etq-pre" style="font-size:${taille(current.prenom, 24)}px">${esc(current.prenom)}</div>` : ''}
       </div>`;
   }
   function docLines(s){
@@ -6267,9 +6268,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     F('dPaper').innerHTML = h;
     if (h.includes('class="bc"')) renderBarcodes();
     // étiquette de péniche : nom et prénom aussi grands que possible sans déborder
-    F('dPaper').querySelectorAll('.d-etq-nom,.d-etq-pre').forEach(el => {
-      const max = el.classList.contains('d-etq-nom') ? 46 : 34; let f = max; el.style.fontSize = f + 'px';
-      while (f > 12 && el.scrollWidth > el.clientWidth + 1) el.style.fontSize = (--f) + 'px';
+    F('dPaper').querySelectorAll('.d-etq').forEach(etq => {
+      const nom = etq.querySelector('.d-etq-nom'), pre = etq.querySelector('.d-etq-pre');
+      const fit = (el, max) => { if (!el) return; let f = max; el.style.fontSize = f + 'px'; while (f > 9 && el.scrollWidth > el.clientWidth + 1) el.style.fontSize = (--f) + 'px'; };
+      fit(nom, 36); fit(pre, 24);
+      // la hauteur utile (20 mm) doit contenir l'en-tête, le nom et le prénom
+      const h = () => [...etq.children].reduce((a, c) => a + c.getBoundingClientRect().height, 0), max = etq.clientHeight - 2 * etq.clientHeight * 5 / 30;
+      let g = 0; while (h() > max && g++ < 30) [nom, pre].forEach(el => { if (el) el.style.fontSize = Math.max(9, parseFloat(el.style.fontSize) - 1) + 'px'; });
     });
   }
 
