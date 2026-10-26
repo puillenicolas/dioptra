@@ -704,8 +704,8 @@ select.inp{appearance:auto}
 .d-dos{font-size:14px;margin:2px 0}.d-dos em{font-size:11px}.d-dos strong{font-size:20px;letter-spacing:.04em;border:2px solid var(--paper-ink);border-radius:6px;padding:1px 8px;margin-left:4px;display:inline-block}
 .d-cut{margin:34px 0 14px;border-top:2px dashed var(--paper-ink);position:relative;height:0;break-inside:avoid}
 .d-cut span{position:absolute;left:50%;top:-10px;translate:-50% 0;background:var(--paper);padding:0 10px;font-size:11px;white-space:nowrap}
-/* étiquette de péniche : 85 × 30 mm ; zone de texte de 77 mm de large (4 mm de marge à gauche et à droite, 5 mm en haut et en bas) */
-.d-etq{box-sizing:border-box;width:calc(85mm * var(--ft-k, 1));height:calc(30mm * var(--ft-k, 1));border:1px solid var(--paper-ink);border-radius:4px;padding:calc(5mm * var(--ft-k, 1)) calc(4mm * var(--ft-k, 1));display:flex;flex-direction:column;justify-content:center;gap:0;break-inside:avoid;overflow:hidden}
+/* étiquette de péniche : 83 × 30 mm ; zone de texte de 75 mm de large (4 mm de marge à gauche et à droite, 5 mm en haut et en bas) */
+.d-etq{box-sizing:border-box;width:calc(83mm * var(--ft-k, 1));height:calc(30mm * var(--ft-k, 1));border:1px solid var(--paper-ink);border-radius:4px;padding:calc(5mm * var(--ft-k, 1)) calc(4mm * var(--ft-k, 1));display:flex;flex-direction:column;justify-content:center;gap:0;break-inside:avoid;overflow:hidden}
 .d-etq-h{display:flex;align-items:baseline;gap:6px;border-bottom:1px solid var(--paper-ink);padding-bottom:1px;margin-bottom:2px;flex:none}
 .d-etq-h b{font-size:11px;letter-spacing:.02em;line-height:1.1}.d-etq-h small{font-size:8px}.d-etq-h span{margin-left:auto;font-size:8px}
 .d-etq-nom{font-weight:800;text-transform:uppercase;line-height:1.02;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;flex:none}
@@ -2196,7 +2196,7 @@ select.inp{appearance:auto}
   <div class="tabs" id="dTabs"></div>
   <div class="calib" id="dCalib" hidden>
     <span>Pour imprimer en <b>taille réelle</b> : échelle 100 % (pas « Ajuster à la page »), marges « Aucune ».</span>
-    <label>Largeur de l'étiquette mesurée après impression <input class="inp sm" id="dCalibMm" inputmode="decimal" placeholder="85"> mm</label>
+    <label>Largeur de l'étiquette mesurée après impression <input class="inp sm" id="dCalibMm" inputmode="decimal" placeholder="83"> mm</label>
     <button class="ghost sm-btn" type="button" id="dCalibOk">Corriger</button><button class="ghost sm-btn" type="button" id="dCalibRaz">Réinitialiser</button>
     <span class="muted" id="dCalibSt"></span>
   </div>
@@ -6243,7 +6243,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         ${lignesTaxes(s)}`;
   }
   // Réglage d'impression de ce poste : certaines imprimantes réduisent la page (marges non imprimables).
-  // On mesure l'étiquette imprimée (85 mm attendus) et on agrandit l'étiquette d'autant (la pliure reste au milieu de la feuille).
+  // On mesure l'étiquette imprimée (83 mm attendus) et on agrandit l'étiquette d'autant (la pliure reste au milieu de la feuille).
   const calibK = () => { let k = 1; try { k = +localStorage.getItem('calibFT') || 1; } catch(_) {} return k > 0.8 && k < 1.25 ? k : 1; };
   function appliquerCalib(){
     const k = calibK();
@@ -6252,7 +6252,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   F('dCalibOk').addEventListener('click', () => {
     const m = dec(F('dCalibMm').value); if (!(m > 60 && m < 110)) { show('Indiquez la largeur mesurée en millimètres (ex. 78).'); return; }
-    const k = calibK() * 85 / m; try { localStorage.setItem('calibFT', String(k)); } catch(_) {}
+    const k = calibK() * 83 / m; try { localStorage.setItem('calibFT', String(k)); } catch(_) {}
     F('dCalibMm').value = ''; appliquerCalib(); if (docTab) showDoc(docTab); show('Réglage enregistré pour ce poste. Réimprimez pour vérifier.');
   });
   F('dCalibRaz').addEventListener('click', () => { try { localStorage.removeItem('calibFT'); } catch(_) {} appliquerCalib(); if (docTab) showDoc(docTab); show('Réglage d\'impression réinitialisé'); });
