@@ -665,6 +665,7 @@ tr.pt td{color:var(--muted)}
 .c-lines li b{color:var(--ink)}
 .c-lines li.minus span:last-child{color:var(--ok);font-weight:700}
 .opt{color:var(--muted);font-weight:400}
+.ct-blk h2{font-size:16px;margin-bottom:10px}.ct-opts label{max-width:none}
 .pec-box{display:grid;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .pec-list{display:grid;gap:14px}
 .pec-item{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
@@ -1952,9 +1953,18 @@ select.inp{appearance:auto}
 
   <div class="sale">
     <div>
+      <!-- Contenu de la vente : verres + monture, verres seuls (monture du client) ou monture seule -->
+      <section class="blk ct-blk">
+        <h2>Que vend-on ?</h2>
+        <div class="opts ct-opts" id="ctOpts">
+          <input type="radio" name="ct" id="ct-complet" value="complet"><label for="ct-complet"><b>Verres + monture</b><small>Équipement complet</small></label>
+          <input type="radio" name="ct" id="ct-verres" value="verres"><label for="ct-verres"><b>Verres seuls</b><small>Montés sur la monture du client</small></label>
+          <input type="radio" name="ct" id="ct-monture" value="monture"><label for="ct-monture"><b>Monture seule</b><small>Sans verres correcteurs</small></label>
+        </div>
+      </section>
       <!-- 1. Ordonnance -->
-      <section class="blk">
-        <h2><span class="n">1</span>Ordonnance</h2>
+      <section class="blk" id="secRx">
+        <h2><span class="n">1</span>Ordonnance <span class="opt" id="rxOpt" hidden>(facultatif pour une monture seule)</span></h2>
         <p class="sub">Saisissez l'ordonnance telle qu'elle est écrite. Si le cylindre est négatif, elle est transposée automatiquement en cylindre positif.</p>
         <div class="rx-meta">
           <div><label class="lbl" for="rxDate">Date de l'ordonnance</label><input class="inp" type="date" id="rxDate"></div>
@@ -1999,7 +2009,7 @@ select.inp{appearance:auto}
       </section>
 
       <!-- 2. Configurateur de verres -->
-      <section class="blk">
+      <section class="blk" id="secVerres">
         <h2><span class="n">2</span>Verres</h2>
         <p class="sub">Tarifs provisoires (prix de la paire) en attendant les fiches produit.</p>
         <div class="cfg">
@@ -2025,8 +2035,8 @@ select.inp{appearance:auto}
       </section>
 
       <!-- 3. Monture et options -->
-      <section class="blk">
-        <h2><span class="n">3</span>Monture et options</h2>
+      <section class="blk" id="secMonture">
+        <h2><span class="n">3</span><span id="secMontureT">Monture et options</span></h2>
         <p class="sub">Scannez ou cherchez la monture dans le stock (code, marque, modèle). La saisie libre reste possible.</p>
         <label class="lbl" for="mDes">Monture</label>
         <div class="extra">
@@ -2044,7 +2054,7 @@ select.inp{appearance:auto}
       </section>
 
       <!-- 4. Offre -->
-      <section class="blk">
+      <section class="blk" id="secOffre">
         <h2><span class="n">4</span>Offre</h2>
         <p class="sub">Une seule offre par vente.</p>
         <div class="cfg">
@@ -2997,18 +3007,37 @@ select.inp{appearance:auto}
   const rxTxt = e => !e || !e.filled ? '' : `Sph ${d2(e.s ?? 0)}` + (e.c ? ` Cyl ${d2(e.c)} Axe ${e.a}°` : '') + (e.add != null ? ` Add ${d2(e.add)}` : '');
 
   // Lignes de la vente : le prix des verres est réparti sur OD et OG, puis la monture, puis les options
+  // Contenu de la vente : affiche ou masque les parties du formulaire
+  function majContenu(){
+    const ct = sel.contenu || 'complet';
+    F('ctOpts').querySelectorAll('input').forEach(i => { i.checked = i.value === ct; });
+    F('secVerres').hidden = ct === 'monture'; F('secOffre').hidden = ct === 'monture'; F('rxOpt').hidden = ct !== 'monture';
+    F('secMontureT').textContent = ct === 'verres' ? 'Monture du client et options' : ct === 'monture' ? 'Monture et accessoires' : 'Monture et options';
+    const cli = ct === 'verres';
+    F('mPx').hidden = cli; F('mDes').placeholder = cli ? 'Monture apportée par le client : marque, modèle, couleur… (pour l\'atelier)' : 'Code étiquette, marque, modèle…';
+    if (cli) { F('mDes').removeAttribute('list'); if (montureSel) { montureSel = null; F('mDes').value = ''; F('mPx').value = ''; montureInfo(); } }
+    else F('mDes').setAttribute('list', 'mList');
+    if (ct === 'monture' && sel.offre !== 'aucune') { sel.offre = 'aucune'; try { syncUI(); } catch(_) {} }
+    document.querySelectorAll('#v-vente .rem-row').forEach(r => { const k = r.querySelector('[data-rem]')?.dataset.rem;
+      r.hidden = (ct === 'monture' && (k === 'OD' || k === 'OG')) || (ct === 'verres' && k === 'MONTURE'); });
+    F('validateDevis').hidden = !!editing;
+  }
+  F('ctOpts').addEventListener('change', e => { if (e.target.name !== 'ct') return; sel.contenu = e.target.value; majContenu(); recap(); });
   function buildLines(){
     const paire = intOf(F('pxVerres').value), mPx = intOf(F('mPx').value), mDes = F('mDes').value.trim();
+    const ct = sel.contenu || 'complet';
     let eyes = ['OD', 'OG'].filter(k => rx[k] && rx[k].ok && rx[k].filled);
     if (!eyes.length) eyes = ['OD', 'OG'];
+    if (ct === 'monture') eyes = [];
     const half = Math.round(paire / 2);
     const lines = eyes.map((k, i) => ({ k, label: k, des: `${libVerres()}${rxTxt(rx[k]) ? ' · ' + rxTxt(rx[k]) : ''}`,
       px: eyes.length === 2 && i === 1 ? paire - half : half }));
-    lines.push({ k:'MONTURE', label:'MONTURE', des: mDes || '—', px: mPx, pid: montureSel ? montureSel.id : null });
+    // verres seuls : la monture du client n'est pas facturée (sa description va sur la fiche technique)
+    if (ct !== 'verres') lines.push({ k:'MONTURE', label:'MONTURE', des: mDes || '—', px: mPx, pid: montureSel ? montureSel.id : null });
     lines.forEach((l, i) => { lines[i] = appRem(l); });
     optSel.forEach(id => { const p = produits.find(x => x.id === id); if (p) lines.push({ k:'OPT', label:'OPTION', des: p.nom, px: p.prix, pid: p.id }); });
     extras.forEach(x => { if (x.des || x.px) lines.push({ k:'OPT', label:'OPTION', des: x.des || 'Option', px: x.px }); });
-    const p2 = p2Sel(); if (p2.px) lines.push({ k:'P2', label:'2ÈME PAIRE', des: p2.lib || p2.t, px: p2.px });
+    const p2 = p2Sel(); if (p2.px && ct !== 'monture') lines.push({ k:'P2', label:'2ÈME PAIRE', des: p2.lib || p2.t, px: p2.px });
     return lines;
   }
 
@@ -3025,7 +3054,7 @@ select.inp{appearance:auto}
       resumeOffre = ' · 2ème paire offerte';
       if (!p2Sel().px) html += `<li class="sec minus"><span>2ème paire offerte · ${p}</span><span>Offerte</span></li>`;
     }
-    if (besoinAdd() && ['OD', 'OG'].some(k => rx[k] && rx[k].filled && rx[k].add == null))
+    if ((sel.contenu || 'complet') !== 'monture' && besoinAdd() && ['OD', 'OG'].some(k => rx[k] && rx[k].filled && rx[k].add == null))
       html += `<li class="sec"><span style="color:var(--ic-amber-fg)">Addition manquante pour un verre ${esc(opt('type', sel.type).t.toLowerCase())}</span><span></span></li>`;
     F('recapList').innerHTML = html;
     F('recapTot').textContent = money(net);
@@ -3097,14 +3126,14 @@ select.inp{appearance:auto}
     F('rxDate').value = new Date().toISOString().slice(0, 10); F('rxDoc').value = '';
     [...RX_IDS, 'mDes', 'mPx', 'vMarque', 'vCom', 'vComAt'].forEach(id => { F(id).value = ''; F(id).classList.remove('bad'); });
     F('percee').checked = false;
-    sel = defSel(); lineRem = {}; aminciManuel = false; pxManuel = false; extras = []; drawExtras();
+    sel = defSel(); sel.contenu = 'complet'; lineRem = {}; aminciManuel = false; pxManuel = false; extras = []; drawExtras();
     montureSel = null; optSel = []; majMontureList(); F('mInfo').textContent = ''; drawOptCat();
     vaSel = null; majVaList();
     CFG.paire2 = p2De(boutiqueCour()).map(o => ({ ...o })); sel.paire2 = CFG.paire2[0].v;
     if (existing) prefill(existing); else reprendreEP();
     vaInfo(); buildOpts(); drawRemInputs();
     Object.entries(sel).forEach(([k, v]) => setRadio(k, v));
-    go('vente'); updateRx(); syncUI(); F('od-s').focus();
+    go('vente'); updateRx(); syncUI(); majContenu(); recap(); F('od-s').focus();
   }
 
   // Reprend les ½ écarts pupillaires (loin / près) de la dernière vente ou du dernier devis qui les contient
@@ -3129,7 +3158,7 @@ select.inp{appearance:auto}
       put(p + '-epl', e.epl); put(p + '-epp', e.epp); put(p + '-h', e.h); put(p + '-pr', e.pr); put(p + '-pra', e.pra); });
     const v = s.verres || {};
     ['type', 'gamme', 'photo', 'teinte', 'ar', 'aminci'].forEach(k => { if (v[k] != null) sel[k] = v[k]; });
-    sel.offre = s.offre || 'aucune'; sel.paire2 = s.paire2 || CFG.paire2[0].v;
+    sel.offre = s.offre || 'aucune'; sel.paire2 = s.paire2 || CFG.paire2[0].v; sel.contenu = s.contenu || 'complet';
     if (s.offre === 'paire2' && !CFG.paire2.some(o => o.v === sel.paire2)) CFG.paire2.push({ v: sel.paire2, t: p2Lib(s), lib: p2Lib(s), cout: s.paire2Cout || 0, px: s.paire2Px || 0, off: true });
     aminciManuel = true;
     F('vMarque').value = v.marque || ''; F('percee').checked = !!v.percee;
@@ -3151,11 +3180,16 @@ select.inp{appearance:auto}
   });
   F('validate').addEventListener('click', () => {
     updateRx();
-    const errs = [];
-    if (!F('rxDate').value) errs.push('la date de l\'ordonnance');
-    if (!rx.OD.ok || !rx.OG.ok) errs.push('les erreurs de l\'ordonnance');
-    if (!rx.OD.filled && !rx.OG.filled) errs.push('l\'ordonnance (au moins un œil)');
-    if (besoinAdd() && ['OD', 'OG'].some(k => rx[k].filled && rx[k].add == null)) errs.push(`l'addition (verre ${opt('type', sel.type).t.toLowerCase()})`);
+    const errs = [], ct = sel.contenu || 'complet';
+    if (ct === 'monture') {   // monture seule : ordonnance facultative, mais sans erreur si elle est saisie
+      if (!rx.OD.ok || !rx.OG.ok) errs.push('les erreurs de l\'ordonnance');
+      if (!intOf(F('mPx').value) && !F('mDes').value.trim()) errs.push('la monture');
+    } else {
+      if (!F('rxDate').value) errs.push('la date de l\'ordonnance');
+      if (!rx.OD.ok || !rx.OG.ok) errs.push('les erreurs de l\'ordonnance');
+      if (!rx.OD.filled && !rx.OG.filled) errs.push('l\'ordonnance (au moins un œil)');
+      if (besoinAdd() && ['OD', 'OG'].some(k => rx[k].filled && rx[k].add == null)) errs.push(`l'addition (verre ${opt('type', sel.type).t.toLowerCase()})`);
+    }
     if (errs.length) { show('À compléter : ' + errs.join(', ')); return; }
     const r = recap();
     const eye = k => { const e = rx[k]; const hasM = ['epl','epp','h','pr','pra'].some(x => e[x] != null);
@@ -3167,14 +3201,16 @@ select.inp{appearance:auto}
       paire2Lib: sel.offre === 'paire2' ? (CFG.paire2.find(o => o.v === sel.paire2) || {}).lib || '' : '',
       paire2Cout: sel.offre === 'paire2' ? (CFG.paire2.find(o => o.v === sel.paire2) || {}).cout || 0 : 0,
       paire2Px: p2Sel().px || 0,
-      ordonnance: { date: F('rxDate').value, prescripteur: F('rxDoc').value.trim(), ophtalmoId: ophParNom(F('rxDoc').value)?.id || null, OD: eye('OD'), OG: eye('OG') },
-      verres: { ...sel, marque: F('vMarque').value.trim(), libelle: libVerres(), percee: F('percee').checked, prixPaire: intOf(F('pxVerres').value),
+      ordonnance: ct === 'monture' && !rx.OD.filled && !rx.OG.filled ? null : { date: F('rxDate').value, prescripteur: F('rxDoc').value.trim(), ophtalmoId: ophParNom(F('rxDoc').value)?.id || null, OD: eye('OD'), OG: eye('OG') },
+      contenu: ct,
+      verres: ct === 'monture' ? null : { ...sel, marque: F('vMarque').value.trim(), libelle: libVerres(), percee: F('percee').checked, prixPaire: intOf(F('pxVerres').value),
         ref: vaSel ? vaSel.id : null, achatVerre: vaSel ? vaSel.achat : 0, cout: coutVerresSel(r.lines) },
-      monture: { des: F('mDes').value.trim(), px: intOf(F('mPx').value), pid: montureSel ? montureSel.id : null },
+      monture: ct === 'verres' ? { des: F('mDes').value.trim() || 'Monture du client', px: 0, pid: null, client: true }
+        : { des: F('mDes').value.trim(), px: intOf(F('mPx').value), pid: montureSel ? montureSel.id : null },
       commentaire: F('vCom').value.trim(), commentaireAtelier: F('vComAt').value.trim(),
       remisesLignes: JSON.parse(JSON.stringify(lineRem)),
     };
-    if (editing) { appliquerModif(editing, draft, ['lignes','total','remise','net','resume','offre','paire2','paire2Lib','paire2Cout','paire2Px','ordonnance','verres','monture','commentaire','commentaireAtelier','remisesLignes']); return; }
+    if (editing) { appliquerModif(editing, draft, ['lignes','total','remise','net','resume','offre','paire2','paire2Lib','paire2Cout','paire2Px','ordonnance','verres','monture','commentaire','commentaireAtelier','remisesLignes','contenu']); return; }
     if (mode === 'devis') {
       draft.type = 'devis'; draft.numero = nextNum('DV'); figerFiscal(draft);
       (current.historique = current.historique || []).push(draft); save();
@@ -4647,7 +4683,7 @@ select.inp{appearance:auto}
   // cellules de tableau : texte affiché + valeur numérique pour l'export Excel
   const cM = x => ({ h: money(x), n: Math.round(x || 0) }), cN = x => ({ h: sxN(x), n: Math.round(x || 0) }), cP = (a, b) => ({ h: pcTxt(a, b), n: b ? pc(a, b) : '' });
   const sxV = (per, b) => toutesVentes().filter(({ v }) => (b ? v.boutique === b : enMagasin(v)) && dans(v.date, per));
-  const estLun = v => typeVente(v) === 'Lunettes';
+  const estLun = v => typeVente(v) === 'Lunettes' && v.contenu !== 'monture';
   const avecOrd = v => v.kind !== 'rapide' && v.ordonnance && (v.ordonnance.date || v.ordonnance.prescripteur || v.ordonnance.OD || v.ordonnance.OG);
   const vendeurDe = v => v.vendeur || v.par || v.paiements?.[0]?.par || '—';
   const SX_OPTS = [['photo', 'Photochromie'], ['teinte', 'Teinte'], ['ar', 'Antireflet'], ['aminci', 'Amincissement']];
@@ -5846,7 +5882,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     } catch(_) {} finally { dosEnCours = false; }
   }
   // ventes enregistrées avant le compteur par magasin : elles reçoivent leur numéro à la première impression de la fiche
-  const dossierDe = s => { if (!s.dossier && s.type === 'vente' && s.kind !== 'rapide') { poserDossier(s); save(); attribuerDossiers(); } return s.dossier || ''; };
+  const dossierDe = s => { if (!s.dossier && s.type === 'vente' && s.kind !== 'rapide' && s.contenu !== 'monture') { poserDossier(s); save(); attribuerDossiers(); } return s.dossier || ''; };
   if (EN_LIGNE) {
     // anciens numéros par poste (LBV1-0001) : renumérotés dans le compteur de leur magasin
     let chg = false; clients.forEach(c => (c.historique || []).forEach(v => { if (v.type === 'vente' && !v.dossierProv && /^[A-Z0-9]{2,8}-\d{4}$/.test(v.dossier || '')) { v.dossierProv = true; chg = true; } }));
@@ -6028,7 +6064,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (newPecs) { draft.pecs = newPecs; delete draft.pec; }
     if (ctx.mode !== 'solde') {
       draft.type = 'vente'; draft.numero = nextNum('FA'); figerFiscal(draft); draft.paiements = []; draft.vendeur = user.nom;
-      if (draft.kind !== 'rapide') { poserDossier(draft); setTimeout(attribuerDossiers, 0); }
+      if (draft.kind !== 'rapide' && draft.contenu !== 'monture') { poserDossier(draft); setTimeout(attribuerDossiers, 0); }
       (current.historique = current.historique || []).push(draft);
       if (draft.monture?.pid) mvtStock(draft.monture.pid, draft.boutique, -1, 'Vente', draft.numero);
     }
@@ -6231,7 +6267,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   /* ================= Documents à imprimer ================= */
   let docSale = null;
   const DOCS = { journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
-  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', s.kind === 'lentille' ? 'flent' : 'technique', ...pecsDe(s).map((p, i) => 'assurance:' + i)];
+  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', ...(s.kind === 'lentille' ? ['flent'] : s.contenu === 'monture' ? [] : ['technique']), ...pecsDe(s).map((p, i) => 'assurance:' + i)];
   function openDocs(s, kinds = docsFor(s)){
     docSale = s;
     F('dBack').textContent = s.kind === 'journal' ? 'Retour à la comptabilité' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
@@ -6378,6 +6414,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
             const det = mon ? [esc(s.monture?.des || l.des || '—'), pm ? [pm.code && 'code ' + pm.code, pm.couleur, pm.taille].filter(Boolean).map(esc).join(' · ') : '', v.percee ? '<b>PERCÉE</b>' : ''].filter(Boolean).join(' · ')
               : l.k === 'P2' ? esc(p2Lib(s)) + (p2Paye(s) ? '' : ' (offerte)') : esc(desDoc(l) || '');
             return `<tr class="${mon ? 'mon' : ''}"><th>${esc(lib)}</th><td>${det}</td><td class="r">${money(l.px)}</td></tr>`; }).join('')}
+            ${s.monture?.client ? `<tr class="mon"><th>Monture</th><td><b>Monture du client</b> · ${esc(s.monture.des || '—')}${v.percee ? ' · <b>PERCÉE</b>' : ''}</td><td class="r">fournie</td></tr>` : ''}
             ${s.offre === 'paire2' && !(s.lignes || []).some(l => l.k === 'P2') ? `<tr><th>2ème paire</th><td>${esc(p2Lib(s))} (offerte)</td><td class="r">Offerte</td></tr>` : ''}
           </tbody><tfoot>
             ${s.remise ? `<tr><th></th><td>Sous-total</td><td class="r">${money(s.total)}</td></tr><tr><th></th><td>Remise</td><td class="r">− ${money(s.remise)}</td></tr>` : ''}
