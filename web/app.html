@@ -666,6 +666,12 @@ tr.pt td{color:var(--muted)}
 .c-lines li.minus span:last-child{color:var(--ok);font-weight:700}
 .opt{color:var(--muted);font-weight:400}
 .ct-blk h2{font-size:16px;margin-bottom:10px}.ct-opts label{max-width:none}
+.rep-lien{margin:-8px 0 20px}
+.rep-pecs{display:grid;gap:8px;margin:6px 0}
+.rep-pec{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) 40px;gap:8px}
+.rep-sum{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;display:grid;gap:3px}
+.rep-sum div{display:flex;justify-content:space-between;gap:12px}
+@media (max-width:620px){.rep-pec{grid-template-columns:1fr 1fr}.rep-pec select{grid-column:1/-1}}
 .pec-box{display:grid;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .pec-list{display:grid;gap:14px}
 .pec-item{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
@@ -1468,6 +1474,32 @@ select.inp{appearance:auto}
 
 <datalist id="ophList"></datalist>
 
+<div class="overlay" id="dlgRep" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="repTitle" style="width:min(640px,100%)">
+    <header><h2 id="repTitle">Reprendre un dossier de l'ancien logiciel</h2><button class="x" type="button" data-close-rep aria-label="Fermer">×</button></header>
+    <form id="fRep" novalidate>
+      <p class="sub" style="margin:0">Pour un dossier commencé dans l'ancien logiciel et pas encore terminé (commande en cours, reste à payer, prise en charge en attente). Aucune facture n'est créée : elle existe déjà dans l'ancien logiciel.</p>
+      <div class="row3">
+        <div><label class="lbl" for="repKind">Type</label><select class="inp" id="repKind"><option value="lunettes">Lunettes</option><option value="lentille">Lentilles</option></select></div>
+        <div><label class="lbl" for="repNum">N° de l'ancienne facture *</label><input class="inp" id="repNum" autocomplete="off"></div>
+        <div><label class="lbl" for="repDate">Date de l'ancienne facture *</label><input class="inp" type="date" id="repDate"></div>
+      </div>
+      <div><label class="lbl" for="repDes">Ce qui a été vendu *</label><textarea class="inp" id="repDes" rows="2" placeholder="ex. Progressif Essilor Varilux + monture Ray-Ban 5154"></textarea></div>
+      <div class="row3">
+        <div><label class="lbl" for="repTot">Montant total (FCFA) *</label><input class="inp" id="repTot" inputmode="numeric"></div>
+        <div><label class="lbl" for="repPaye">Déjà payé par le client</label><input class="inp" id="repPaye" inputmode="numeric" placeholder="0"></div>
+        <div><label class="lbl" for="repEtape">Où en est le dossier ?</label><select class="inp" id="repEtape"></select></div>
+      </div>
+      <div><span class="lbl">Prises en charge en attente de règlement</span><div id="repPecs" class="rep-pecs"></div>
+        <button class="add" type="button" id="repPecAdd">+ Ajouter une prise en charge</button></div>
+      <div><label class="lbl" for="repCom">Commentaire atelier <span class="opt">(facultatif)</span></label><input class="inp" id="repCom"></div>
+      <div class="rep-sum" id="repSum"></div>
+      <div class="ml-st bad" id="repErr"></div>
+      <div class="actions"><button type="button" class="ghost" data-close-rep>Annuler</button><button type="submit" class="save">Reprendre le dossier</button></div>
+    </form>
+  </div>
+</div>
+
 <!-- =================== STATISTIQUES =================== -->
 <main id="v-stat" hidden>
   <button class="crumb" data-go="accueil">
@@ -1932,6 +1964,7 @@ select.inp{appearance:auto}
       <span>Vente de lentilles de contact et produits d'entretien.</span>
     </button>
   </div>
+  <p class="rep-lien"><button class="ghost" id="goReprise" type="button">↩ Reprendre un dossier de l'ancien logiciel</button></p>
   <div class="hist" id="hist" hidden>
     <h2>Ventes de ce client</h2>
     <ul id="histList"></ul>
@@ -2726,6 +2759,7 @@ select.inp{appearance:auto}
   }
   function refreshFiche(){ if (current) openFiche(current.id); }
   function statusChip(v){
+    if (v.reprise) return `<span class="chip blue">Repris · anc. ${esc(v.ancien?.numero || '')}</span> ` + statusChip({ ...v, reprise: false });
     if (v.type === 'devis') return v.statut === 'Accepté'
       ? `<span class="chip">Devis accepté → ${v.vente}</span>` : `<span class="chip blue">Devis</span>`;
     if (v.tropPercu) return `<span class="chip warn">${money(v.tropPercu)} à rendre</span>`;
@@ -3394,7 +3428,7 @@ select.inp{appearance:auto}
       if (v.type !== 'vente' || (v.boutique || '') !== b) return;
       (v.paiements || []).forEach((p, i) => { if (p.date && dayKey(p.date) === j) enc.push({
         date: p.date, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : (v.client || 'Anonyme'), clientId: c ? c.id : v.clientId || null,
-        type: v.kind === 'rapide' ? 'Vente rapide' : (i > 0 || dayKey(v.date) !== j) ? 'Règlement' : v.kind === 'lentille' ? 'Lentilles' : 'Vente',
+        type: v.reprise ? 'Règlement dossier repris' : v.kind === 'rapide' ? 'Vente rapide' : (i > 0 || dayKey(v.date) !== j) ? 'Règlement' : v.kind === 'lentille' ? 'Lentilles' : 'Vente',
         mode: p.mode, ref: p.ref, par: p.par || '', montant: p.montant, v }); });
       pecsDe(v).forEach(pc => { if (dayKey(pc.date || v.date) === j) pecs.push({ ...pc, numero: v.numero, client: c ? `${c.nom} ${c.prenom}` : '', v }); });
     };
@@ -4315,7 +4349,7 @@ select.inp{appearance:auto}
 
   // Module Commandes & WhatsApp
   let cmTab = 'suivi', cmFiltre = 'Prête à retirer';
-  function commandes(){ return toutesVentes().filter(({ v }) => v.kind !== 'rapide' && enMagasin(v)).map(x => ({ ...x, e: etapeDe(x.v) })); }
+  function commandes(){ return toutesVentes(true).filter(({ v }) => v.kind !== 'rapide' && enMagasin(v)).map(x => ({ ...x, e: etapeDe(x.v) })); }
   function majTuileCmd(){ try { const L = commandes(); F('tCmdEnc').textContent = L.filter(x => x.e !== 'Livrée').length; F('tCmdPret').textContent = L.filter(x => x.e === 'Prête à retirer').length; } catch(_) {} }
   function openCmd(tab = cmTab){
     cmTab = tab; F('cmSub').textContent = boutiqueCour();
@@ -4366,8 +4400,9 @@ select.inp{appearance:auto}
   function ld0(k, d){ try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch(_) { return d; } }
   const saveCo = () => { try { localStorage.setItem('bordereaux', JSON.stringify(bordereaux)); localStorage.setItem('pointages', JSON.stringify(pointages)); } catch(_) {} save(); };
   let coTab = 'tb';
-  const toutesVentes = () => { const L = [];
-    clients.forEach(c => (c.historique || []).forEach(v => { if (v.type === 'vente' && v.numero) L.push({ v, c }); }));
+  // avecReprises : inclure les dossiers repris de l'ancien logiciel (suivi, encaissements, PEC) — exclus du chiffre d'affaires
+  const toutesVentes = (avecReprises = false) => { const L = [];
+    clients.forEach(c => (c.historique || []).forEach(v => { if (v.type === 'vente' && v.numero && (avecReprises || !v.reprise)) L.push({ v, c }); }));
     ventesRapides.forEach(v => L.push({ v, c: clients.find(x => x.id === v.clientId) || null }));
     return L; };
   const enMagasin = v => boutiqueCour() === 'Toutes les boutiques' || v.boutique === boutiqueCour();
@@ -4417,10 +4452,10 @@ select.inp{appearance:auto}
   // Chaque journal produit : titre, en-têtes, lignes (type : normal / grp / st / tt), colonnes numériques, indicateurs
   function journal(k, o = {}){
     const per = o.per || periode(), glob = o.glob != null ? o.glob : jrnGlobal;
-    const V = toutesVentes().filter(({ v }) => enMagasin(v)), tous = boutiqueCour() === 'Toutes les boutiques';
+    const V = toutesVentes(true).filter(({ v }) => enMagasin(v)), tous = boutiqueCour() === 'Toutes les boutiques';
     const titre = JRN[k] + (glob ? ' · global' : ''), mag = tous ? ['Magasin'] : [];
     if (k === 'jfa') {
-      const L = V.filter(({ v }) => dans(v.date, per)).sort((a, b) => a.v.date.localeCompare(b.v.date)).map(({ v, c }) => ({ v, c, T: calculTaxes(v) }));
+      const L = V.filter(({ v }) => !v.reprise && dans(v.date, per)).sort((a, b) => a.v.date.localeCompare(b.v.date)).map(({ v, c }) => ({ v, c, T: calculTaxes(v) }));
       const noms = []; L.forEach(x => x.T.taxes.forEach(t => { const n = `${t.nom} ${fmtTaux(t.taux)}`; if (!noms.includes(n)) noms.push(n); }));
       const tx = (T, n) => T.taxes.filter(t => `${t.nom} ${fmtTaux(t.taux)}` === n).reduce((a, t) => a + t.mt, 0);
       const val = X => { const s = f => X.reduce((a, x) => a + f(x), 0);
@@ -4450,7 +4485,8 @@ select.inp{appearance:auto}
       const M = [];
       V.forEach(({ v, c }) => {
         const cle = c ? c.id : 'passage', nom = c ? `${c.nom} ${c.prenom}` : 'Clients de passage';
-        M.push({ cle, nom, date: v.date, piece: v.numero, lib: v.kind === 'rapide' ? 'Vente rapide' : v.kind === 'lentille' ? 'Facture lentilles' : 'Facture', d: jPartCli(v), c: 0 });
+        if (v.reprise) M.push({ cle, nom, date: v.date, piece: v.ancien?.numero || v.numero, lib: `Solde repris de l'ancien logiciel (facture ${v.ancien?.numero || ''})`, d: v.repriseDu || 0, c: 0 });
+        else M.push({ cle, nom, date: v.date, piece: v.numero, lib: v.kind === 'rapide' ? 'Vente rapide' : v.kind === 'lentille' ? 'Facture lentilles' : 'Facture', d: jPartCli(v), c: 0 });
         (v.paiements || []).forEach(p => M.push({ cle, nom, date: p.date || v.date, piece: v.numero, lib: `Règlement ${p.mode}${p.ref ? ' · ' + p.ref : ''}`, d: 0, c: p.montant || 0 }));
         if (v.tropPercu) M.push({ cle, nom, date: v.modifieLe || v.date, piece: v.numero, lib: 'Trop-perçu à rendre', d: v.tropPercu, c: 0 });
       });
@@ -4478,7 +4514,7 @@ select.inp{appearance:auto}
       // encaissements (par magasin de la vente), sorties d'espèces et clôtures Z, regroupés par magasin et par jour
       const E = [];
       V.forEach(({ v, c }) => (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) E.push({ b: v.boutique || '', date: p.date, piece: v.numero,
-        lib: `${jNomCli(v, c)} · ${v.kind === 'rapide' ? 'vente rapide' : (v.paiements.indexOf(p) > 0 || dayKey(v.date) !== dayKey(p.date)) ? 'règlement' : 'vente'}${p.ref ? ' · réf. ' + p.ref : ''}`,
+        lib: `${jNomCli(v, c)} · ${v.reprise ? `règlement dossier repris (anc. facture ${v.ancien?.numero || ''})` : v.kind === 'rapide' ? 'vente rapide' : (v.paiements.indexOf(p) > 0 || dayKey(v.date) !== dayKey(p.date)) ? 'règlement' : 'vente'}${p.ref ? ' · réf. ' + p.ref : ''}`,
         mode: p.mode, entree: p.montant || 0, sortie: 0 }); }));
       mouvements.filter(m => (tous || m.boutique === boutiqueCour()) && dans(m.date, per)).forEach(m => E.push({ b: m.boutique, date: m.date, piece: '',
         lib: `Sortie · ${m.motif || ''}${m.commentaire ? ' · ' + m.commentaire : ''}${m.par ? ' · ' + m.par : ''}`, mode: 'Espèces', entree: 0, sortie: m.montant || 0 }));
@@ -4624,8 +4660,8 @@ select.inp{appearance:auto}
     const ca = V.reduce((a, { v }) => a + v.net, 0), n = V.length;
     const cout = V.reduce((a, { v }) => a + coutVente(v), 0), caAvecCout = V.filter(({ v }) => coutVente(v) > 0).reduce((a, { v }) => a + v.net, 0);
     const pec = V.reduce((a, { v }) => a + pecTot(v), 0);
-    let enc = 0; toutesVentes().forEach(({ v }) => { if (enMagasin(v)) (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) enc += p.montant; }); });
-    const du = toutesVentes().filter(({ v }) => enMagasin(v)).reduce((a, { v }) => a + (v.solde || 0), 0);
+    let enc = 0; toutesVentes(true).forEach(({ v }) => { if (enMagasin(v)) (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) enc += p.montant; }); });
+    const du = toutesVentes(true).filter(({ v }) => enMagasin(v)).reduce((a, { v }) => a + (v.solde || 0), 0);
     F('tbKpi').innerHTML = kpi('Chiffre d\'affaires', money(ca), `${n} vente${n > 1 ? 's' : ''}`, 'main') + kpi('Panier moyen', money(n ? ca / n : 0))
       + kpi('Encaissé', money(enc), 'paiements reçus sur la période') + kpi('Prises en charge', money(pec), 'à recevoir des assurances')
       + kpi('Marge sur produits', caAvecCout ? money(caAvecCout - cout) : '—', caAvecCout ? `${Math.round((caAvecCout - cout) / caAvecCout * 100)} % · ventes avec coût d'achat connu` : 'aucun coût d\'achat connu')
@@ -4647,7 +4683,7 @@ select.inp{appearance:auto}
     F('tbType').innerHTML = barTable(group(typeVente), ca);
     F('tbShop').innerHTML = barTable(group(v => v.boutique || '—'), ca);
     F('tbSeller').innerHTML = barTable(group(v => v.vendeur || v.paiements?.[0]?.par || '—'), ca);
-    const pm = {}; toutesVentes().forEach(({ v }) => { if (enMagasin(v)) (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) pm[p.mode] = (pm[p.mode] || 0) + p.montant; }); });
+    const pm = {}; toutesVentes(true).forEach(({ v }) => { if (enMagasin(v)) (v.paiements || []).forEach(p => { if (p.date && dans(p.date, per)) pm[p.mode] = (pm[p.mode] || 0) + p.montant; }); });
     if (pec) pm['Prise en charge'] = pec;
     F('tbMode').innerHTML = barTable(Object.entries(pm).sort((a, b) => b[1] - a[1]).map(([k, x]) => [k, x, null]), Object.values(pm).reduce((a, x) => a + x, 0));
   }
@@ -4980,7 +5016,7 @@ select.inp{appearance:auto}
   try { majTuileStat(); } catch(_) {}
 
   // --- Prises en charge et bordereaux
-  const toutesPec = () => toutesVentes().flatMap(({ v, c }) => pecsDe(v).map(p => ({ v, c, p })));
+  const toutesPec = () => toutesVentes(true).flatMap(({ v, c }) => pecsDe(v).map(p => ({ v, c, p })));
   const pecStatut = p => p.paye >= p.montant ? 'Payée' : p.paye > 0 ? 'Payée partiellement' : p.bordereau ? 'Facturée' : 'À facturer';
   function drawPEC(){
     const all = toutesPec().filter(({ v }) => enMagasin(v));
@@ -4992,7 +5028,7 @@ select.inp{appearance:auto}
       + kpi('Facturé, en attente', money(sum(x => ['Facturée', 'Payée partiellement'].includes(pecStatut(x.p)))), 'bordereaux envoyés', 'warn-k')
       + kpi('Encaissé des assurances', money(all.filter(x => !F('pcOrg').value || x.p.organisme === F('pcOrg').value).reduce((a, x) => a + (x.p.paye || 0), 0)));
     F('pcRows').innerHTML = L.map(({ v, c, p }) => `<tr><td>${fmtDate(v.date)}</td><td><b>${esc(c ? c.nom + ' ' + c.prenom : '—')}</b></td><td>${esc(p.organisme)}</td>
-      <td class="muted">${esc(p.matricule)}${p.bon ? ' · ' + esc(p.bon) : ''}</td><td>${v.numero}</td><td>${p.bordereau || '—'}</td>
+      <td class="muted">${esc(p.matricule)}${p.bon ? ' · ' + esc(p.bon) : ''}</td><td>${v.reprise ? esc(v.ancien?.numero || '') + ' <small class="muted">(ancien logiciel)</small>' : v.numero}</td><td>${p.bordereau || '—'}</td>
       <td style="text-align:right">${money(p.montant)}</td><td style="text-align:right">${p.paye ? money(p.paye) : '—'}</td><td>${stChip(pecStatut(p))}</td></tr>`).join('')
       || `<tr><td colspan="9" class="muted">Aucune prise en charge.</td></tr>`;
     // bordereaux
@@ -5067,7 +5103,7 @@ select.inp{appearance:auto}
       <div class="d-num"><b>BORDEREAU</b><div>N° ${b.numero}</div><div>${fmtDate(b.date)}</div></div></div>
       <div class="d-client"><span>Destinataire</span><b>${esc(b.organisme)}</b><span>Prises en charge optiques · ${moisTxt(b.mois)}</span></div>
       <table class="d-lines"><thead><tr><th>Date</th><th>Bénéficiaire</th><th>N° adhérent</th><th>N° bon</th><th>Facture</th><th class="r">Montant</th></tr></thead><tbody>${
-        D.map(({ v, c, p }) => `<tr><td>${fmtDate(v.date)}</td><td>${esc(c ? c.nom + ' ' + c.prenom : '—')}</td><td>${esc(p.matricule)}</td><td>${esc(p.bon || '—')}</td><td>${v.numero}</td><td class="r">${money(p.montant)}</td></tr>`).join('')}</tbody></table>
+        D.map(({ v, c, p }) => `<tr><td>${fmtDate(v.date)}</td><td>${esc(c ? c.nom + ' ' + c.prenom : '—')}</td><td>${esc(p.matricule)}</td><td>${esc(p.bon || '—')}</td><td>${v.reprise ? esc(v.ancien?.numero || '') : v.numero}</td><td class="r">${money(p.montant)}</td></tr>`).join('')}</tbody></table>
       <table class="d-tot"><tbody><tr><td>Nombre de dossiers</td><td class="r">${D.length}</td></tr><tr class="b big"><td>Total à régler</td><td class="r">${money(tot)}</td></tr></tbody></table>
       <p class="d-words">Arrêté le présent bordereau à la somme de <b>${enLettres(tot)} francs CFA</b> (${money(tot)}).</p>
       <p class="d-note">Les factures assurance et bons de prise en charge correspondants sont joints au présent bordereau.</p>
@@ -5076,7 +5112,7 @@ select.inp{appearance:auto}
 
   // --- Impayés clients
   function drawImp(){
-    const L = toutesVentes().filter(({ v }) => enMagasin(v) && v.solde > 0).map(x => ({ ...x, age: Math.floor((Date.now() - new Date(x.v.date)) / 864e5) })).sort((a, b) => b.age - a.age);
+    const L = toutesVentes(true).filter(({ v }) => enMagasin(v) && v.solde > 0).map(x => ({ ...x, age: Math.floor((Date.now() - new Date(x.v.date)) / 864e5) })).sort((a, b) => b.age - a.age);
     const tot = L.reduce((a, x) => a + x.v.solde, 0), b = f => L.filter(f).reduce((a, x) => a + x.v.solde, 0);
     F('ipSum').textContent = `${L.length} vente(s) · ${money(tot)}`;
     F('ipKpi').innerHTML = kpi('Moins de 30 jours', money(b(x => x.age < 30))) + kpi('30 à 60 jours', money(b(x => x.age >= 30 && x.age <= 60)), '', 'warn-k') + kpi('Plus de 60 jours', money(b(x => x.age > 60)), '', 'bad-k');
@@ -5107,7 +5143,7 @@ select.inp{appearance:auto}
   // --- Rapprochement bancaire
   function drawBQ(){
     const per = periode(), ops = [];
-    toutesVentes().forEach(({ v, c }) => { if (!enMagasin(v)) return; (v.paiements || []).forEach((p, i) => {
+    toutesVentes(true).forEach(({ v, c }) => { if (!enMagasin(v)) return; (v.paiements || []).forEach((p, i) => {
       if (p.mode !== 'Espèces' && p.date && dans(p.date, per)) ops.push({ key: `${v.numero}#${i}`, date: p.date, mode: p.mode, ref: p.ref, lib: `${v.numero} · ${c ? c.nom + ' ' + c.prenom : v.client || 'Anonyme'}`, boutique: v.boutique, mt: p.montant }); }); });
     mouvements.filter(m => m.motif === 'Dépôt en banque' && (boutiqueCour() === 'Toutes les boutiques' || m.boutique === boutiqueCour()) && dans(m.date, per))
       .forEach(m => ops.push({ key: 'M:' + m.id, date: m.date, mode: 'Dépôt en banque', ref: m.commentaire, lib: 'Dépôt espèces · ' + m.par, boutique: m.boutique, mt: m.montant }));
@@ -6088,6 +6124,57 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   function reprendreVente(v){ draft = v; openCaisse({ mode:'solde' }); }
 
+  /* ---------- Reprise d'un dossier de l'ancien logiciel (bascule) ---------- */
+  let repPecs = [];
+  function drawRepEtapes(){ F('repEtape').innerHTML = ETAPES[F('repKind').value === 'lentille' ? 'lentille' : 'lunettes'].map(e => `<option>${e}</option>`).join(''); }
+  function drawRepPecs(){
+    const orgs = ['', ...PARAM.organismes];
+    F('repPecs').innerHTML = repPecs.map((x, i) => `<div class="rep-pec" data-i="${i}">
+      <select class="inp" data-k="org">${orgs.map(o => `<option value="${esc(o)}"${o === x.org ? ' selected' : ''}>${o ? esc(o) : 'Organisme…'}</option>`).join('')}</select>
+      <input class="inp" data-k="mat" placeholder="N° adhérent" value="${esc(x.mat)}"><input class="inp" data-k="mt" inputmode="numeric" placeholder="Montant" value="${x.mt || ''}">
+      <button class="del" type="button" data-del="${i}" aria-label="Retirer">×</button></div>`).join('');
+    majRepSum();
+  }
+  function majRepSum(){
+    const tot = intOf(F('repTot').value), deja = intOf(F('repPaye').value), pec = repPecs.reduce((a, x) => a + (x.mt || 0), 0), reste = tot - pec - deja;
+    F('repSum').innerHTML = `<div><span>Montant total</span><b>${money(tot)}</b></div>${pec ? `<div><span>Prises en charge en attente</span><span>− ${money(pec)}</span></div>` : ''}
+      ${deja ? `<div><span>Déjà payé dans l'ancien logiciel</span><span>− ${money(deja)}</span></div>` : ''}<div><span>Reste à payer par le client</span><b style="color:${reste < 0 ? 'var(--pin)' : 'var(--ink)'}">${money(reste)}</b></div>`;
+  }
+  F('goReprise').addEventListener('click', () => {
+    ['repNum', 'repDes', 'repTot', 'repPaye', 'repCom'].forEach(id => F(id).value = ''); F('repDate').value = ''; F('repKind').value = 'lunettes'; F('repErr').textContent = '';
+    repPecs = []; drawRepEtapes(); F('repEtape').value = 'Verres commandés'; drawRepPecs(); F('dlgRep').hidden = false; F('repNum').focus();
+  });
+  document.querySelectorAll('[data-close-rep]').forEach(b => b.addEventListener('click', () => F('dlgRep').hidden = true));
+  F('repKind').addEventListener('change', drawRepEtapes);
+  ['repTot', 'repPaye'].forEach(id => F(id).addEventListener('input', majRepSum));
+  F('repPecAdd').addEventListener('click', () => { repPecs.push({ org: '', mat: '', mt: 0 }); drawRepPecs(); });
+  F('repPecs').addEventListener('input', e => { const r = e.target.closest('[data-i]'), k = e.target.dataset.k; if (!r || !k) return; repPecs[r.dataset.i][k] = k === 'mt' ? intOf(e.target.value) : e.target.value; majRepSum(); });
+  F('repPecs').addEventListener('change', e => { const r = e.target.closest('[data-i]'); if (r && e.target.dataset.k === 'org') repPecs[r.dataset.i].org = e.target.value; });
+  F('repPecs').addEventListener('click', e => { const i = e.target.dataset.del; if (i == null) return; repPecs.splice(i, 1); drawRepPecs(); });
+  F('fRep').addEventListener('submit', e => {
+    e.preventDefault();
+    const num = F('repNum').value.trim(), date = F('repDate').value, des = F('repDes').value.trim(), tot = intOf(F('repTot').value), deja = intOf(F('repPaye').value);
+    const pecs = repPecs.filter(x => x.org || x.mt), pec = pecs.reduce((a, x) => a + (x.mt || 0), 0), b = boutiqueCour(), miss = [];
+    if (!num) miss.push('le n° de l\'ancienne facture'); if (!date) miss.push('sa date'); if (!des) miss.push('ce qui a été vendu'); if (!tot) miss.push('le montant total');
+    if (pecs.some(x => !x.org || !x.mt)) miss.push('l\'organisme et le montant de chaque prise en charge');
+    if (b === 'Toutes les boutiques') miss.push('le magasin (choisissez-le en haut de l\'écran)');
+    if (miss.length) { F('repErr').textContent = 'À compléter : ' + miss.join(', ') + '.'; return; }
+    if (pec + deja > tot) { F('repErr').textContent = 'Les prises en charge et le montant déjà payé dépassent le montant total.'; return; }
+    if ((current.historique || []).some(v => v.reprise && v.ancien?.numero === num)) { F('repErr').textContent = `Le dossier ${num} a déjà été repris pour ce client.`; return; }
+    const now = new Date().toISOString(), kind = F('repKind').value, etape = F('repEtape').value;
+    const v = { type: 'vente', reprise: true, kind: kind === 'lentille' ? 'lentille' : undefined, numero: nextNum('RP'), date: now, boutique: b, vendeur: user.nom,
+      ancien: { numero: num, date }, lignes: [{ k: 'REP', label: 'DOSSIER REPRIS', des, px: tot }], total: tot, remise: 0, net: tot,
+      pecs: pecs.map(x => ({ id: pecId(), organisme: x.org, matricule: x.mat.trim(), bon: '', montant: x.mt, statut: 'À facturer', numeroFacture: num, date: now, par: user.nom })),
+      dejaPaye: deja, paye: deja, paiements: [], resteAcharge: tot - pec, solde: Math.max(0, tot - pec - deja), repriseDu: Math.max(0, tot - pec - deja),
+      monture: { des: '' }, verres: null, ordonnance: null, commentaireAtelier: F('repCom').value.trim(), contenu: 'complet',
+      etapes: [{ e: etape, date: now, par: user.nom }], journal: [{ date: now, par: user.nom, role: user.role, ancienNet: tot, nouveauNet: tot, details: [`Dossier repris de l'ancien logiciel (facture ${num} du ${fmtDate(date)})`] }] };
+    v.statut = v.solde > 0 ? (deja > 0 ? 'Acompte' : 'À encaisser') : 'Soldée';
+    if (kind !== 'lentille' && etape !== 'Livrée') { poserDossier(v); setTimeout(attribuerDossiers, 0); }
+    (current.historique = current.historique || []).push(v); rattacherClient(current, b); save();
+    F('dlgRep').hidden = true; try { majTuileCmd(); } catch(_) {}
+    openDetail(v); show(`Dossier ${num} repris (${v.numero})`);
+  });
+
   /* ================= Suivi du client et comparaison d'ordonnances ================= */
   const r2 = n => Math.round(n * 100) / 100;
   const rxKey = o => JSON.stringify([o.date, o.prescripteur, ...['OD', 'OG'].map(k => o[k] ? [o[k].s, o[k].c, o[k].c ? o[k].a : null, o[k].add] : null)]);
@@ -6182,11 +6269,13 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     const isV = v.type === 'vente';
     F('detKind').textContent = `${isV ? 'Vente' : 'Devis'}${v.kind === 'lentille' ? ' lentilles' : ''} · ${current.nom} ${current.prenom}`;
     F('detTitle').innerHTML = `${v.numero} ${statusChip(v)}`;
-    F('detMeta').textContent = `${fmtDateTime(v.date)} · ${v.boutique || ''}${v.dossier ? ' · dossier n° ' + v.dossier : ''}${v.devis ? ' · issue du devis ' + v.devis : ''}`;
+    F('detMeta').textContent = `${v.reprise ? `Repris de l'ancien logiciel le ${fmtDate(v.date)} · facture ${v.ancien?.numero || ''} du ${v.ancien?.date ? fmtDate(v.ancien.date) : '—'}` : fmtDateTime(v.date)} · ${v.boutique || ''}${v.dossier ? ' · dossier n° ' + v.dossier : ''}${v.devis ? ' · issue du devis ' + v.devis : ''}`;
     const resp = peutModifierVente(), respC = droit('corrCaisse');
     const lock = t => `<button class="act ghost-act" disabled title="Réservé au responsable">${t} · responsable</button>`;
     let a = '';
-    if (isV) {
+    if (isV && v.reprise) {
+      if (v.solde > 0) a += `<button class="act" data-act="solde">Encaisser le reste (${money(v.solde)})</button>`;
+    } else if (isV) {
       a += resp ? `<button class="act ghost-act" data-act="edit">Modifier la vente</button>` : lock('Modifier la vente');
       a += respC ? `<button class="act ghost-act" data-act="corr">Caisse</button>` : lock('Caisse');
       if (v.solde > 0) a += `<button class="act" data-act="solde">Encaisser le reste (${money(v.solde)})</button>`;
@@ -6249,7 +6338,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   });
   // Vente sans aucun encaissement → redevient un devis. La facture n'est pas effacée : elle reste dans le journal
   // des factures avec la mention « annulée » (numérotation continue pour la comptabilité).
-  const peutRemettreEnDevis = v => v.type === 'vente' && !(v.paiements || []).some(p => p.montant) && !(v.paye > 0)
+  const peutRemettreEnDevis = v => v.type === 'vente' && !v.reprise && !(v.paiements || []).some(p => p.montant) && !(v.paye > 0)
     && !pecsDe(v).some(p => p.bordereau || p.paye > 0);
   function remettreEnDevis(v){
     if (!peutRemettreEnDevis(v)) { show('Impossible : un encaissement ou une prise en charge facturée existe déjà sur cette vente.'); return; }
@@ -6266,8 +6355,8 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
 
   /* ================= Documents à imprimer ================= */
   let docSale = null;
-  const DOCS = { journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
-  const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', ...(s.kind === 'lentille' ? ['flent'] : s.contenu === 'monture' ? [] : ['technique']), ...pecsDe(s).map((p, i) => 'assurance:' + i)];
+  const DOCS = { recu:'Reçu de règlement', journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
+  const docsFor = s => s.reprise ? ['recu', ...(s.kind !== 'lentille' && s.dossier ? ['technique'] : [])] : s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', ...(s.kind === 'lentille' ? ['flent'] : s.contenu === 'monture' ? [] : ['technique']), ...pecsDe(s).map((p, i) => 'assurance:' + i)];
   function openDocs(s, kinds = docsFor(s)){
     docSale = s;
     F('dBack').textContent = s.kind === 'journal' ? 'Retour à la comptabilité' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
@@ -6374,7 +6463,19 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (s.kind === 'z') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = rapportZHtml(s); return; }
     if (s.kind === 'rapide') { F('dPaper').innerHTML = k === 'ticket' ? ticketHtml(s) : factureRapideHtml(s); F('dPaper').classList.toggle('ticket-paper', k === 'ticket'); return; }
     F('dPaper').classList.remove('ticket-paper', 'a4-exact');
-    if (k === 'facture') {
+    if (k === 'recu') {
+      // dossier repris : la facture appartient à l'ancien logiciel ; DIOPTRA édite un reçu des règlements reçus
+      const regl = s.paiements || [];
+      h = docHead(s, 'REÇU DE RÈGLEMENT') + `<p class="d-note" style="margin-top:0">Dossier repris de l'ancien logiciel · facture <b>${esc(s.ancien?.numero || '')}</b> du ${s.ancien?.date ? fmtDate(s.ancien.date) : '—'}</p>`
+        + `<table class="d-lines"><thead><tr><th>Désignation</th><th class="r">Montant</th></tr></thead><tbody><tr><td><b>Dossier ${esc(s.ancien?.numero || '')}</b><br><span>${esc(s.lignes?.[0]?.des || '')}</span></td><td class="r">${money(s.total)}</td></tr></tbody></table>
+        <table class="d-tot"><tbody>
+          ${pecsDe(s).map(x => `<tr><td>Prise en charge ${esc(x.organisme)}</td><td class="r">− ${money(x.montant)}</td></tr>`).join('')}
+          <tr><td>Part patient</td><td class="r">${money(s.resteAcharge)}</td></tr>
+          ${s.dejaPaye ? `<tr><td>Déjà réglé dans l'ancien logiciel</td><td class="r">${money(s.dejaPaye)}</td></tr>` : ''}
+          ${regl.map(x => `<tr><td>Payé${x.date ? ' le ' + fmtDateTime(x.date) : ''} · ${esc(x.mode)}${x.ref ? ' · réf. ' + esc(x.ref) : ''}</td><td class="r">${money(x.montant)}</td></tr>`).join('')}
+          <tr class="b"><td>${s.solde ? 'Reste dû' : 'Soldé'}</td><td class="r">${money(s.solde)}</td></tr></tbody></table>
+        <p class="d-note">Ce reçu atteste des règlements reçus. Il ne remplace pas la facture n° ${esc(s.ancien?.numero || '')} émise par l'ancien logiciel.</p>`;
+    } else if (k === 'facture') {
       h = docHead(s, 'FACTURE') + rxMini(s) + docLines(s)
         + pecsDe(s).map(p => `<tr><td>Prise en charge ${esc(p.organisme)}${p.bon ? ' · bon n° ' + esc(p.bon) : ''}</td><td class="r">− ${money(p.montant)}</td></tr>`).join('')
         + `<tr class="b"><td>Part patient</td><td class="r">${money(s.resteAcharge)}</td></tr>`
