@@ -98,7 +98,7 @@
   const COLLS = {
     clients: 'list', ventesRapides: 'list', produits: 'list', mouvements: 'list', clotures: 'list',
     mvtsStock: 'list', receptions: 'list', transferts: 'list', inventaires: 'list', bordereaux: 'list',
-    verresAchat: 'list', waLog: 'list', notes: 'list', livraisons: 'list', facturesFourn: 'list', comptesBq: 'list', opsBq: 'list',
+    verresAchat: 'list', waLog: 'list', notes: 'list', livraisons: 'list', facturesFourn: 'list', comptesBq: 'list', opsBq: 'list', reglAss: 'list',
     pointages: 'map', paire2Mag: 'map',
     parametres: 'doc', paramsAchat: 'doc', tplWa: 'doc', optVerres: 'doc', tarifs: 'doc', mappingsXL: 'doc',
     mailCaisse: 'doc', waCaisse: 'doc',

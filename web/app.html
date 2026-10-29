@@ -673,7 +673,16 @@ tr.pt td{color:var(--muted)}
 .fac-retard{color:var(--pin);font-weight:700}
 .bk-rev input.inp,.bk-rev select.inp{padding:6px 8px;font-size:13px;min-width:0}.bk-rev td{vertical-align:middle}
 .bk-tbl td{vertical-align:middle}
+.pt-form{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1.3fr;gap:12px}@media (max-width:900px){.pt-form{grid-template-columns:1fr 1fr}}
+.pt-br{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pt-chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;color:inherit;text-align:left}
+.pt-chip span{color:var(--primary);font-weight:600;margin-left:6px}.pt-chip.on{border-color:var(--primary);background:var(--ic-blue)}
+.pt-filtre{margin-bottom:8px}.pt-filtre input{max-width:260px}
+.pt-tbl td{vertical-align:middle}.pt-tbl tr.pt-on td{background:var(--ic-blue)}.pt-tbl tr.pt-flash td{background:var(--ic-green)}.pt-tbl input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary)}
+.pt-ec{display:grid;gap:4px;min-width:220px}.pt-ec select,.pt-ec input{padding:6px 8px;font-size:13px}
+.pt-foot{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border-top:1px solid var(--line);padding:12px 0 2px;margin-top:12px}
+.pt-ok{color:var(--ok);font-weight:700}
 .bqq-op{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;font-size:14px}.bqq-op b.mt{font-size:20px}
+.bqq-rg{display:grid;gap:4px;max-height:180px;overflow:auto;font-size:13px}.bqq-rg label{display:flex;gap:8px;align-items:center}
 .bqq-ch{display:grid;gap:6px}.bqq-ch label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
 .bqq-ch label:has(input:checked){border-color:var(--primary);background:var(--ic-blue)}.bqq-ch input{margin-top:3px;accent-color:var(--primary)}.bqq-ch small{display:block;opacity:.7}
 #bqqDet{margin-top:10px}#bqqDet:empty{display:none}.bk-tbl .bk-ok{color:var(--ok);font-weight:600}.bk-prop{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
@@ -1062,6 +1071,17 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile" id="tAss">
+      <button class="tile-link" id="goAss" aria-label="Ouvrir les assurances">
+      <div class="ic green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6.2c0 5 3.4 9.4 8 10.8 4.6-1.4 8-5.8 8-10.8V5l-8-3Z"/><path d="m8.5 12 2.4 2.4 4.7-4.8" fill="none" stroke="var(--ic-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h2>Assurances</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>À encaisser : <b id="tAsDu">—</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Litiges en cours : <b id="tAsLit">0</b></span></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide" id="tStat">
       <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
       <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1392,7 +1412,7 @@ select.inp{appearance:auto}
   <div class="co-p" data-p="pec" hidden>
     <section class="blk">
       <div class="row-head"><h2>Prises en charge</h2>
-        <span class="bl-btns"><select class="inp sm" id="pcOrg"></select><select class="inp sm" id="pcSt"><option value="">Tous statuts</option><option>À facturer</option><option>Facturée</option><option>Payée partiellement</option><option>Payée</option></select></span></div>
+        <span class="bl-btns"><select class="inp sm" id="pcOrg"></select><select class="inp sm" id="pcSt"><option value="">Tous statuts</option><option>À facturer</option><option>Facturée</option><option>Payée partiellement</option><option>En litige</option><option>Payée</option><option>Reste au client</option><option>Abandonnée</option></select></span></div>
       <div class="s-stats co-kpi" id="pcKpi" style="margin-top:12px"></div>
       <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>Patient</th><th>Organisme</th><th>Adhérent / bon</th><th>Facture</th><th>Bordereau</th><th style="text-align:right">Montant</th><th style="text-align:right">Payé</th><th>Statut</th></tr></thead><tbody id="pcRows"></tbody></table></div>
     </section>
@@ -1530,6 +1550,57 @@ select.inp{appearance:auto}
 <datalist id="ophList"></datalist>
 
 <!-- =================== ACHATS =================== -->
+<main id="v-ass" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="asSub"></div><h1>Assurances</h1></div></div>
+  <div class="tabs" id="asTabs"><button class="tab on" data-as="pt">Pointer un règlement</button><button class="tab" data-as="suivi">En attente &amp; litiges</button><button class="tab" data-as="regl">Règlements reçus</button></div>
+
+  <div class="as-p" data-p="pt">
+    <section class="blk">
+      <div class="row-head"><h2>Règlement reçu</h2></div>
+      <p class="sub">Saisissez le chèque (ou le virement), puis pointez un à un les dossiers listés sur le bordereau papier de l'assurance : tapez ou scannez le n° de dossier, de facture, le nom ou le matricule. Un bordereau payé en entier se pointe d'un clic.</p>
+      <div class="pt-form">
+        <div><label class="lbl" for="ptOrg">Assurance</label><select class="inp" id="ptOrg"></select></div>
+        <div><label class="lbl" for="ptDate">Date</label><input class="inp" type="date" id="ptDate"></div>
+        <div><label class="lbl" for="ptMode">Mode</label><select class="inp" id="ptMode"><option>Chèque</option><option>Virement</option><option>Espèces</option></select></div>
+        <div><label class="lbl" for="ptNum" id="ptNumL">N° du chèque</label><input class="inp" id="ptNum"></div>
+        <div><label class="lbl" for="ptMt">Montant reçu (FCFA)</label><input class="inp" id="ptMt" inputmode="numeric"></div>
+      </div>
+    </section>
+    <section class="blk" id="ptZone" hidden>
+      <div class="row-head"><h2>Dossiers à pointer</h2>
+        <span class="bl-btns"><input class="inp" id="ptScan" placeholder="N° dossier, facture, nom, matricule… puis Entrée" style="min-width:300px" autocomplete="off"></span></div>
+      <div class="pt-br" id="ptBr"></div>
+      <div class="pt-filtre"><input class="inp sm" id="ptFiltre" placeholder="Filtrer la liste" autocomplete="off"></div>
+      <div class="tbl-wrap"><table class="s-tbl pt-tbl"><thead><tr><th></th><th>Bordereau</th><th>Patient</th><th>Matricule / bon</th><th style="text-align:right">Reste dû</th><th style="text-align:right">Payé</th><th>Écart</th></tr></thead><tbody id="ptRows"></tbody></table></div>
+      <p class="muted" id="ptNone" hidden></p>
+      <div class="pt-foot"><span id="ptRecap"></span><span><button class="ghost" type="button" id="ptAnnuler">Tout décocher</button> <button class="save" type="button" id="ptOk">Enregistrer le règlement</button></span></div>
+    </section>
+  </div>
+
+  <div class="as-p" data-p="suivi" hidden>
+    <div class="s-stats co-kpi" id="asKpi"></div>
+    <section class="blk">
+      <div class="row-head"><h2>Sommes dues par assurance</h2></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Assurance</th><th style="text-align:right">Dossiers</th><th style="text-align:right">Non facturé</th><th style="text-align:right">En litige</th><th style="text-align:right">Plus ancien</th><th style="text-align:right">Total dû</th><th></th></tr></thead><tbody id="asOrgRows"></tbody></table></div>
+    </section>
+    <section class="blk">
+      <div class="row-head"><h2>Litiges en cours</h2></div>
+      <p class="sub">Dossiers rejetés ou payés en partie que vous avez choisi de recontester. Quand l'assurance paie, ils se pointent normalement ; sinon, passez le reste au client ou abandonnez-le.</p>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Depuis le</th><th>Patient</th><th>Assurance</th><th>Motif</th><th style="text-align:right">Montant</th><th></th></tr></thead><tbody id="asLitRows"></tbody></table></div>
+    </section>
+  </div>
+
+  <div class="as-p" data-p="regl" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Règlements reçus des assurances</h2></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>Assurance</th><th>Chèque / virement</th><th style="text-align:right">Dossiers</th><th style="text-align:right">Montant</th><th>Banque</th><th></th></tr></thead><tbody id="asRegRows"></tbody></table></div>
+    </section>
+  </div>
+</main>
 <main id="v-banque" hidden>
   <button class="crumb" data-go="accueil">
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
@@ -2654,11 +2725,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), banque: document.getElementById('v-banque') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -5160,15 +5231,18 @@ select.inp{appearance:auto}
 
   // --- Prises en charge et bordereaux
   const toutesPec = () => toutesVentes().flatMap(({ v, c }) => pecsDe(v).map(p => ({ v, c, p })));
-  const pecStatut = p => p.paye >= p.montant ? 'Payée' : p.paye > 0 ? 'Payée partiellement' : p.bordereau ? 'Facturée' : 'À facturer';
+  // reste dû par l'assurance : montant − payé − écart passé au client ou abandonné (un litige reste dû)
+  const resteP = p => Math.max(0, (p.montant || 0) - (p.paye || 0) - (p.issue && p.issue.type !== 'litige' ? p.issue.montant || 0 : 0));
+  const pecStatut = p => (p.paye || 0) >= p.montant ? 'Payée' : !resteP(p) ? (p.issue?.type === 'client' ? 'Reste au client' : 'Abandonnée') : p.issue?.type === 'litige' ? 'En litige'
+    : p.paye > 0 ? 'Payée partiellement' : p.bordereau ? 'Facturée' : 'À facturer';
   function drawPEC(){
     const all = toutesPec().filter(({ v }) => enMagasin(v));
     const orgs = [...new Set(all.map(x => x.p.organisme))].sort();
     const oSel = F('pcOrg').value; F('pcOrg').innerHTML = `<option value="">Tous les organismes</option>` + orgs.map(o => `<option${o === oSel ? ' selected' : ''}>${esc(o)}</option>`).join('');
     const st = F('pcSt').value, L = all.filter(x => (!F('pcOrg').value || x.p.organisme === F('pcOrg').value) && (!st || pecStatut(x.p) === st)).sort((a, b) => b.v.date.localeCompare(a.v.date));
-    const sum = f => all.filter(x => !F('pcOrg').value || x.p.organisme === F('pcOrg').value).filter(f).reduce((a, x) => a + x.p.montant - (x.p.paye || 0), 0);
+    const sum = f => all.filter(x => !F('pcOrg').value || x.p.organisme === F('pcOrg').value).filter(f).reduce((a, x) => a + resteP(x.p), 0);
     F('pcKpi').innerHTML = kpi('À facturer', money(sum(x => pecStatut(x.p) === 'À facturer')), 'pas encore sur un bordereau')
-      + kpi('Facturé, en attente', money(sum(x => ['Facturée', 'Payée partiellement'].includes(pecStatut(x.p)))), 'bordereaux envoyés', 'warn-k')
+      + kpi('Facturé, en attente', money(sum(x => ['Facturée', 'Payée partiellement', 'En litige'].includes(pecStatut(x.p)))), 'bordereaux envoyés', 'warn-k')
       + kpi('Encaissé des assurances', money(all.filter(x => !F('pcOrg').value || x.p.organisme === F('pcOrg').value).reduce((a, x) => a + (x.p.paye || 0), 0)));
     F('pcRows').innerHTML = L.map(({ v, c, p }) => `<tr><td>${fmtDate(v.date)}</td><td><b>${esc(c ? c.nom + ' ' + c.prenom : '—')}</b></td><td>${esc(p.organisme)}</td>
       <td class="muted">${esc(p.matricule)}${p.bon ? ' · ' + esc(p.bon) : ''}</td><td>${v.numero}</td><td>${p.bordereau || '—'}</td>
@@ -5180,14 +5254,14 @@ select.inp{appearance:auto}
     brInfo();
     F('brList').innerHTML = bordereaux.filter(b => boutiqueCour() === 'Toutes les boutiques' || b.boutique === boutiqueCour()).slice().reverse().map(b => {
       const D = brDossiers(b), tot = D.reduce((a, x) => a + x.p.montant, 0), pay = D.reduce((a, x) => a + (x.p.paye || 0), 0);
-      const age = Math.floor((Date.now() - new Date(b.date)) / 864e5), st = pay >= tot ? 'Payée' : pay > 0 ? 'Payée partiellement' : 'Facturée';
-      return `<li class="br-item"><span><b>${b.numero}</b> · ${esc(b.organisme)} · ${moisTxt(b.mois)} · ${D.length} dossier(s) · émis le ${fmtDate(b.date)}${st !== 'Payée' ? ` · <span class="${age > 60 ? 'st-zero' : 'muted'}">${age} j</span>` : ''}
+      const age = Math.floor((Date.now() - new Date(b.date)) / 864e5), st = D.every(x => !resteP(x.p)) ? (pay >= tot ? 'Payée' : 'Soldée') : pay > 0 ? 'Payée partiellement' : 'Facturée';
+      return `<li class="br-item"><span><b>${b.numero}</b> · ${esc(b.organisme)} · ${moisTxt(b.mois)} · ${D.length} dossier(s) · émis le ${fmtDate(b.date)}${!['Payée', 'Soldée'].includes(st) ? ` · <span class="${age > 60 ? 'st-zero' : 'muted'}">${age} j</span>` : ''}
         ${b.relances?.length ? ` · ${b.relances.length} relance(s), dernière le ${fmtDate(b.relances[b.relances.length - 1].date)}` : ''}<br>
         ${stChip(st)} payé ${money(pay)} / ${money(tot)}</span>
-        <span class="br-acts"><button class="act ghost-act" data-br-doc="${b.numero}">Bordereau</button>${st !== 'Payée' ? `<button class="act ghost-act" data-br-rel="${b.numero}">Relancer</button><button class="act" data-br-pay="${b.numero}">Paiement reçu</button>` : ''}</span></li>`;
+        <span class="br-acts"><button class="act ghost-act" data-br-doc="${b.numero}">Bordereau</button>${!['Payée', 'Soldée'].includes(st) ? `<button class="act ghost-act" data-br-rel="${b.numero}">Relancer</button><button class="act" data-br-pay="${b.numero}">Paiement reçu</button>` : ''}</span></li>`;
     }).join('') || `<li class="muted">Aucun bordereau.</li>`;
   }
-  const stChip = st => `<span class="chip ${st === 'Payée' ? '' : st === 'À facturer' ? 'blue' : 'warn'}">${st}</span>`;
+  const stChip = st => `<span class="chip ${['Payée', 'Soldée'].includes(st) ? '' : st === 'À facturer' ? 'blue' : 'warn'}">${st}</span>`;
   const moisTxt = m => new Date(m + '-01T12:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   const brDossiers = b => toutesPec().filter(x => x.p.bordereau === b.numero);
   const brCandidats = () => toutesPec().filter(({ v, p }) => enMagasin(v) && !p.bordereau && p.organisme === F('brOrg').value && dayKey(p.date || v.date).slice(0, 7) <= F('brMois').value);
@@ -5215,7 +5289,7 @@ select.inp{appearance:auto}
     const b = bordereaux.find(x => x.numero === n);
     if (t.dataset.brDoc) openDocs({ kind:'bord', numero: b.numero, b });
     if (t.dataset.brRel) { b.relances.push({ date: new Date().toISOString(), par: user.nom }); saveCo(); drawPEC(); show(`Relance notée pour ${b.numero}`); }
-    if (t.dataset.brPay) openBrPay(b);
+    if (t.dataset.brPay) { if (droit('compta')) pointer(b.organisme, b.numero); else show('Réservé au responsable.'); }
   });
   let bpB = null;
   function openBrPay(b){
@@ -5292,7 +5366,7 @@ select.inp{appearance:auto}
   const signe = o => o.sens === 'D' ? -o.montant : o.montant;
   const soldeCompte = c => (c.soldeInit || 0) + opsBq.filter(o => o.compte === c.id && (!c.dateInit || o.date >= c.dateInit)).reduce((a, o) => a + signe(o), 0);
   const BK_DEB = ['Frais bancaires', 'Agios et intérêts', 'Salaires', 'Charges sociales (CNSS…)', 'Loyer', 'Impôts et taxes', 'Électricité / eau / téléphone', 'Prélèvement', 'Retrait d\'espèces', 'Virement entre comptes', 'Remboursement de prêt', 'Autre dépense'];
-  const BK_CRE = ['Encaissement carte bancaire', 'Dépôt d\'espèces', 'Virement assurance', 'Règlement client (virement / chèque)', 'Remboursement fournisseur', 'Virement entre comptes', 'Apport / prêt', 'Intérêts créditeurs', 'Autre recette'];
+  const BK_CRE = ['Encaissement carte bancaire', 'Dépôt d\'espèces', 'Virement assurance', 'Remise de chèques assurance', 'Règlement client (virement / chèque)', 'Remboursement fournisseur', 'Virement entre comptes', 'Apport / prêt', 'Intérêts créditeurs', 'Autre recette'];
   const versDev = (fcfa, dev) => dev === 'EUR' ? fcfa / PA.taux : dev === 'USD' ? fcfa / (PA.tauxUsd || 600) : fcfa;
   const facOuvertes = () => facturesFourn.filter(f => facVisible(f) && resteFac(f) > 0.005);
   // les débits se rapprochent des factures fournisseurs : à payer (le rapprochement règle la facture) ou déjà réglées à la main dans Achats
@@ -5358,6 +5432,7 @@ select.inp{appearance:auto}
         if (p?.bqPointe) { delete p.bq; delete p.bqPointe; } else if (p) f.paiements = f.paiements.filter(x => x !== p);
         if (o.rappro.facCree && !(f.paiements || []).length) facturesFourn = facturesFourn.filter(x => x !== f);
         saveAch(); } }
+    if (o.regls?.length) { reglAss.forEach(r => { if (r.bq === o.id) delete r.bq; }); delete o.regls; saveRegl(); }
     delete o.rappro; delete o.cat; delete o.note;
   }
   F('bkRows').addEventListener('click', e => { const d = e.target.dataset;
@@ -5396,15 +5471,24 @@ select.inp{appearance:auto}
         <div><label class="lbl" for="bqqNum">N° de facture *</label><input class="inp" id="bqqNum"></div></div>
         <label class="lbl" for="bqqNat">Nature</label><select class="inp" id="bqqNat">${[...F('facCat').options].map(x => `<option>${esc(x.value)}</option>`).join('')}</select>`;
     else {
-      F('bqqDet').innerHTML = `<label class="lbl" for="bqqCat">Correspond à</label><select class="inp" id="bqqCat">${(o.sens === 'D' ? BK_DEB : BK_CRE).map(x => `<option>${esc(x)}</option>`).join('')}</select>`;
+      F('bqqDet').innerHTML = `<label class="lbl" for="bqqCat">Correspond à</label><select class="inp" id="bqqCat">${(o.sens === 'D' ? BK_DEB : BK_CRE).map(x => `<option>${esc(x)}</option>`).join('')}</select><div id="bqqRg"></div>`;
       if (o.sens === 'D' && /frais|commission|tenue|agio|int[ée]r[êe]t/i.test(o.libelle || '')) F('bqqCat').value = /agio|int[ée]r[êe]t/i.test(o.libelle) ? 'Agios et intérêts' : 'Frais bancaires';
       const lt = (o.libelle || '') + ' ' + (o.tiers || '');
       if (o.sens === 'C') F('bqqCat').value = /versement|esp[eè]ces/i.test(lt) ? 'Dépôt d\'espèces' : /tpe|carte|mon[ée]tique|visa|mastercard|gimac/i.test(lt) ? 'Encaissement carte bancaire'
         : /assur|ascoma|gras savoye|cnamgs|nsia|axa|saham|sanlam|sunu|ogar|mutuelle/i.test(lt) ? 'Virement assurance' : /int[ée]r[êe]t/i.test(lt) ? 'Intérêts créditeurs' : 'Encaissement carte bancaire';
       else if (/salaire|paie/i.test(lt)) F('bqqCat').value = 'Salaires'; else if (/cnss|caisse nationale/i.test(lt)) F('bqqCat').value = 'Charges sociales (CNSS…)'; else if (/loyer/i.test(lt)) F('bqqCat').value = 'Loyer';
       else if (/imp[oô]t|dgi|tva|patente|taxe/i.test(lt) && !/tva sur (frais|commission)/i.test(lt)) F('bqqCat').value = 'Impôts et taxes'; else if (/retrait/i.test(lt)) F('bqqCat').value = 'Retrait d\'espèces';
+      bkQRg();
     }
   }
+  // crédit d'assurance : on peut cocher le(s) règlement(s) pointé(s) dans Assurances qu'il encaisse
+  function bkQRg(){
+    const z = F('bqqRg'); if (!z) return; const o = opsBq.find(x => x.id === bkQ[bkQi]);
+    if (!/assurance/i.test(F('bqqCat').value)) { z.innerHTML = ''; return; }
+    const L = reglAss.filter(r => regVisible(r) && !r.bq).sort((a, b) => Math.abs(a.montant - o.montant) - Math.abs(b.montant - o.montant)).slice(0, 15);
+    z.innerHTML = L.length ? `<span class="lbl" style="margin-top:10px">Règlements d'assurance encaissés par cet avis <span class="opt">(facultatif)</span></span><div class="bqq-rg">${L.map(r => `<label><input type="checkbox" value="${esc(r.id)}"${Math.abs(r.montant - o.montant) <= 1 ? ' checked' : ''}> ${esc(r.organisme)} · ${esc(r.mode)}${r.numero ? ' n° ' + esc(r.numero) : ''} · ${fmtDate(r.date)} · <b>${money(r.montant)}</b></label>`).join('')}</div>` : '';
+  }
+  F('bqqDet').addEventListener('change', e => { if (e.target.id === 'bqqCat') bkQRg(); });
   F('bqqChoix').addEventListener('change', bkQDet);
   F('bqqSkip').addEventListener('click', () => { bkQi++; bkQAfficher(); });
   document.querySelectorAll('[data-close-bkq]').forEach(b => b.addEventListener('click', () => { F('dlgBkQ').hidden = true; drawBQ(); }));
@@ -5419,7 +5503,9 @@ select.inp{appearance:auto}
       const c = compteCour(), f = { id: 'ff' + Date.now().toString(36), fournisseur: four, numero: num, date: o.date, echeance: o.date, montant: o.montant, devise: 'FCFA',
         boutique: c?.boutique || (boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : ''), nature: F('bqqNat').value, note: 'Créée depuis la banque', paiements: [], creeLe: new Date().toISOString(), par: user.nom };
       facturesFourn.push(f); rapprocher(o, 'FA:' + f.id); o.rappro.facCree = true;
-    } else o.cat = F('bqqCat').value;
+    } else { o.cat = F('bqqCat').value;
+      const rg = [...document.querySelectorAll('#bqqRg input:checked')].map(i => i.value);
+      if (rg.length) { o.regls = rg; reglAss.forEach(r => { if (rg.includes(r.id)) r.bq = o.id; }); saveRegl(); } }
     if (note) o.note = note;
     saveBk(); try { majTuileAchat(); } catch(_) {} bkQi++; bkQAfficher();
   });
@@ -5438,6 +5524,174 @@ select.inp{appearance:auto}
     F('tBkId').innerHTML = (() => { const n = opsBq.filter(o => ids.has(o.compte) && aIdentifier(o)).length; return n ? `<span class="fac-retard">${n}</span>` : '0'; })();
     F('tBkSolde').textContent = vis.length ? money(vis.reduce((a, c) => a + soldeCompte(c), 0)) : 'aucun compte';
   }
+  /* ---------- Assurances : pointage des règlements (chèque + bordereau papier, ou virement) ---------- */
+  let reglAss = ld0('reglAss', []), asTab = 'pt', pt = { org: '', L: {} };
+  const saveRegl = () => { try { localStorage.setItem('reglAss', JSON.stringify(reglAss)); } catch(_) {} saveCo(); };
+  const ISSUES = { attente: 'Reste dû par l\'assurance', litige: 'Litige : à recontester', client: 'À la charge du client', perte: 'Abandonné (perte)' };
+  const nomCli = (c, v) => c ? `${c.nom} ${c.prenom}` : v.client || '—';
+  const dusAss = org => toutesPec().filter(({ v, p }) => enMagasin(v) && resteP(p) > 0 && (!org || p.organisme === org));
+  const regVisible = r => boutiqueCour() === 'Toutes les boutiques' || r.boutique === boutiqueCour();
+  function majTuileAss(){
+    const D = dusAss(''); F('tAsDu').textContent = money(D.reduce((a, x) => a + resteP(x.p), 0));
+    const n = D.filter(x => x.p.issue?.type === 'litige').length; F('tAsLit').innerHTML = n ? `<span class="fac-retard">${n}</span>` : '0';
+  }
+  function openAss(tab = asTab){
+    if (!droit('compta')) { show('Assurances réservées aux personnes ayant accès à la comptabilité.'); return; }
+    asTab = tab; F('asTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.as === tab));
+    document.querySelectorAll('.as-p').forEach(p => p.hidden = p.dataset.p !== tab);
+    F('asSub').textContent = boutiqueCour();
+    ({ pt: drawPt, suivi: drawAsSuivi, regl: drawAsRegl })[tab]();
+    go('ass');
+  }
+  F('goAss').addEventListener('click', () => openAss());
+  F('asTabs').addEventListener('click', e => { const b = e.target.closest('[data-as]'); if (b) openAss(b.dataset.as); });
+
+  // --- Pointer un règlement
+  function pointer(org, brNum){
+    pt = { org, L: {} }; if (!F('ptDate').value) F('ptDate').value = dayKey();
+    if (brNum) dusAss(org).filter(x => x.p.bordereau === brNum).forEach(({ p }) => pt.L[p.id] = { m: resteP(p), issue: 'attente', motif: '' });
+    openAss('pt');
+  }
+  function drawPt(){
+    const orgs = [...new Set(dusAss('').map(x => x.p.organisme))].sort();
+    if (pt.org && !orgs.includes(pt.org)) orgs.push(pt.org);
+    F('ptOrg').innerHTML = `<option value="">Choisir l'assurance…</option>` + orgs.map(o => `<option${o === pt.org ? ' selected' : ''}>${esc(o)}</option>`).join('');
+    if (!F('ptDate').value) F('ptDate').value = dayKey();
+    F('ptNumL').textContent = F('ptMode').value === 'Chèque' ? 'N° du chèque' : 'Référence';
+    F('ptZone').hidden = !pt.org;
+    if (!pt.org) return;
+    const D = dusAss(pt.org).sort((a, b) => (a.p.bordereau || 'ZZZ').localeCompare(b.p.bordereau || 'ZZZ') || a.v.date.localeCompare(b.v.date));
+    // raccourcis par bordereau
+    const brs = {}; D.forEach(({ p }) => { const k = p.bordereau || ''; (brs[k] = brs[k] || { n: 0, t: 0 }); brs[k].n++; brs[k].t += resteP(p); });
+    F('ptBr').innerHTML = Object.entries(brs).map(([k, x]) => { const tous = D.filter(d => (d.p.bordereau || '') === k).every(d => pt.L[d.p.id]);
+      return `<button type="button" class="pt-chip${tous ? ' on' : ''}" data-pt-br="${esc(k)}"><b>${k ? esc(k) : 'Hors bordereau'}</b> · ${x.n} dossier${x.n > 1 ? 's' : ''} · ${money(x.t)} <span>${tous ? '✓ tout pointé' : 'Tout pointer'}</span></button>`; }).join('');
+    const q = norm(F('ptFiltre').value || '');
+    const V = q ? D.filter(x => pt.L[x.p.id] || ptMatch(x, q)) : D;
+    F('ptRows').innerHTML = V.map(({ v, c, p }) => { const l = pt.L[p.id], r = resteP(p), ec = l ? r - l.m : 0;
+      return `<tr data-pid="${esc(p.id)}" class="${l ? 'pt-on' : ''}"><td><input type="checkbox" data-pt-on${l ? ' checked' : ''} aria-label="Pointer"></td>
+        <td>${p.bordereau ? esc(p.bordereau) : '<span class="muted">—</span>'}</td><td><b>${esc(nomCli(c, v))}</b><br><small class="muted">${fmtDate(v.date)} · ${v.dossier ? 'dossier ' + esc(v.dossier) + ' · ' : ''}${esc(v.numero)}</small></td>
+        <td class="muted">${esc(p.matricule || '')}${p.bon ? '<br>bon ' + esc(p.bon) : ''}</td>
+        <td style="text-align:right">${money(r)}${p.paye ? `<br><small class="muted">déjà payé ${money(p.paye)}</small>` : ''}${p.issue?.type === 'litige' ? '<br><span class="chip warn">litige</span>' : ''}</td>
+        <td style="text-align:right">${l ? `<input class="inp num" data-pt-m value="${l.m}" inputmode="numeric" style="width:110px;text-align:right">` : ''}</td>
+        <td>${l && ec > 0 ? `<div class="pt-ec"><small>Écart ${money(ec)} :</small><select class="inp" data-pt-iss>${Object.entries(ISSUES).map(([k, t]) => `<option value="${k}"${l.issue === k ? ' selected' : ''}>${t}</option>`).join('')}</select>${l.issue !== 'attente' ? `<input class="inp" data-pt-mot placeholder="Motif (ex. plafond dépassé)" value="${esc(l.motif || '')}">` : ''}</div>` : l && ec < 0 ? '<small class="fac-retard">Supérieur au reste dû</small>' : ''}</td></tr>`; }).join('');
+    F('ptNone').hidden = V.length > 0; F('ptNone').textContent = D.length ? 'Aucun dossier ne correspond à la recherche.' : 'Plus aucun dossier en attente pour cette assurance.';
+    ptRecap();
+  }
+  const ptMatch = ({ v, c, p }, q) => [v.dossier, v.numero, p.bon, p.matricule, c && c.nom + ' ' + c.prenom, c && c.prenom + ' ' + c.nom, v.client].some(x => x && norm(String(x)).includes(q));
+  function ptRecap(){
+    const lignes = Object.values(pt.L), tot = lignes.reduce((a, l) => a + l.m, 0), mt = intOf(F('ptMt').value), ec = mt - tot;
+    F('ptRecap').innerHTML = `<b>${lignes.length}</b> dossier(s) pointé(s) · total <b>${money(tot)}</b>${mt ? ` · ${F('ptMode').value === 'Chèque' ? 'chèque' : 'montant reçu'} ${money(mt)} · <span class="${ec === 0 ? 'pt-ok' : 'fac-retard'}">${ec === 0 ? '✓ le compte est bon' : `écart ${ec > 0 ? '+' : '−'}${money(Math.abs(ec))}`}</span>` : ''}`;
+    F('ptOk').disabled = !lignes.length;
+  }
+  F('ptOrg').addEventListener('change', () => { pt = { org: F('ptOrg').value, L: {} }; F('ptFiltre').value = ''; drawPt(); });
+  F('ptMode').addEventListener('change', drawPt);
+  F('ptMt').addEventListener('input', ptRecap);
+  F('ptFiltre').addEventListener('input', drawPt);
+  // douchette / saisie : Entrée pointe le dossier s'il n'y en a qu'un
+  F('ptScan').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const t = F('ptScan').value.trim(); if (!t) return; const q = norm(t), td = /^\d{1,6}$/.test(t) ? t.padStart(4, '0') : null;
+    const D = dusAss(pt.org);
+    let M = td ? D.filter(x => x.v.dossier === td || x.v.numero.toUpperCase() === t.toUpperCase()) : [];
+    if (!M.length) M = D.filter(x => [x.v.numero, x.p.bon, x.p.matricule].some(y => y && norm(String(y)) === q));
+    if (!M.length) M = D.filter(x => ptMatch(x, q));
+    if (M.length === 1) { const p = M[0].p; if (!pt.L[p.id]) pt.L[p.id] = { m: resteP(p), issue: 'attente', motif: '' }; F('ptScan').value = ''; F('ptFiltre').value = ''; drawPt();
+      const tr = F('ptRows').querySelector(`[data-pid="${CSS.escape(p.id)}"]`); if (tr) { tr.scrollIntoView({ block: 'center' }); tr.classList.add('pt-flash'); setTimeout(() => tr.classList.remove('pt-flash'), 900); }
+      show(`${nomCli(M[0].c, M[0].v)} pointé · ${money(resteP(p))}`); return; }
+    if (M.length > 1) { F('ptFiltre').value = t; F('ptScan').value = ''; drawPt(); show(`${M.length} dossiers correspondent : cochez le bon.`); return; }
+    const ail = toutesPec().find(x => enMagasin(x.v) && ptMatch(x, q));
+    show(ail ? (resteP(ail.p) > 0 ? `Ce dossier est chez ${ail.p.organisme}, pas chez ${pt.org}.` : 'Ce dossier est déjà soldé.') : 'Aucun dossier trouvé.');
+  });
+  F('ptBr').addEventListener('click', e => { const b = e.target.closest('[data-pt-br]'); if (!b) return; const k = b.dataset.ptBr, D = dusAss(pt.org).filter(d => (d.p.bordereau || '') === k);
+    const tous = D.every(d => pt.L[d.p.id]); D.forEach(({ p }) => { if (tous) delete pt.L[p.id]; else if (!pt.L[p.id]) pt.L[p.id] = { m: resteP(p), issue: 'attente', motif: '' }; }); drawPt(); });
+  F('ptRows').addEventListener('change', e => { const tr = e.target.closest('[data-pid]'); if (!tr) return; const id = tr.dataset.pid, l = pt.L[id];
+    if (e.target.matches('[data-pt-on]')) { if (e.target.checked) { const x = toutesPec().find(y => y.p.id === id); pt.L[id] = { m: resteP(x.p), issue: 'attente', motif: '' }; } else delete pt.L[id]; drawPt(); }
+    else if (e.target.matches('[data-pt-m]')) { l.m = Math.max(0, intOf(e.target.value)); if (l.issue === 'attente' && l.m === 0) l.issue = 'litige'; drawPt(); }
+    else if (e.target.matches('[data-pt-iss]')) { l.issue = e.target.value; drawPt(); }
+    else if (e.target.matches('[data-pt-mot]')) l.motif = e.target.value.trim(); });
+  F('ptRows').addEventListener('input', e => { if (e.target.matches('[data-pt-m]')) { const l = pt.L[e.target.closest('[data-pid]').dataset.pid]; l.m = Math.max(0, intOf(e.target.value)); ptRecap(); } });
+  F('ptAnnuler').addEventListener('click', () => { pt.L = {}; drawPt(); });
+  F('ptOk').addEventListener('click', () => {
+    const lignes = Object.entries(pt.L); if (!lignes.length) return;
+    const mt = intOf(F('ptMt').value), tot = lignes.reduce((a, [, l]) => a + l.m, 0), num = F('ptNum').value.trim(), mode = F('ptMode').value;
+    if (!mt) { show(`Indiquez le montant ${mode === 'Chèque' ? 'du chèque' : 'reçu'}.`); F('ptMt').focus(); return; }
+    if (mt !== tot && !confirm(`Le total pointé (${money(tot)}) ne correspond pas au montant reçu (${money(mt)}). Enregistrer quand même ?`)) return;
+    const all = toutesPec(), date = new Date(F('ptDate').value + 'T12:00').toISOString(), ref = `${mode}${num ? ' n° ' + num : ''}`;
+    const r = { id: 'ra' + Date.now().toString(36), organisme: pt.org, date, mode, numero: num, montant: mt, boutique: boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : '', lignes: [], par: user.nom, le: new Date().toISOString() };
+    const parBr = {};
+    for (const [id, l] of lignes) {
+      const x = all.find(y => y.p.id === id); if (!x) continue; const { v, p } = x, reste = resteP(p), m = Math.min(l.m, reste), ec = reste - m;
+      const ln = { pid: id, vente: v.numero, client: nomCli(x.c, v), bordereau: p.bordereau || '', montant: m, avant: p.issue ? { ...p.issue } : null };
+      if (m > 0) { p.paye = (p.paye || 0) + m; (p.reglements = p.reglements || []).push({ date, montant: m, ref, par: user.nom, regl: r.id }); }
+      if (ec > 0 && l.issue !== 'attente') {
+        p.issue = { type: l.issue, montant: ec, motif: l.motif || '', date, par: user.nom, regl: r.id }; ln.issue = l.issue; ln.ecart = ec;
+        if (l.issue === 'client') { v.resteAcharge = (v.resteAcharge || 0) + ec; v.solde = (v.solde || 0) + ec; }
+      } else if (p.issue?.type === 'litige') delete p.issue;   // litige réglé ou remis en attente
+      p.statut = pecStatut(p); r.lignes.push(ln);
+      if (p.bordereau && m > 0) parBr[p.bordereau] = (parBr[p.bordereau] || 0) + m;
+    }
+    Object.entries(parBr).forEach(([n, s]) => { const b = bordereaux.find(y => y.numero === n); if (b) (b.paiements = b.paiements || []).push({ date, montant: s, ref, par: user.nom, regl: r.id }); });
+    reglAss.push(r); saveRegl(); save();
+    const cli = r.lignes.filter(l => l.issue === 'client').length;
+    pt.L = {}; F('ptNum').value = ''; F('ptMt').value = ''; drawPt(); majTuileAss();
+    show(`Règlement de ${money(mt)} enregistré · ${r.lignes.length} dossier(s)${cli ? ` · ${cli} reste(s) passé(s) à la charge du client` : ''}`);
+  });
+
+  // --- En attente et litiges
+  function drawAsSuivi(){
+    const D = dusAss(''), orgs = {};
+    D.forEach(({ v, p }) => { const o = orgs[p.organisme] = orgs[p.organisme] || { n: 0, t: 0, lit: 0, nf: 0, vieux: 0 };
+      o.n++; o.t += resteP(p); if (p.issue?.type === 'litige') o.lit += resteP(p); if (!p.bordereau) o.nf += resteP(p);
+      o.vieux = Math.max(o.vieux, Math.floor((Date.now() - new Date(v.date)) / 864e5)); });
+    const tot = D.reduce((a, x) => a + resteP(x.p), 0), lit = D.filter(x => x.p.issue?.type === 'litige'), mois = dayKey().slice(0, 7);
+    F('asKpi').innerHTML = kpi('À encaisser des assurances', money(tot), `${D.length} dossier(s)`, 'main')
+      + kpi('Dont non encore facturé', money(D.filter(x => !x.p.bordereau).reduce((a, x) => a + resteP(x.p), 0)), 'pas encore sur un bordereau')
+      + kpi('En litige', money(lit.reduce((a, x) => a + resteP(x.p), 0)), `${lit.length} dossier(s)`, lit.length ? 'warn-k' : '')
+      + kpi('Encaissé ce mois-ci', money(reglAss.filter(r => regVisible(r) && r.date.slice(0, 7) === mois).reduce((a, r) => a + r.montant, 0)));
+    F('asOrgRows').innerHTML = Object.entries(orgs).sort((a, b) => b[1].t - a[1].t).map(([o, x]) => `<tr><td><b>${esc(o)}</b></td><td style="text-align:right">${x.n}</td>
+      <td style="text-align:right">${x.nf ? money(x.nf) : '—'}</td><td style="text-align:right">${x.lit ? `<span class="fac-retard">${money(x.lit)}</span>` : '—'}</td>
+      <td style="text-align:right" class="${x.vieux > 90 ? 'st-zero' : ''}">${x.vieux} j</td><td style="text-align:right"><b>${money(x.t)}</b></td>
+      <td><button class="act" type="button" data-as-pt="${esc(o)}">Pointer un règlement</button></td></tr>`).join('') || `<tr><td colspan="7" class="muted">Aucune somme en attente des assurances.</td></tr>`;
+    F('asLitRows').innerHTML = lit.map(({ v, c, p }) => `<tr data-pid="${esc(p.id)}"><td>${fmtDate(p.issue.date)}</td><td><b>${esc(nomCli(c, v))}</b><br><small class="muted">${esc(v.numero)}${p.bordereau ? ' · ' + esc(p.bordereau) : ''}</small></td>
+      <td>${esc(p.organisme)}</td><td>${esc(p.issue.motif || '—')}</td><td style="text-align:right"><b>${money(resteP(p))}</b></td>
+      <td style="white-space:nowrap"><button class="act ghost-act" type="button" data-lit="client">Au client</button> <button class="act ghost-act" type="button" data-lit="perte">Abandonner</button> <button class="act ghost-act" type="button" data-lit="lever">Lever le litige</button></td></tr>`).join('')
+      || `<tr><td colspan="6" class="muted">Aucun litige en cours.</td></tr>`;
+  }
+  F('asOrgRows').addEventListener('click', e => { const o = e.target.dataset.asPt; if (o != null) pointer(o); });
+  F('asLitRows').addEventListener('click', e => { const a = e.target.dataset.lit; if (!a) return; const id = e.target.closest('[data-pid]').dataset.pid, x = toutesPec().find(y => y.p.id === id); if (!x) return; const { v, p } = x, ec = resteP(p);
+    if (a === 'lever') delete p.issue;
+    else { if (!confirm(a === 'client' ? `Passer ${money(ec)} à la charge du client ${nomCli(x.c, v)} ?` : `Abandonner ${money(ec)} (perte) ?`)) return;
+      p.issue = { ...p.issue, type: a, montant: ec, date: new Date().toISOString(), par: user.nom, regl: null };
+      if (a === 'client') { v.resteAcharge = (v.resteAcharge || 0) + ec; v.solde = (v.solde || 0) + ec; } }
+    p.statut = pecStatut(p); save(); saveCo(); drawAsSuivi(); majTuileAss(); show(a === 'lever' ? 'Litige levé : le dossier redevient dû par l\'assurance' : a === 'client' ? 'Reste passé à la charge du client (visible dans les impayés clients)' : 'Montant abandonné'); });
+
+  // --- Règlements reçus
+  function drawAsRegl(){
+    const L = reglAss.filter(regVisible).slice().sort((a, b) => b.date.localeCompare(a.date));
+    F('asRegRows').innerHTML = L.map(r => { const tot = r.lignes.reduce((a, l) => a + l.montant, 0), bq = r.bq && opsBq.find(o => o.id === r.bq);
+      return `<tr data-rg="${esc(r.id)}"><td>${fmtDate(r.date)}</td><td><b>${esc(r.organisme)}</b></td><td>${esc(r.mode)}${r.numero ? ' n° ' + esc(r.numero) : ''}</td>
+        <td style="text-align:right">${r.lignes.length}</td><td style="text-align:right"><b>${money(r.montant)}</b>${tot !== r.montant ? `<br><small class="fac-retard">pointé ${money(tot)}</small>` : ''}</td>
+        <td>${bq ? `<span class="chip">En banque le ${fmtDate(bq.date)}</span>` : '<span class="chip warn">Pas encore vu en banque</span>'}</td>
+        <td style="white-space:nowrap"><button class="act ghost-act" type="button" data-rg-det>Détail</button> <button class="act ghost-act" type="button" data-rg-del>Annuler</button></td></tr>
+        <tr class="rg-det" hidden><td colspan="7"><ul class="c-lines">${r.lignes.map(l => `<li><span>${esc(l.client)} · ${esc(l.vente)}${l.bordereau ? ' · ' + esc(l.bordereau) : ''}${l.issue ? ` · <i>${esc(ISSUES[l.issue])} (${money(l.ecart)})</i>` : ''}</span><span>${money(l.montant)}</span></li>`).join('')}</ul><small class="muted">Saisi par ${esc(r.par)} le ${fmtDate(r.le)}</small></td></tr>`; }).join('')
+      || `<tr><td colspan="7" class="muted">Aucun règlement enregistré.</td></tr>`;
+  }
+  F('asRegRows').addEventListener('click', e => { const tr = e.target.closest('[data-rg]'); if (!tr) return; const r = reglAss.find(x => x.id === tr.dataset.rg);
+    if (e.target.matches('[data-rg-det]')) tr.nextElementSibling.hidden = !tr.nextElementSibling.hidden;
+    if (e.target.matches('[data-rg-del]')) {
+      const all = toutesPec();
+      const bloque = r.lignes.find(l => { const x = all.find(y => y.p.id === l.pid); return l.issue === 'client' && x && (x.v.solde || 0) < l.ecart; });
+      if (bloque) { show(`Impossible : le client ${bloque.client} a déjà réglé la part qui lui a été passée.`); return; }
+      if (!confirm(`Annuler le règlement ${r.mode} ${r.numero || ''} de ${money(r.montant)} ? Les dossiers redeviennent dus par ${r.organisme}.`)) return;
+      r.lignes.forEach(l => { const x = all.find(y => y.p.id === l.pid); if (!x) return; const { v, p } = x;
+        p.paye = Math.max(0, (p.paye || 0) - l.montant); p.reglements = (p.reglements || []).filter(g => g.regl !== r.id);
+        if (p.issue?.regl === r.id) { if (p.issue.type === 'client') { v.resteAcharge = Math.max(0, (v.resteAcharge || 0) - l.ecart); v.solde = Math.max(0, (v.solde || 0) - l.ecart); } delete p.issue; }
+        if (l.avant) p.issue = l.avant; p.statut = pecStatut(p); });
+      bordereaux.forEach(b => { if (b.paiements) b.paiements = b.paiements.filter(x => x.regl !== r.id); });
+      if (r.bq) { const o = opsBq.find(x => x.id === r.bq); if (o) { o.regls = (o.regls || []).filter(x => x !== r.id); saveBk(); } }
+      reglAss = reglAss.filter(x => x !== r); saveRegl(); save(); drawAsRegl(); majTuileAss(); show('Règlement annulé');
+    } });
+
   // comptes
   F('bkCompteAdd').addEventListener('click', () => { if (user.role === 'vendeur') { show('Réservé au responsable.'); return; }
     ['bkNom', 'bkBanque', 'bkNum', 'bkSolde'].forEach(id => F(id).value = ''); F('bkDate').value = dayKey(); F('bkErr').textContent = '';
@@ -5965,7 +6219,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
-  try { majTuileAchat(); majTuileBanque(); } catch(_) {}
+  try { majTuileAchat(); majTuileBanque(); majTuileAss(); } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
   let blData = null, blCtl = null;
@@ -7258,7 +7512,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, comptesBq: () => comptesBq, opsBq: () => opsBq, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
@@ -7270,7 +7524,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); } else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); } else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)
