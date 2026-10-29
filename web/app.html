@@ -1051,6 +1051,17 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile" id="tBanque">
+      <button class="tile-link" id="goBanque" aria-label="Ouvrir la banque">
+      <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 2.5 7v2h19V7L12 2Z"/><rect x="4.5" y="10.5" width="3" height="7" rx=".6"/><rect x="10.5" y="10.5" width="3" height="7" rx=".6"/><rect x="16.5" y="10.5" width="3" height="7" rx=".6"/><rect x="2.5" y="19" width="19" height="2.5" rx=".8"/></svg></div>
+      <h2>Banque</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>Avis à identifier : <b id="tBkId">0</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Solde des comptes : <b id="tBkSolde">—</b></span></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide" id="tStat">
       <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
       <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1363,7 +1374,7 @@ select.inp{appearance:auto}
   </div>
   <div class="tabs" id="coTabs">
     <button class="tab on" data-co="tb">Tableau de bord</button><button class="tab" data-co="pec">Prises en charge</button>
-    <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Banque</button>
+    <button class="tab" data-co="imp">Impayés clients</button>
     <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des PEC</button><button class="tab" data-co="jca">Journal de caisse</button>
   </div>
 
@@ -1449,25 +1460,6 @@ select.inp{appearance:auto}
     </section>
   </div>
 
-  <div class="co-p" data-p="bq" hidden>
-    <div class="s-stats co-kpi" id="bkKpi"></div>
-    <section class="blk">
-      <div class="row-head"><h2>Banque</h2>
-        <span class="bl-btns"><select class="inp sm" id="bkCompte"></select><button class="ghost" type="button" id="bkCompteAdd">+ Compte bancaire</button>
-          <label class="save bl-btn"><input type="file" id="bkFile" accept="application/pdf,image/*" multiple hidden>Importer des avis / relevés (PDF)</label></span></div>
-      <p class="sub">Importez les avis de débit et de crédit (ou un relevé) envoyés par la banque, en PDF : plusieurs fichiers à la fois si besoin. DIOPTRA lit chaque opération : les débits sont rapprochés des factures fournisseurs à payer (la facture est alors réglée), et pour tout avis qui ne correspond à rien, DIOPTRA vous demande à quoi il correspond.</p>
-      <div class="bl" id="bkSt" hidden></div>
-      <div id="bkRev" hidden>
-        <h3 style="margin:14px 0 6px;font-size:15px">Opérations lues : vérifiez avant d'enregistrer</h3>
-        <div class="tbl-wrap"><table class="s-tbl bk-rev"><thead><tr><th></th><th>Fichier</th><th>Date</th><th>Sens</th><th style="text-align:right">Montant</th><th style="text-align:right">Frais</th><th>Libellé</th><th>Référence</th></tr></thead><tbody id="bkRevRows"></tbody></table></div>
-        <div class="st-foot"><span class="muted" id="bkRevTot"></span><span><button class="ghost" type="button" id="bkRevNo">Annuler</button> <button class="save" type="button" id="bkRevOk">Enregistrer les opérations</button></span></div>
-      </div>
-      <div class="row-head" style="margin-top:16px"><h3 style="margin:0;font-size:15px">Opérations du compte</h3>
-        <span class="bl-btns"><select class="inp sm" id="bkEtat"><option value="a">À rapprocher</option><option value="r">Rapprochées</option><option value="">Toutes</option></select><button class="ghost" type="button" id="bkSurs">Valider les propositions sûres</button></span></div>
-      <div class="tbl-wrap"><table class="s-tbl bk-tbl"><thead><tr><th>Date</th><th>Libellé</th><th style="text-align:right">Débit</th><th style="text-align:right">Crédit</th><th>Rapprochement</th></tr></thead><tbody id="bkRows"></tbody></table></div>
-      <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
-    </section>
-  </div>
 </main>
 
 <div class="overlay" id="dlgBkQ" hidden>
@@ -1538,6 +1530,31 @@ select.inp{appearance:auto}
 <datalist id="ophList"></datalist>
 
 <!-- =================== ACHATS =================== -->
+<main id="v-banque" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="bkSub"></div><h1>Banque</h1></div>
+    <div class="per"><select class="inp" id="bkPer"><option value="m">Ce mois-ci</option><option value="m1">Mois dernier</option><option value="3m">3 derniers mois</option><option value="a">Cette année</option><option value="tout" selected>Tout</option></select></div></div>
+    <div class="s-stats co-kpi" id="bkKpi"></div>
+    <section class="blk">
+      <div class="row-head"><h2>Opérations bancaires</h2>
+        <span class="bl-btns"><select class="inp sm" id="bkCompte"></select><button class="ghost" type="button" id="bkCompteAdd">+ Compte bancaire</button>
+          <label class="save bl-btn"><input type="file" id="bkFile" accept="application/pdf,image/*" multiple hidden>Importer des avis / relevés (PDF)</label></span></div>
+      <p class="sub">Importez les avis de débit et de crédit (ou un relevé) envoyés par la banque, en PDF : plusieurs fichiers à la fois si besoin. DIOPTRA lit chaque opération : les débits sont rapprochés des factures fournisseurs à payer (la facture est alors réglée), et pour tout avis qui ne correspond à rien, DIOPTRA vous demande à quoi il correspond.</p>
+      <div class="bl" id="bkSt" hidden></div>
+      <div id="bkRev" hidden>
+        <h3 style="margin:14px 0 6px;font-size:15px">Opérations lues : vérifiez avant d'enregistrer</h3>
+        <div class="tbl-wrap"><table class="s-tbl bk-rev"><thead><tr><th></th><th>Fichier</th><th>Date</th><th>Sens</th><th style="text-align:right">Montant</th><th style="text-align:right">Frais</th><th>Libellé</th><th>Référence</th></tr></thead><tbody id="bkRevRows"></tbody></table></div>
+        <div class="st-foot"><span class="muted" id="bkRevTot"></span><span><button class="ghost" type="button" id="bkRevNo">Annuler</button> <button class="save" type="button" id="bkRevOk">Enregistrer les opérations</button></span></div>
+      </div>
+      <div class="row-head" style="margin-top:16px"><h3 style="margin:0;font-size:15px">Opérations du compte</h3>
+        <span class="bl-btns"><select class="inp sm" id="bkEtat"><option value="a">À rapprocher</option><option value="r">Rapprochées</option><option value="">Toutes</option></select><button class="ghost" type="button" id="bkSurs">Valider les propositions sûres</button></span></div>
+      <div class="tbl-wrap"><table class="s-tbl bk-tbl"><thead><tr><th>Date</th><th>Libellé</th><th style="text-align:right">Débit</th><th style="text-align:right">Crédit</th><th>Rapprochement</th></tr></thead><tbody id="bkRows"></tbody></table></div>
+      <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
+    </section>
+</main>
 <main id="v-achat" hidden>
   <button class="crumb" data-go="accueil">
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
@@ -2637,11 +2654,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), banque: document.getElementById('v-banque') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -4554,8 +4571,8 @@ select.inp{appearance:auto}
     F('coSub').textContent = boutiqueCour();
     coTab = tab; F('coTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.co === tab));
     document.querySelectorAll('.co-p').forEach(p => p.hidden = p.dataset.p !== tab);
-    F('coPer').parentElement.hidden = !['tb', 'bq'].includes(tab);
-    ({ tb: drawTB, pec: drawPEC, imp: drawImp, bq: drawBQ, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas'), jca: () => drawJrn('jca') })[tab]();
+    F('coPer').parentElement.hidden = !['tb'].includes(tab);
+    ({ tb: drawTB, pec: drawPEC, imp: drawImp, jfa: () => drawJrn('jfa'), jcl: () => drawJrn('jcl'), jas: () => drawJrn('jas'), jca: () => drawJrn('jca') })[tab]();
     go('compta');
   }
   F('goCompta').addEventListener('click', () => droit('compta') ? openCompta('tb') : show('Comptabilité réservée au responsable.'));
@@ -5303,7 +5320,7 @@ select.inp{appearance:auto}
   function drawBQ(){
     const vis = comptesBq.filter(compteVisible), cur = F('bkCompte').value;
     F('bkCompte').innerHTML = vis.length ? vis.map(c => `<option value="${esc(c.id)}"${c.id === cur ? ' selected' : ''}>${esc(c.nom)}</option>`).join('') : '<option value="">Aucun compte : créez-en un</option>';
-    const c = compteCour(), per = periode(), C = candidatsBq(), pris = new Set();
+    const c = compteCour(), per = perBq(), C = candidatsBq(), pris = new Set();
     const ops = c ? opsBq.filter(o => o.compte === c.id) : [], aR = ops.filter(aIdentifier);
     const ffAtt = facOuvertes().reduce((a, f) => a + enFcfa(resteFac(f), f.devise), 0), mois = dayKey().slice(0, 7);
     const payeBq = ops.filter(o => o.rappro && o.date.slice(0, 7) === mois).reduce((a, o) => a + o.montant, 0);
@@ -5406,7 +5423,21 @@ select.inp{appearance:auto}
     if (note) o.note = note;
     saveBk(); try { majTuileAchat(); } catch(_) {} bkQi++; bkQAfficher();
   });
-  ['bkCompte', 'bkEtat'].forEach(id => F(id).addEventListener('change', drawBQ));
+  ['bkCompte', 'bkEtat', 'bkPer'].forEach(id => F(id).addEventListener('change', drawBQ));
+  function perBq(){
+    const t = new Date(), y = t.getFullYear(), m = t.getMonth(), P = F('bkPer').value, fin = new Date(y, m + 1, 0, 23, 59, 59);
+    return P === 'm' ? [new Date(y, m, 1), fin] : P === 'm1' ? [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)] : P === '3m' ? [new Date(y, m - 2, 1), fin] : P === 'a' ? [new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59)] : [new Date(2000, 0, 1), new Date(2100, 0, 1)];
+  }
+  function openBanque(){
+    if (!droit('compta')) { show('Banque réservée au responsable.'); return; }
+    F('bkSub').textContent = boutiqueCour(); drawBQ(); go('banque');
+  }
+  F('goBanque').addEventListener('click', openBanque);
+  function majTuileBanque(){
+    const vis = comptesBq.filter(compteVisible), ids = new Set(vis.map(c => c.id));
+    F('tBkId').innerHTML = (() => { const n = opsBq.filter(o => ids.has(o.compte) && aIdentifier(o)).length; return n ? `<span class="fac-retard">${n}</span>` : '0'; })();
+    F('tBkSolde').textContent = vis.length ? money(vis.reduce((a, c) => a + soldeCompte(c), 0)) : 'aucun compte';
+  }
   // comptes
   F('bkCompteAdd').addEventListener('click', () => { if (user.role === 'vendeur') { show('Réservé au responsable.'); return; }
     ['bkNom', 'bkBanque', 'bkNum', 'bkSolde'].forEach(id => F(id).value = ''); F('bkDate').value = dayKey(); F('bkErr').textContent = '';
@@ -5934,7 +5965,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
-  try { majTuileAchat(); } catch(_) {}
+  try { majTuileAchat(); majTuileBanque(); } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
   let blData = null, blCtl = null;
@@ -7239,7 +7270,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); } else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); } else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)
