@@ -680,7 +680,8 @@ tr.pt td{color:var(--muted)}
 .pt-tbl td{vertical-align:middle}.pt-tbl tr.pt-on td{background:var(--ic-blue)}.pt-tbl tr.pt-flash td{background:var(--ic-green)}.pt-tbl input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary)}
 .pt-ec{display:grid;gap:4px;min-width:220px}.pt-ec select,.pt-ec input{padding:6px 8px;font-size:13px}
 .pt-foot{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border-top:1px solid var(--line);padding:12px 0 2px;margin-top:12px}
-.pt-ok{color:var(--ok);font-weight:700}
+.pt-ok{color:var(--ok);font-weight:700}.pt-lu{color:var(--primary)}.pt-tbl tr.pt-doute td{background:var(--ic-amber)}
+.pt-nt{border:1px solid var(--ic-amber-fg);border-radius:10px;padding:10px 14px;margin:10px 0}.pt-nt .c-lines li{align-items:center}
 .bqq-op{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;font-size:14px}.bqq-op b.mt{font-size:20px}
 .bqq-rg{display:grid;gap:4px;max-height:180px;overflow:auto;font-size:13px}.bqq-rg label{display:flex;gap:8px;align-items:center}
 .bqq-ch{display:grid;gap:6px}.bqq-ch label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
@@ -1560,8 +1561,10 @@ select.inp{appearance:auto}
 
   <div class="as-p" data-p="pt">
     <section class="blk">
-      <div class="row-head"><h2>Règlement reçu</h2></div>
-      <p class="sub">Saisissez le chèque (ou le virement), puis pointez un à un les dossiers listés sur le bordereau papier de l'assurance : tapez ou scannez le n° de dossier, de facture, le nom ou le matricule. Un bordereau payé en entier se pointe d'un clic.</p>
+      <div class="row-head"><h2>Règlement reçu</h2>
+        <span class="bl-btns"><label class="save bl-btn"><input type="file" id="ptScanFile" accept="image/*,application/pdf" multiple hidden>Scanner le bordereau papier (photo ou PDF)</label></span></div>
+      <p class="sub">Saisissez le chèque (ou le virement), puis pointez un à un les dossiers listés sur le bordereau papier de l'assurance : tapez ou scannez le n° de dossier, de facture, le nom ou le matricule. Un bordereau payé en entier se pointe d'un clic. Plus rapide : scannez ou photographiez le bordereau papier de l'assurance (plusieurs pages possibles), DIOPTRA retrouve chaque dossier et pré-remplit le pointage.</p>
+      <div class="bl" id="ptLu" hidden></div>
       <div class="pt-form">
         <div><label class="lbl" for="ptOrg">Assurance</label><select class="inp" id="ptOrg"></select></div>
         <div><label class="lbl" for="ptDate">Date</label><input class="inp" type="date" id="ptDate"></div>
@@ -1573,6 +1576,7 @@ select.inp{appearance:auto}
     <section class="blk" id="ptZone" hidden>
       <div class="row-head"><h2>Dossiers à pointer</h2>
         <span class="bl-btns"><input class="inp" id="ptScan" placeholder="N° dossier, facture, nom, matricule… puis Entrée" style="min-width:300px" autocomplete="off"></span></div>
+      <div class="pt-nt" id="ptNT" hidden><span class="lbl">Lignes du bordereau non retrouvées : cherchez le dossier puis cochez-le, ou ignorez la ligne</span><ul class="c-lines" id="ptNTRows"></ul></div>
       <div class="pt-br" id="ptBr"></div>
       <div class="pt-filtre"><input class="inp sm" id="ptFiltre" placeholder="Filtrer la liste" autocomplete="off"></div>
       <div class="tbl-wrap"><table class="s-tbl pt-tbl"><thead><tr><th></th><th>Bordereau</th><th>Patient</th><th>Matricule / bon</th><th style="text-align:right">Reste dû</th><th style="text-align:right">Payé</th><th>Écart</th></tr></thead><tbody id="ptRows"></tbody></table></div>
@@ -5558,7 +5562,7 @@ select.inp{appearance:auto}
     F('ptOrg').innerHTML = `<option value="">Choisir l'assurance…</option>` + orgs.map(o => `<option${o === pt.org ? ' selected' : ''}>${esc(o)}</option>`).join('');
     if (!F('ptDate').value) F('ptDate').value = dayKey();
     F('ptNumL').textContent = F('ptMode').value === 'Chèque' ? 'N° du chèque' : 'Référence';
-    F('ptZone').hidden = !pt.org;
+    F('ptZone').hidden = !pt.org; drawPtNT();
     if (!pt.org) return;
     const D = dusAss(pt.org).sort((a, b) => (a.p.bordereau || 'ZZZ').localeCompare(b.p.bordereau || 'ZZZ') || a.v.date.localeCompare(b.v.date));
     // raccourcis par bordereau
@@ -5568,8 +5572,8 @@ select.inp{appearance:auto}
     const q = norm(F('ptFiltre').value || '');
     const V = q ? D.filter(x => pt.L[x.p.id] || ptMatch(x, q)) : D;
     F('ptRows').innerHTML = V.map(({ v, c, p }) => { const l = pt.L[p.id], r = resteP(p), ec = l ? r - l.m : 0;
-      return `<tr data-pid="${esc(p.id)}" class="${l ? 'pt-on' : ''}"><td><input type="checkbox" data-pt-on${l ? ' checked' : ''} aria-label="Pointer"></td>
-        <td>${p.bordereau ? esc(p.bordereau) : '<span class="muted">—</span>'}</td><td><b>${esc(nomCli(c, v))}</b><br><small class="muted">${fmtDate(v.date)} · ${v.dossier ? 'dossier ' + esc(v.dossier) + ' · ' : ''}${esc(v.numero)}</small></td>
+      return `<tr data-pid="${esc(p.id)}" class="${l ? (l.doute ? 'pt-on pt-doute' : 'pt-on') : ''}"><td><input type="checkbox" data-pt-on${l ? ' checked' : ''} aria-label="Pointer"></td>
+        <td>${p.bordereau ? esc(p.bordereau) : '<span class="muted">—</span>'}</td><td><b>${esc(nomCli(c, v))}</b>${l?.lu ? `<br><small class="pt-lu">lu : ${esc(l.lu)}${l.doute ? ' · à vérifier' : ''}</small>` : ''}<br><small class="muted">${fmtDate(v.date)} · ${v.dossier ? 'dossier ' + esc(v.dossier) + ' · ' : ''}${esc(v.numero)}</small></td>
         <td class="muted">${esc(p.matricule || '')}${p.bon ? '<br>bon ' + esc(p.bon) : ''}</td>
         <td style="text-align:right">${money(r)}${p.paye ? `<br><small class="muted">déjà payé ${money(p.paye)}</small>` : ''}${p.issue?.type === 'litige' ? '<br><span class="chip warn">litige</span>' : ''}</td>
         <td style="text-align:right">${l ? `<input class="inp num" data-pt-m value="${l.m}" inputmode="numeric" style="width:110px;text-align:right">` : ''}</td>
@@ -5583,7 +5587,7 @@ select.inp{appearance:auto}
     F('ptRecap').innerHTML = `<b>${lignes.length}</b> dossier(s) pointé(s) · total <b>${money(tot)}</b>${mt ? ` · ${F('ptMode').value === 'Chèque' ? 'chèque' : 'montant reçu'} ${money(mt)} · <span class="${ec === 0 ? 'pt-ok' : 'fac-retard'}">${ec === 0 ? '✓ le compte est bon' : `écart ${ec > 0 ? '+' : '−'}${money(Math.abs(ec))}`}</span>` : ''}`;
     F('ptOk').disabled = !lignes.length;
   }
-  F('ptOrg').addEventListener('change', () => { pt = { org: F('ptOrg').value, L: {} }; F('ptFiltre').value = ''; drawPt(); });
+  F('ptOrg').addEventListener('change', () => { pt = { org: F('ptOrg').value, L: {} }; ptNonTrouves = []; F('ptLu').hidden = true; F('ptFiltre').value = ''; drawPt(); });
   F('ptMode').addEventListener('change', drawPt);
   F('ptMt').addEventListener('input', ptRecap);
   F('ptFiltre').addEventListener('input', drawPt);
@@ -5633,9 +5637,75 @@ select.inp{appearance:auto}
     Object.entries(parBr).forEach(([n, s]) => { const b = bordereaux.find(y => y.numero === n); if (b) (b.paiements = b.paiements || []).push({ date, montant: s, ref, par: user.nom, regl: r.id }); });
     reglAss.push(r); saveRegl(); save();
     const cli = r.lignes.filter(l => l.issue === 'client').length;
-    pt.L = {}; F('ptNum').value = ''; F('ptMt').value = ''; drawPt(); majTuileAss();
+    pt.L = {}; ptNonTrouves = []; F('ptLu').hidden = true; F('ptNum').value = ''; F('ptMt').value = ''; drawPt(); majTuileAss();
     show(`Règlement de ${money(mt)} enregistré · ${r.lignes.length} dossier(s)${cli ? ` · ${cli} reste(s) passé(s) à la charge du client` : ''}`);
   });
+
+
+  // --- Lecture du bordereau papier de l'assurance (photo ou PDF) et rapprochement automatique
+  let ptNonTrouves = [];
+  const motsNom = t => norm(t || '').split(/[^a-z0-9]+/).filter(w => w.length > 1);
+  function scoreLigne(l, { v, c, p }){
+    let s = 0; const eq = (a, b) => a && b && norm(String(a)).replace(/[^a-z0-9]/g, '') === norm(String(b)).replace(/[^a-z0-9]/g, '');
+    if (eq(l.facture, v.numero) || (l.facture && v.dossier && eq(l.facture, v.dossier))) s += 5;
+    if (eq(l.bon, p.bon)) s += 4;
+    if (eq(l.matricule, p.matricule)) s += 3;
+    const n = motsNom(l.nom), cn = new Set(motsNom(c ? c.nom + ' ' + c.prenom : v.client)); const comm = n.filter(w => cn.has(w)).length;
+    if (comm) s += comm >= 2 ? 3 : 1.5;
+    if (l.montantFacture && Math.abs(l.montantFacture - p.montant) <= 1) s += 1.5;
+    if (l.montantPaye && Math.abs(l.montantPaye - resteP(p)) <= 1) s += 1;
+    return s;
+  }
+  F('ptScanFile').addEventListener('change', async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    const sm = await sampleP;
+    if (!sm) { ptSt('La lecture automatique n\'est pas disponible ici : pointez les dossiers en les tapant ou en les scannant.', 'warn'); return; }
+    ptSt(`Lecture du bordereau (${files.length} fichier${files.length > 1 ? 's' : ''})…`);
+    let text = '', imgs = [];
+    try { for (const f of files) { if (f.type === 'application/pdf') { const r = await pdfVers(f); text += r.text + '\n'; imgs.push(...r.imgs); } else imgs.push(f); } }
+    catch(_) { ptSt('Fichier illisible.', 'bad'); return; }
+    const prompt = `Tu lis le bordereau ou relevé de règlement qu'une assurance santé (Afrique centrale : CNAMGS, ASCOMA, NSIA, Gras Savoye, AXA, SUNU, Sanlam…) envoie à un opticien avec son chèque ou son virement.
+Il liste les dossiers (patients) réglés, parfois avec le montant facturé, le montant payé et les rejets ou abattements.
+Réponds uniquement avec ce JSON :
+{"assurance": "nom de l'assurance", "date": "AAAA-MM-JJ", "numeroCheque": "n° du chèque ou référence du virement", "montantTotal": 0,
+ "lignes": [{"nom": "nom et prénom du patient ou de l'assuré", "matricule": "n° d'assuré / matricule", "bon": "n° de bon de prise en charge", "facture": "n° de facture de l'opticien",
+   "montantFacture": 0, "montantPaye": 0, "motif": "motif de rejet ou d'abattement s'il y en a"}]}
+Montants en FCFA, nombres sans espace. montantPaye = ce que l'assurance règle réellement pour cette ligne (0 si rejeté). Ignore les lignes de total. Champs inconnus : chaîne vide ou 0.
+${text.replace(/\s/g, '').length > 100 ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourni en image(s) ; lis-le attentivement, il peut être manuscrit ou photographié de travers.'}`;
+    let d; try { d = await sm.json(prompt, { images: imgs.length ? imgs.slice(0, 5) : undefined, modelTier: 'default' }); }
+    catch(_) { ptSt('La lecture a échoué. Réessayez avec une photo plus nette, bien à plat et bien éclairée.', 'bad'); return; }
+    const lignes = (d?.lignes || []).map(l => ({ ...l, montantPaye: Math.round(+l.montantPaye || 0), montantFacture: Math.round(+l.montantFacture || 0) })).filter(l => l.nom || l.matricule || l.bon || l.facture);
+    if (!lignes.length) { ptSt('Aucune ligne de dossier trouvée sur ce document.', 'bad'); return; }
+    // assurance : celle choisie, sinon celle lue sur le document
+    if (!pt.org) { const orgs = [...new Set(dusAss('').map(x => x.p.organisme))], a = norm(d.assurance || '');
+      const o = orgs.find(x => a && (norm(x).includes(a) || a.includes(norm(x)))); if (o) pt = { org: o, L: {} };
+      else { ptSt(`Assurance lue : « ${esc(d.assurance || '?')} ». Choisissez-la dans la liste puis relancez la lecture.`, 'warn'); drawPt(); return; } }
+    if (d.numeroCheque && !F('ptNum').value) F('ptNum').value = d.numeroCheque;
+    if (d.montantTotal && !F('ptMt').value) F('ptMt').value = Math.round(+d.montantTotal);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) F('ptDate').value = d.date;
+    // rapprochement : chaque ligne avec le dossier le plus ressemblant (score suffisant et sans ex æquo)
+    pt.L = {};   // la lecture remplace le pointage en cours
+    const D = dusAss(pt.org), pris = new Set(); let ok = 0; ptNonTrouves = [];
+    lignes.forEach(l => {
+      const S = D.filter(x => !pris.has(x.p.id)).map(x => ({ x, s: scoreLigne(l, x) })).sort((a, b) => b.s - a.s);
+      const best = S[0];
+      if (best && best.s >= 3 && !(S[1] && S[1].s === best.s)) {
+        const p = best.x.p, reste = resteP(p), m = Math.min(l.montantPaye, reste); pris.add(p.id); ok++;
+        pt.L[p.id] = { m, issue: m < reste ? (l.motif || m === 0 ? 'litige' : 'attente') : 'attente', motif: l.motif || '', lu: `${l.nom || l.matricule || l.bon}${l.montantPaye ? ' · ' + money(l.montantPaye) : ' · rejeté'}`, doute: best.s < 4.5 };
+      } else ptNonTrouves.push(l);
+    });
+    ptSt(`${lignes.length} ligne(s) lue(s) · <b>${ok}</b> dossier(s) pointé(s) automatiquement${ptNonTrouves.length ? ` · <b class="fac-retard">${ptNonTrouves.length}</b> non retrouvée(s), voir ci-dessous` : ''}. Vérifiez les lignes surlignées avant d'enregistrer.`, ptNonTrouves.length ? 'warn' : '');
+    drawPt();
+  });
+  function ptSt(h, cls = ''){ F('ptLu').hidden = false; F('ptLu').className = 'bl bl-st ' + cls; F('ptLu').innerHTML = h; }
+  function drawPtNT(){
+    F('ptNT').hidden = !ptNonTrouves.length;
+    F('ptNTRows').innerHTML = ptNonTrouves.map((l, i) => `<li><span><b>${esc(l.nom || '—')}</b>${l.matricule ? ' · mat. ' + esc(l.matricule) : ''}${l.bon ? ' · bon ' + esc(l.bon) : ''}${l.facture ? ' · fact. ' + esc(l.facture) : ''}${l.motif ? ` · <i>${esc(l.motif)}</i>` : ''}</span>
+      <span>${l.montantPaye ? money(l.montantPaye) : 'rejeté'} <button class="act ghost-act" type="button" data-nt="${i}">Chercher</button> <button class="del sm" type="button" data-nt-x="${i}" aria-label="Ignorer">×</button></span></li>`).join('');
+  }
+  F('ptNTRows').addEventListener('click', e => { const i = e.target.dataset.nt, x = e.target.dataset.ntX;
+    if (x != null) { ptNonTrouves.splice(+x, 1); drawPtNT(); return; }
+    if (i == null) return; const l = ptNonTrouves[+i]; F('ptFiltre').value = motsNom(l.nom).sort((a, b) => b.length - a.length)[0] || l.matricule || l.bon || ''; drawPt(); F('ptFiltre').scrollIntoView({ block: 'center' }); });
 
   // --- En attente et litiges
   function drawAsSuivi(){
