@@ -671,6 +671,9 @@ tr.pt td{color:var(--muted)}
 .liv-tbl tr.ok td:last-child input{border-color:var(--ok)}.liv-tbl tr.manque td:last-child input{border-color:var(--ic-amber-fg)}
 .liv-new{font-size:11px;font-weight:700;color:var(--ic-purple-fg)}
 .fac-retard{color:var(--pin);font-weight:700}
+.bk-rev input.inp,.bk-rev select.inp{padding:6px 8px;font-size:13px;min-width:0}.bk-rev td{vertical-align:middle}
+.bk-tbl td{vertical-align:middle}.bk-tbl .bk-ok{color:var(--ok);font-weight:600}.bk-prop{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+.bk-tbl select.inp{max-width:260px;padding:6px 8px;font-size:13px}
 .pec-box{display:grid;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .pec-list{display:grid;gap:14px}
 .pec-item{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
@@ -1356,7 +1359,7 @@ select.inp{appearance:auto}
   </div>
   <div class="tabs" id="coTabs">
     <button class="tab on" data-co="tb">Tableau de bord</button><button class="tab" data-co="pec">Prises en charge</button>
-    <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Rapprochement bancaire</button>
+    <button class="tab" data-co="imp">Impayés clients</button><button class="tab" data-co="bq">Banque</button>
     <button class="tab" data-co="jfa">Journal des factures</button><button class="tab" data-co="jcl">Journal clients</button><button class="tab" data-co="jas">Journal des PEC</button><button class="tab" data-co="jca">Journal de caisse</button>
   </div>
 
@@ -1443,16 +1446,41 @@ select.inp{appearance:auto}
   </div>
 
   <div class="co-p" data-p="bq" hidden>
+    <div class="s-stats co-kpi" id="bkKpi"></div>
     <section class="blk">
-      <div class="row-head"><h2>Rapprochement bancaire</h2>
-        <span class="bl-btns"><select class="inp sm" id="bqMode"><option value="">Tous les moyens</option><option>Carte bancaire</option><option>Airtel Money</option><option>Moov Money</option><option>Dépôt en banque</option></select>
-        <select class="inp sm" id="bqEtat"><option value="">Tous</option><option value="non">À pointer</option><option value="oui">Pointés</option></select></span></div>
-      <p class="sub">Pointez chaque opération quand vous la retrouvez sur le relevé bancaire ou mobile money. Les espèces passent par les dépôts en banque.</p>
-      <div class="s-stats co-kpi" id="bqKpi"></div>
-      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Pointé</th><th>Date</th><th>Moyen</th><th>Référence</th><th>Vente / motif</th><th>Magasin</th><th style="text-align:right">Montant</th></tr></thead><tbody id="bqRows"></tbody></table></div>
+      <div class="row-head"><h2>Banque</h2>
+        <span class="bl-btns"><select class="inp sm" id="bkCompte"></select><button class="ghost" type="button" id="bkCompteAdd">+ Compte bancaire</button>
+          <label class="save bl-btn"><input type="file" id="bkFile" accept="application/pdf,image/*" multiple hidden>Importer des avis / relevés (PDF)</label></span></div>
+      <p class="sub">Importez les avis de débit et de crédit (ou un relevé) envoyés par la banque, en PDF : plusieurs fichiers à la fois si besoin. DIOPTRA lit chaque opération et propose le rapprochement avec les remises carte, les dépôts d'espèces, les virements des assurances et les règlements fournisseurs.</p>
+      <div class="bl" id="bkSt" hidden></div>
+      <div id="bkRev" hidden>
+        <h3 style="margin:14px 0 6px;font-size:15px">Opérations lues : vérifiez avant d'enregistrer</h3>
+        <div class="tbl-wrap"><table class="s-tbl bk-rev"><thead><tr><th></th><th>Fichier</th><th>Date</th><th>Sens</th><th style="text-align:right">Montant</th><th style="text-align:right">Frais</th><th>Libellé</th><th>Référence</th></tr></thead><tbody id="bkRevRows"></tbody></table></div>
+        <div class="st-foot"><span class="muted" id="bkRevTot"></span><span><button class="ghost" type="button" id="bkRevNo">Annuler</button> <button class="save" type="button" id="bkRevOk">Enregistrer les opérations</button></span></div>
+      </div>
+      <div class="row-head" style="margin-top:16px"><h3 style="margin:0;font-size:15px">Opérations du compte</h3>
+        <span class="bl-btns"><select class="inp sm" id="bkEtat"><option value="a">À rapprocher</option><option value="r">Rapprochées</option><option value="">Toutes</option></select><button class="ghost" type="button" id="bkSurs">Valider les propositions sûres</button></span></div>
+      <div class="tbl-wrap"><table class="s-tbl bk-tbl"><thead><tr><th>Date</th><th>Libellé</th><th style="text-align:right">Débit</th><th style="text-align:right">Crédit</th><th>Rapprochement</th></tr></thead><tbody id="bkRows"></tbody></table></div>
+      <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
     </section>
   </div>
 </main>
+
+<div class="overlay" id="dlgBk" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bkTitle" style="width:min(520px,100%)">
+    <header><h2 id="bkTitle">Compte bancaire</h2><button class="x" type="button" data-close-bk aria-label="Fermer">×</button></header>
+    <form id="fBk" novalidate>
+      <div class="row2"><div><label class="lbl" for="bkNom">Nom du compte *</label><input class="inp" id="bkNom" placeholder="ex. BGFI Libreville"></div>
+        <div><label class="lbl" for="bkBanque">Banque</label><input class="inp" id="bkBanque" list="bkBanques"><datalist id="bkBanques"><option value="BGFIBank Gabon"><option value="Orabank Gabon"><option value="UGB"><option value="Ecobank Gabon"></datalist></div></div>
+      <div class="row2"><div><label class="lbl" for="bkNum">N° de compte <span class="opt">(facultatif)</span></label><input class="inp" id="bkNum"></div>
+        <div><label class="lbl" for="bkMag">Magasin</label><select class="inp" id="bkMag"></select></div></div>
+      <div class="row2"><div><label class="lbl" for="bkSolde">Solde de départ (FCFA)</label><input class="inp" id="bkSolde" inputmode="numeric" placeholder="0"></div>
+        <div><label class="lbl" for="bkDate">À la date du</label><input class="inp" type="date" id="bkDate"></div></div>
+      <div class="ml-st bad" id="bkErr"></div>
+      <div class="actions"><button type="button" class="ghost" data-close-bk>Annuler</button><button type="submit" class="save">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
 
 <div class="overlay" id="dlgFm" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fmTitle" style="width:min(460px,100%)">
@@ -5221,27 +5249,143 @@ select.inp{appearance:auto}
   F('ipMsgClose').addEventListener('click', () => F('ipMsg').hidden = true);
 
   // --- Rapprochement bancaire
-  function drawBQ(){
-    const per = periode(), ops = [];
-    toutesVentes().forEach(({ v, c }) => { if (!enMagasin(v)) return; (v.paiements || []).forEach((p, i) => {
-      if (p.mode !== 'Espèces' && p.date && dans(p.date, per)) ops.push({ key: `${v.numero}#${i}`, date: p.date, mode: p.mode, ref: p.ref, lib: `${v.numero} · ${c ? c.nom + ' ' + c.prenom : v.client || 'Anonyme'}`, boutique: v.boutique, mt: p.montant }); }); });
-    mouvements.filter(m => m.motif === 'Dépôt en banque' && (boutiqueCour() === 'Toutes les boutiques' || m.boutique === boutiqueCour()) && dans(m.date, per))
-      .forEach(m => ops.push({ key: 'M:' + m.id, date: m.date, mode: 'Dépôt en banque', ref: m.commentaire, lib: 'Dépôt espèces · ' + m.par, boutique: m.boutique, mt: m.montant }));
-    bordereaux.forEach(b => (b.paiements || []).forEach((p, i) => { if (dans(p.date, per) && (boutiqueCour() === 'Toutes les boutiques' || b.boutique === boutiqueCour()))
-      ops.push({ key: `BR:${b.numero}:${i + 1}`, date: p.date, mode: 'Virement assurance', ref: p.ref, lib: `${b.numero} · ${b.organisme}`, boutique: b.boutique, mt: p.montant }); }));
-    ops.sort((a, b) => b.date.localeCompare(a.date));
-    const md = F('bqMode').value, et = F('bqEtat').value;
-    const L = ops.filter(o => (!md || o.mode === md) && (!et || (et === 'oui') === !!pointages[o.key]));
-    const s = f => ops.filter(f).reduce((a, o) => a + o.mt, 0);
-    F('bqKpi').innerHTML = kpi('À pointer', money(s(o => !pointages[o.key])), `${ops.filter(o => !pointages[o.key]).length} opération(s)`, 'warn-k') + kpi('Pointé', money(s(o => pointages[o.key])), `${ops.filter(o => pointages[o.key]).length} opération(s)`)
-      + ['Carte bancaire', 'Airtel Money', 'Moov Money', 'Dépôt en banque'].map(m => kpi(m, money(s(o => o.mode === m)), `dont à pointer ${money(s(o => o.mode === m && !pointages[o.key]))}`)).join('');
-    F('bqRows').innerHTML = L.map(o => `<tr class="${pointages[o.key] ? 'pt' : ''}"><td><input type="checkbox" data-pt="${esc(o.key)}"${pointages[o.key] ? ' checked' : ''} aria-label="Pointé"></td>
-      <td>${fmtDateTime(o.date)}</td><td>${o.mode}</td><td>${esc(o.ref || '—')}</td><td>${esc(o.lib)}</td><td class="muted">${esc(o.boutique || '')}</td><td style="text-align:right"><b>${money(o.mt)}</b>${pointages[o.key] ? `<br><small class="muted">pointé le ${fmtDate(pointages[o.key].date)}</small>` : ''}</td></tr>`).join('')
-      || `<tr><td colspan="7" class="muted">Aucune opération sur la période.</td></tr>`;
+  /* ---------- Banque : comptes, avis de débit / crédit, rapprochement ---------- */
+  let comptesBq = ld0('comptesBq', []), opsBq = ld0('opsBq', []), bkLus = [];
+  const saveBk = () => { try { localStorage.setItem('comptesBq', JSON.stringify(comptesBq)); localStorage.setItem('opsBq', JSON.stringify(opsBq)); } catch(_) {} };
+  const BK_CATS = ['Frais bancaires', 'Agios et intérêts', 'Salaires', 'Loyer', 'Impôts et taxes', 'Virement entre comptes', 'Apport / prêt', 'Prélèvement', 'Autre'];
+  const compteCour = () => comptesBq.find(c => c.id === F('bkCompte').value) || null;
+  const compteVisible = c => boutiqueCour() === 'Toutes les boutiques' ? user.role === 'admin' : !c.boutique || c.boutique === boutiqueCour();
+  const signe = o => o.sens === 'D' ? -o.montant : o.montant;
+  const soldeCompte = c => (c.soldeInit || 0) + opsBq.filter(o => o.compte === c.id && (!c.dateInit || o.date >= c.dateInit)).reduce((a, o) => a + signe(o), 0);
+  // ce que la banque doit refléter : remises carte (par jour et magasin), dépôts d'espèces, virements des assurances, règlements fournisseurs
+  function candidatsBq(){
+    const C = [];
+    mouvements.filter(m => m.motif === 'Dépôt en banque').forEach(m => C.push({ key: 'M:' + m.id, sens: 'C', date: m.date, mt: m.montant, lib: `Dépôt d'espèces · ${(m.boutique || '').replace(/^Magasin /, '')}${m.par ? ' · ' + m.par : ''}`, type: 'Dépôt espèces', b: m.boutique }));
+    const cb = {}; toutesVentes(true).forEach(({ v }) => (v.paiements || []).forEach(p => { if (p.mode === 'Carte bancaire' && p.date) { const k = dayKey(p.date) + '|' + (v.boutique || ''); cb[k] = (cb[k] || 0) + (p.montant || 0); } }));
+    Object.entries(cb).forEach(([k, mt]) => { const [d, b] = k.split('|'); C.push({ key: 'CB:' + k, sens: 'C', date: d + 'T12:00', mt, lib: `Remise carte du ${fmtDate(d + 'T12:00')} · ${b.replace(/^Magasin /, '')}`, type: 'Carte bancaire', b, tol: 0.05 }); });
+    bordereaux.forEach(b => (b.paiements || []).forEach((p, i) => C.push({ key: `BR:${b.numero}:${i + 1}`, sens: 'C', date: p.date, mt: p.montant, lib: `Bordereau ${b.numero} · ${b.organisme}`, type: 'Virement assurance', b: b.boutique })));
+    facturesFourn.forEach(f => (f.paiements || []).forEach((p, i) => C.push({ key: `FF:${f.id}:${i}`, sens: 'D', date: p.date, mt: enFcfa(p.montant, f.devise), lib: `${f.fournisseur} · facture ${f.numero}`, type: 'Règlement fournisseur', b: f.boutique, tol: f.devise !== 'FCFA' ? 0.03 : 0 })));
+    return C;
   }
-  ['bqMode', 'bqEtat'].forEach(id => F(id).addEventListener('change', drawBQ));
-  F('bqRows').addEventListener('change', e => { const k = e.target.dataset.pt; if (!k) return;
-    pointages[k] = e.target.checked ? { date: new Date().toISOString(), par: user.nom } : null; saveCo(); drawBQ(); });
+  // meilleure correspondance pour une opération bancaire (montant, sens, date proche), hors éléments déjà rapprochés
+  function proposition(o, C, pris){
+    const t = new Date(o.date).getTime(); let best = null, bs = 1e9;
+    C.forEach(c => { if (c.sens !== o.sens || pris.has(c.key)) return;
+      const brut = o.sens === 'C' ? o.montant + (o.frais || 0) : o.montant - (o.frais || 0);
+      const ecart = Math.min(Math.abs(c.mt - o.montant), Math.abs(c.mt - brut)), tol = Math.max(1, (c.tol || 0) * c.mt);
+      if (ecart > tol) return;
+      const j = (t - new Date(c.date).getTime()) / 864e5; if (j < -3 || j > 15) return;
+      const sc = Math.abs(j) + ecart / Math.max(1, c.mt) * 100; if (sc < bs) { bs = sc; best = { ...c, sur: ecart <= 1 && Math.abs(j) <= 10 }; } });
+    return best;
+  }
+  function drawBQ(){
+    const vis = comptesBq.filter(compteVisible), cur = F('bkCompte').value;
+    F('bkCompte').innerHTML = vis.length ? vis.map(c => `<option value="${esc(c.id)}"${c.id === cur ? ' selected' : ''}>${esc(c.nom)}</option>`).join('') : '<option value="">Aucun compte : créez-en un</option>';
+    const c = compteCour(), per = periode(), C = candidatsBq(), pris = new Set(opsBq.filter(o => o.rappro).map(o => o.rappro.key));
+    const ops = c ? opsBq.filter(o => o.compte === c.id) : [];
+    const aR = ops.filter(o => !o.rappro && !o.cat);
+    const pecAtt = toutesPec().filter(({ v, p }) => enMagasin(v) && p.bordereau && (p.paye || 0) < p.montant).reduce((a, { p }) => a + p.montant - (p.paye || 0), 0);
+    const ffAtt = facturesFourn.filter(f => facVisible(f) && resteFac(f) > 0.005).reduce((a, f) => a + enFcfa(resteFac(f), f.devise), 0);
+    F('bkKpi').innerHTML = (c ? kpi('Solde ' + c.nom, money(soldeCompte(c)), c.dateInit ? `calculé depuis le ${fmtDate(c.dateInit + 'T12:00')}` : 'solde de départ + opérations importées', 'main') : kpi('Comptes', String(vis.length), 'créez vos comptes BGFI, Orabank…', 'main'))
+      + kpi('À rapprocher', String(aR.length), aR.length ? `${money(aR.filter(o => o.sens === 'C').reduce((a, o) => a + o.montant, 0))} crédits · ${money(aR.filter(o => o.sens === 'D').reduce((a, o) => a + o.montant, 0))} débits` : 'tout est rapproché', aR.length ? 'warn-k' : '')
+      + kpi('Assurances à recevoir', money(pecAtt), 'bordereaux envoyés, non réglés')
+      + kpi('Fournisseurs à payer', money(ffAtt), 'factures en attente (Achats)');
+    const et = F('bkEtat').value;
+    const L = ops.filter(o => dans(o.date, per) && (et === 'a' ? !o.rappro && !o.cat : et === 'r' ? o.rappro || o.cat : true)).sort((a, b) => b.date.localeCompare(a.date));
+    const prisP = new Set(pris);
+    F('bkRows').innerHTML = L.map(o => {
+      let r;
+      if (o.rappro) r = `<span class="bk-ok">✓ ${esc(o.rappro.lib)}</span> <button class="act ghost-act" type="button" data-bk-off="${esc(o.id)}">Défaire</button>`;
+      else if (o.cat) r = `<span class="bk-ok">✓ ${esc(o.cat)}</span> <button class="act ghost-act" type="button" data-bk-off="${esc(o.id)}">Défaire</button>`;
+      else { const pr = proposition(o, C, prisP); if (pr) prisP.add(pr.key);
+        const t = new Date(o.date).getTime(), autres = C.filter(x => x.sens === o.sens && !pris.has(x.key) && Math.abs((t - new Date(x.date).getTime()) / 864e5) <= 45 && Math.abs(x.mt - o.montant) <= Math.max(1000, o.montant * 0.15)).slice(0, 30);
+        r = `<div class="bk-prop">${pr ? `<span>Proposé : <b>${esc(pr.lib)}</b> (${money(pr.mt)})</span><button class="act" type="button" data-bk-ok="${esc(o.id)}" data-key="${esc(pr.key)}">Valider</button>` : ''}
+          <select class="inp" data-bk-sel="${esc(o.id)}"><option value="">${pr ? 'Autre…' : 'Rapprocher avec…'}</option>${autres.map(x => `<option value="${esc(x.key)}">${esc(x.lib)} · ${money(x.mt)}</option>`).join('')}<optgroup label="Classer en">${BK_CATS.map(x => `<option value="cat:${esc(x)}">${esc(x)}</option>`).join('')}</optgroup></select></div>`; }
+      return `<tr data-op="${esc(o.id)}"><td>${fmtDate(o.date)}</td><td><b>${esc(o.libelle || '—')}</b>${o.tiers ? `<br><small class="muted">${esc(o.tiers)}</small>` : ''}${o.ref ? `<br><small class="muted">réf. ${esc(o.ref)}</small>` : ''}${o.frais ? `<br><small class="muted">dont frais ${money(o.frais)}</small>` : ''}</td>
+        <td style="text-align:right">${o.sens === 'D' ? money(o.montant) : ''}</td><td style="text-align:right">${o.sens === 'C' ? money(o.montant) : ''}</td><td>${r}</td></tr>`; }).join('');
+    F('bkNone').hidden = L.length > 0;
+  }
+  const rapprocher = (o, key) => { const c = candidatsBq().find(x => x.key === key); if (!c) return; o.rappro = { key, type: c.type, lib: c.lib, par: user.nom, date: new Date().toISOString() }; delete o.cat; };
+  F('bkRows').addEventListener('click', e => { const d = e.target.dataset;
+    if (d.bkOk) { const o = opsBq.find(x => x.id === d.bkOk); if (o) { rapprocher(o, d.key); saveBk(); drawBQ(); } }
+    if (d.bkOff) { const o = opsBq.find(x => x.id === d.bkOff); if (o) { delete o.rappro; delete o.cat; saveBk(); drawBQ(); } } });
+  F('bkRows').addEventListener('change', e => { const id = e.target.dataset.bkSel; if (!id || !e.target.value) return; const o = opsBq.find(x => x.id === id); if (!o) return;
+    if (e.target.value.startsWith('cat:')) { o.cat = e.target.value.slice(4); delete o.rappro; } else rapprocher(o, e.target.value); saveBk(); drawBQ(); });
+  F('bkSurs').addEventListener('click', () => { const c = compteCour(); if (!c) return; const C = candidatsBq(), pris = new Set(opsBq.filter(o => o.rappro).map(o => o.rappro.key)); let n = 0;
+    opsBq.filter(o => o.compte === c.id && !o.rappro && !o.cat).sort((a, b) => a.date.localeCompare(b.date)).forEach(o => { const pr = proposition(o, C, pris); if (pr && pr.sur) { rapprocher(o, pr.key); pris.add(pr.key); n++; } });
+    saveBk(); drawBQ(); show(n ? `${n} opération(s) rapprochée(s)` : 'Aucune proposition sûre (montant exact) à valider.'); });
+  ['bkCompte', 'bkEtat'].forEach(id => F(id).addEventListener('change', drawBQ));
+  // comptes
+  F('bkCompteAdd').addEventListener('click', () => { if (user.role === 'vendeur') { show('Réservé au responsable.'); return; }
+    ['bkNom', 'bkBanque', 'bkNum', 'bkSolde'].forEach(id => F(id).value = ''); F('bkDate').value = dayKey(); F('bkErr').textContent = '';
+    F('bkMag').innerHTML = `<option value="">Tous les magasins</option>` + magasinsVisibles().map(b => `<option${b === boutiqueCour() ? ' selected' : ''}>${esc(b)}</option>`).join('');
+    F('dlgBk').hidden = false; F('bkNom').focus(); });
+  document.querySelectorAll('[data-close-bk]').forEach(b => b.addEventListener('click', () => F('dlgBk').hidden = true));
+  F('fBk').addEventListener('submit', e => { e.preventDefault(); const nom = F('bkNom').value.trim(); if (!nom) { F('bkErr').textContent = 'Donnez un nom au compte.'; return; }
+    const c = { id: 'bq' + Date.now().toString(36), nom, banque: F('bkBanque').value.trim(), numero: F('bkNum').value.trim(), boutique: F('bkMag').value, soldeInit: intOf(F('bkSolde').value), dateInit: F('bkDate').value };
+    comptesBq.push(c); saveBk(); F('dlgBk').hidden = true; drawBQ(); F('bkCompte').value = c.id; drawBQ(); show('Compte créé'); });
+  // lecture des avis de débit / crédit en PDF
+  const bkSt = (h, cls = '') => { F('bkSt').hidden = false; F('bkSt').className = 'bl bl-st ' + cls; F('bkSt').innerHTML = h; };
+  const nbFr = t => { const n = Number(String(t).replace(/[\s  .]/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+  // sans lecture automatique : un avis = une opération (sens, date, plus gros montant)
+  function avisSimple(text, nom){
+    const t = text.replace(/\s+/g, ' '), sens = /avis\s+de\s+d[ée]bit|\bd[ée]bit\b/i.test(t) && !/avis\s+de\s+cr[ée]dit/i.test(t) ? 'D' : 'C';
+    const dm = t.match(/(\d{2})[\/.-](\d{2})[\/.-](\d{4})/), date = dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : dayKey();
+    const mtx = t.match(/(?:montant|net|somme)[^0-9]{0,40}(\d{1,3}(?:[ .\u202f\u00a0]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)/i);
+    const mts = mtx ? [nbFr(mtx[1])] : [...t.matchAll(/\d{1,3}(?:[ .  ]\d{3})+(?:,\d{1,2})?|\d{4,}(?:,\d{1,2})?/g)].map(m => nbFr(m[0])).filter(n => n >= 100 && n < 1e9 && !(n >= 1900 && n <= 2100));
+    const lib = ((t.match(/(?:motif|libell[ée]|objet)\s*:?\s*([^:]{4,80})/i) || [])[1] || nom).replace(/\s+(?:r[ée]f[ée]rence|r[ée]f\.?|montant|date|compte)\s*(?::.*)?$/i, '');
+    return [{ date, sens, montant: mts.length ? Math.max(...mts) : 0, frais: 0, libelle: lib.trim(), ref: (t.match(/r[ée]f(?:[ée]rence)?\.?\s*:?\s*([A-Z0-9\/-]{4,})/i) || [])[1] || '', tiers: '', verifier: true }];
+  }
+  F('bkFile').addEventListener('change', async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    if (!compteCour()) { show('Créez d\'abord le compte bancaire concerné.'); return; }
+    const sm = await sampleP; bkLus = [];
+    for (const [i, file] of files.entries()) {
+      bkSt(`Lecture de <b>${esc(file.name)}</b> (${i + 1}/${files.length})…`);
+      let text = '', imgs = [];
+      try { if (file.type === 'application/pdf') ({ text, imgs } = await pdfVers(file)); else imgs = [file]; } catch(_) { bkLus.push({ fichier: file.name, erreur: 'illisible' }); continue; }
+      let ops = null;
+      if (sm) {
+        const prompt = `Tu lis un document bancaire d'une banque d'Afrique centrale (BGFIBank, Orabank…) : un ou plusieurs avis de débit ou de crédit, ou un relevé de compte.
+Extrais chaque opération portée au compte. Réponds uniquement avec ce JSON :
+{"compte": "n° de compte", "operations": [{"date": "AAAA-MM-JJ (date de valeur, sinon date d'opération)", "sens": "credit ou debit",
+ "montant": 0, "frais": 0, "libelle": "motif ou libellé complet", "reference": "référence de l'opération", "tiers": "donneur d'ordre ou bénéficiaire"}]}
+montant = montant net réellement porté au compte, en FCFA, nombre sans espace. frais = total des commissions, frais et taxes sur frais retenus sur cette opération (0 si aucun).
+Ignore les soldes, totaux et reports. Champs inconnus : chaîne vide.
+${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourni en image(s).'}`;
+        try { const d = await sm.json(prompt, { images: imgs.length ? imgs.slice(0, 5) : undefined, modelTier: 'default' });
+          ops = (d?.operations || []).map(x => ({ date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || '') ? x.date : dayKey(), sens: /deb|déb/i.test(x.sens || '') ? 'D' : 'C', montant: Math.round(+x.montant || 0), frais: Math.round(+x.frais || 0),
+            libelle: x.libelle || '', ref: x.reference || '', tiers: x.tiers || '' })).filter(x => x.montant > 0); } catch(_) { ops = null; }
+      }
+      if (!ops && text) ops = avisSimple(text, file.name);
+      if (!ops || !ops.length) { bkLus.push({ fichier: file.name, erreur: 'aucune opération trouvée' }); continue; }
+      ops.forEach(o => bkLus.push({ fichier: file.name, ...o }));
+    }
+    const err = bkLus.filter(x => x.erreur);
+    bkLus = bkLus.filter(x => !x.erreur);
+    bkSt(`${bkLus.length} opération(s) lue(s)${err.length ? ` · non lus : ${err.map(x => esc(x.fichier) + ' (' + x.erreur + ')').join(', ')}` : ''}${!sm ? ' · lecture simplifiée : vérifiez chaque ligne' : ''}`, err.length ? 'warn' : '');
+    drawBkRev();
+  });
+  function drawBkRev(){
+    F('bkRev').hidden = !bkLus.length;
+    F('bkRevRows').innerHTML = bkLus.map((x, i) => `<tr${x.verifier ? ' style="background:var(--ic-amber)"' : ''}><td><input type="checkbox" data-rv="${i}" data-k="on"${x.off ? '' : ' checked'}></td><td class="muted" style="font-size:12px">${esc(x.fichier)}</td>
+      <td><input class="inp" type="date" data-rv="${i}" data-k="date" value="${esc(x.date)}"></td>
+      <td><select class="inp" data-rv="${i}" data-k="sens"><option value="C"${x.sens === 'C' ? ' selected' : ''}>Crédit</option><option value="D"${x.sens === 'D' ? ' selected' : ''}>Débit</option></select></td>
+      <td><input class="inp" data-rv="${i}" data-k="montant" inputmode="numeric" value="${x.montant}" style="text-align:right;width:110px"></td><td><input class="inp" data-rv="${i}" data-k="frais" inputmode="numeric" value="${x.frais || 0}" style="text-align:right;width:80px"></td>
+      <td><input class="inp" data-rv="${i}" data-k="libelle" value="${esc(x.libelle)}"></td><td><input class="inp" data-rv="${i}" data-k="ref" value="${esc(x.ref)}" style="width:120px"></td></tr>`).join('');
+    const on = bkLus.filter(x => !x.off); F('bkRevTot').textContent = `${on.length} opération(s) · crédits ${money(on.filter(x => x.sens === 'C').reduce((a, x) => a + x.montant, 0))} · débits ${money(on.filter(x => x.sens === 'D').reduce((a, x) => a + x.montant, 0))}`;
+  }
+  F('bkRevRows').addEventListener('change', e => { const i = e.target.dataset.rv, k = e.target.dataset.k; if (i == null) return; const x = bkLus[i];
+    if (k === 'on') x.off = !e.target.checked; else x[k] = ['montant', 'frais'].includes(k) ? intOf(e.target.value) : e.target.value; delete x.verifier; drawBkRev(); });
+  F('bkRevNo').addEventListener('click', () => { bkLus = []; drawBkRev(); F('bkSt').hidden = true; });
+  F('bkRevOk').addEventListener('click', () => {
+    const c = compteCour(); if (!c) return; let n = 0, dbl = 0;
+    bkLus.filter(x => !x.off && x.montant > 0).forEach(x => {
+      const id = 'op-' + c.id + '-' + x.date + '-' + x.sens + x.montant + '-' + norm(x.ref || x.libelle).slice(0, 24);
+      if (opsBq.some(o => o.id === id)) { dbl++; return; }
+      opsBq.push({ id, compte: c.id, date: x.date, sens: x.sens, montant: x.montant, frais: x.frais || 0, libelle: x.libelle, ref: x.ref, tiers: x.tiers || '', fichier: x.fichier, par: user.nom, le: new Date().toISOString() }); n++; });
+    saveBk(); bkLus = []; drawBkRev(); bkSt(`${n} opération(s) enregistrée(s)${dbl ? ` · ${dbl} déjà importée(s), ignorée(s)` : ''}.`); drawBQ();
+  });
 
   /* ================= Gestion Stock ================= */
   const BOUTIQUES = PARAM.magasins.filter(m => m.actif).map(m => m.nom);
@@ -6987,7 +7131,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, comptesBq: () => comptesBq, opsBq: () => opsBq, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
