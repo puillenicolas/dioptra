@@ -106,3 +106,27 @@ npm test                      # tests du serveur et du rapport de caisse
 ```
 
 L'aperçu Claude (artefact) utilise `web/app.html` tel quel, avec un stockage dans le navigateur et sans serveur.
+
+## Intégration Prismea → DIOPTRA (bons de livraison)
+
+Prismea envoie chaque facture / bon de livraison d'un opticien à DIOPTRA ; il arrive dans **Achats › Livraisons Prismea**,
+où le magasin contrôle les quantités puis valide : les montures entrent en stock et la facture passe dans les factures à payer.
+
+1. Dans DIOPTRA (version en ligne) : Paramètres › Postes et accès › connexion administrateur › **Intégration Prismea** › « Créer une clé ».
+2. Dans Prismea : enregistrer l'adresse `https://app.dioptra.pro/api/livraisons` et la clé.
+3. Envoi : `POST /api/livraisons`, en-tête `Authorization: Bearer <clé>`, corps JSON :
+
+```json
+{
+  "source": "Prismea", "fournisseur": "Optique Distribution Global",
+  "numero": "FA2026-0042", "bl": "V2026-0042", "date": "2026-10-29", "echeance": "2026-11-28",
+  "devise": "EUR", "magasin": "Magasin Libreville Centre",
+  "lignes": [ { "ean": "8053672000011", "etiquette": "OZO-001", "marque": "OZ", "modele": "Lyon",
+                "coloris": "Noir mat", "taille": "52□18 140", "qte": 2, "pu": 35.50 } ]
+}
+```
+
+- `pu` : prix unitaire HT facturé (après remise), dans la devise indiquée ; `total` facultatif (sinon Σ qte × pu).
+- Renvoyer le même `numero` met à jour la livraison tant qu'elle n'est pas réceptionnée ; après réception : réponse 409.
+- Réponses : `200 { ok, id, etat: "creee" | "maj", articles }`, `400` données invalides, `401` clé invalide.
+- Le même JSON peut être importé à la main dans Achats (« Importer un BL Prismea (fichier) »).

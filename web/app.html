@@ -103,6 +103,7 @@ h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin:0;text-wrap:balan
 .tile-link{all:unset;cursor:pointer;display:flex;flex-direction:column;border-radius:8px}
 .tile-link:focus-visible{outline:2px solid var(--brand);outline-offset:4px}
 .tile-link:hover h2{color:var(--primary)}
+@media (min-width:981px){#tStat{grid-column:span 2!important}}
 .tile-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:32px;flex-wrap:wrap}
 .tile-wide .tile-link{flex-direction:row;align-items:center;gap:16px}
 .tile-wide .ic{margin-bottom:0}.tile-wide h2{margin:0}
@@ -666,6 +667,10 @@ tr.pt td{color:var(--muted)}
 .c-lines li.minus span:last-child{color:var(--ok);font-weight:700}
 .opt{color:var(--muted);font-weight:400}
 .ct-blk h2{font-size:16px;margin-bottom:10px}.ct-opts label{max-width:none}
+.liv-tbl td{vertical-align:middle}.liv-tbl input.inp{width:70px;text-align:right;padding:6px 8px}
+.liv-tbl tr.ok td:last-child input{border-color:var(--ok)}.liv-tbl tr.manque td:last-child input{border-color:var(--ic-amber-fg)}
+.liv-new{font-size:11px;font-weight:700;color:var(--ic-purple-fg)}
+.fac-retard{color:var(--pin);font-weight:700}
 .pec-box{display:grid;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .pec-list{display:grid;gap:14px}
 .pec-item{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
@@ -1028,6 +1033,17 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile" id="tAchat">
+      <button class="tile-link" id="goAchat" aria-label="Ouvrir les achats">
+      <div class="ic purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h3.5L21 13v4h-5"/><circle cx="7" cy="18" r="1.8" fill="currentColor"/><circle cx="17.5" cy="18" r="1.8" fill="currentColor"/></svg></div>
+      <h2>Achats</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>Livraisons à réceptionner : <b id="tAchLiv">0</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Factures à payer : <b id="tAchFac">0</b></span></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide" id="tStat">
       <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
       <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1236,6 +1252,13 @@ select.inp{appearance:auto}
         <div id="cptMags"></div>
         <div class="st-foot"><span class="muted" id="cptSt" style="font-size:13px"></span><span><button class="ghost" type="button" id="cptCancel">Annuler</button> <button class="save" type="submit">Enregistrer</button></span></div>
       </form>
+    </div>
+
+    <div id="cleBox" hidden>
+      <div class="row-head" style="margin-top:24px"><h2>Intégration Prismea</h2><button class="ghost" type="button" id="cleNew">+ Créer une clé</button></div>
+      <p class="sub">Prismea envoie ses factures et bons de livraison à DIOPTRA avec une clé d'intégration : ils arrivent dans Achats › Livraisons Prismea. Adresse d'envoi : <code id="cleUrl"></code> (méthode POST, en-tête <code>Authorization: Bearer &lt;clé&gt;</code>).</p>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Nom</th><th>Début de la clé</th><th>Créée le</th><th>Dernier envoi</th><th>État</th><th></th></tr></thead><tbody id="cleRows"></tbody></table></div>
+      <p class="muted" id="cleSt" style="font-size:13px"></p>
     </div>
 
     <div id="mdpBox" hidden>
@@ -1468,6 +1491,82 @@ select.inp{appearance:auto}
 
 <datalist id="ophList"></datalist>
 
+<!-- =================== ACHATS =================== -->
+<main id="v-achat" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="acSub"></div><h1>Achats</h1></div></div>
+  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons Prismea</button><button class="tab" data-ac="fac">Factures à payer</button></div>
+
+  <div class="ac-p" data-p="liv">
+    <section class="blk" id="livListe">
+      <div class="row-head"><h2>Livraisons à réceptionner</h2>
+        <span class="bl-btns"><label class="ghost bl-btn"><input type="file" id="livFile" accept=".json,application/json" hidden>Importer un BL Prismea (fichier)</label></span></div>
+      <p class="sub">Les factures et bons de livraison envoyés par Prismea arrivent ici automatiquement. Vérifiez les quantités reçues puis validez : les montures entrent dans le stock du magasin et la facture passe dans « Factures à payer ».</p>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>N° facture / BL</th><th>Fournisseur</th><th>Magasin</th><th style="text-align:right">Montures</th><th style="text-align:right">Montant</th><th>Statut</th></tr></thead><tbody id="livRows"></tbody></table></div>
+      <p class="muted" id="livNone" hidden>Aucune livraison pour l'instant.</p>
+    </section>
+    <section class="blk" id="livRec" hidden>
+      <div class="row-head"><h2 id="livTitre"></h2><button class="ghost" type="button" id="livRetour">← Retour à la liste</button></div>
+      <p class="sub" id="livInfo"></p>
+      <div class="row3" style="margin:10px 0">
+        <div><label class="lbl" for="livMag">Magasin qui reçoit</label><select class="inp" id="livMag"></select></div>
+        <div><label class="lbl" for="livScan">Scanner une pochette (EAN ou référence)</label><input class="inp" id="livScan" autocomplete="off" placeholder="Scannez, puis Entrée"></div>
+        <div style="display:flex;align-items:end;gap:8px"><button class="ghost" type="button" id="livTout">Tout reçu</button><button class="ghost" type="button" id="livRien">Remettre à zéro</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="s-tbl liv-tbl"><thead><tr><th>Référence</th><th>Monture</th><th>Dans DIOPTRA</th><th style="text-align:right">Prix HT</th><th style="text-align:right">Coût arrivé</th><th style="text-align:right">Prix de vente</th><th style="text-align:right">Attendu</th><th style="text-align:right">Reçu</th></tr></thead><tbody id="livLines"></tbody></table></div>
+      <div class="st-foot"><span class="muted" id="livTot"></span><span><button class="save" type="button" id="livOk">Valider la réception</button></span></div>
+    </section>
+  </div>
+
+  <div class="ac-p" data-p="fac" hidden>
+    <div class="s-stats co-kpi" id="facKpi"></div>
+    <section class="blk">
+      <div class="row-head"><h2>Factures fournisseurs</h2>
+        <span class="bl-btns"><select class="inp sm" id="facFiltre"><option value="ouvertes">À payer</option><option value="retard">En retard</option><option value="payees">Payées</option><option value="">Toutes</option></select><button class="save" type="button" id="facNew">+ Nouvelle facture</button></span></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Échéance</th><th>Fournisseur</th><th>N° facture</th><th>Date</th><th>Magasin</th><th style="text-align:right">Montant</th><th style="text-align:right">Payé</th><th style="text-align:right">Reste</th><th>Statut</th><th></th></tr></thead><tbody id="facRows"></tbody></table></div>
+      <p class="muted" id="facNone" hidden>Aucune facture.</p>
+    </section>
+  </div>
+</main>
+
+<div class="overlay" id="dlgFac" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="facTitle" style="width:min(620px,100%)">
+    <header><h2 id="facTitle">Facture fournisseur</h2><button class="x" type="button" data-close-fac aria-label="Fermer">×</button></header>
+    <form id="fFac" novalidate>
+      <div class="row2"><div><label class="lbl" for="facFour">Fournisseur *</label><input class="inp" id="facFour" list="facFourList" autocomplete="off"><datalist id="facFourList"></datalist></div>
+        <div><label class="lbl" for="facNum">N° de facture *</label><input class="inp" id="facNum" autocomplete="off"></div></div>
+      <div class="row3"><div><label class="lbl" for="facDate">Date *</label><input class="inp" type="date" id="facDate"></div>
+        <div><label class="lbl" for="facEch">Échéance *</label><input class="inp" type="date" id="facEch"></div>
+        <div><label class="lbl" for="facMag">Magasin</label><select class="inp" id="facMag"></select></div></div>
+      <div class="row3"><div><label class="lbl" for="facMt">Montant *</label><input class="inp" id="facMt" inputmode="decimal"></div>
+        <div><label class="lbl" for="facDev">Devise</label><select class="inp" id="facDev"><option value="FCFA">FCFA</option><option value="EUR">EUR (€)</option><option value="USD">USD ($)</option></select></div>
+        <div><label class="lbl" for="facCat">Nature</label><select class="inp" id="facCat"><option>Montures</option><option>Verres</option><option>Lentilles</option><option>Fournitures</option><option>Transport / transit</option><option>Loyer et charges</option><option>Autre</option></select></div></div>
+      <div><label class="lbl" for="facNote">Note <span class="opt">(facultatif)</span></label><input class="inp" id="facNote"></div>
+      <div id="facPays"></div>
+      <div class="ml-st bad" id="facErr"></div>
+      <div class="actions"><button type="button" class="ghost" id="facDel" hidden>Supprimer</button><span style="flex:1"></span><button type="button" class="ghost" data-close-fac>Annuler</button><button type="submit" class="save">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="dlgReg" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="regTitle" style="width:min(480px,100%)">
+    <header><h2 id="regTitle">Enregistrer un règlement</h2><button class="x" type="button" data-close-reg aria-label="Fermer">×</button></header>
+    <form id="fReg" novalidate>
+      <p class="sub" id="regInfo" style="margin:0"></p>
+      <div class="row2"><div><label class="lbl" for="regDate">Date du paiement</label><input class="inp" type="date" id="regDate"></div>
+        <div><label class="lbl" for="regMt">Montant</label><input class="inp" id="regMt" inputmode="decimal"></div></div>
+      <div class="row2"><div><label class="lbl" for="regMode">Moyen</label><select class="inp" id="regMode"><option>Virement / SWIFT</option><option>Chèque</option><option>Espèces</option><option>Mobile money</option><option>Compensation</option></select></div>
+        <div><label class="lbl" for="regRef">Référence <span class="opt">(facultatif)</span></label><input class="inp" id="regRef"></div></div>
+      <div class="ml-st bad" id="regErr"></div>
+      <div class="actions"><button type="button" class="ghost" data-close-reg>Annuler</button><button type="submit" class="save">Enregistrer le règlement</button></div>
+    </form>
+  </div>
+</div>
+
 <!-- =================== STATISTIQUES =================== -->
 <main id="v-stat" hidden>
   <button class="crumb" data-go="accueil">
@@ -1676,6 +1775,7 @@ select.inp{appearance:auto}
       <div class="row3 p-frame">
         <div class="f"><label for="pCouleur">Couleur</label><input type="text" id="pCouleur"></div>
         <div class="f"><label for="pTaille">Taille (calibre-pont-branche)</label><input type="text" id="pTaille" placeholder="52-18-140"></div>
+        <div class="f"><label for="pEan">Code EAN (code-barres de la pochette) <span class="opt">(facultatif)</span></label><input type="text" id="pEan" inputmode="numeric" autocomplete="off"></div>
         <div class="f"><label for="pMatiere">Matière</label><select class="inp" id="pMatiere"><option></option><option>Acétate</option><option>Métal</option><option>Titane</option><option>Injecté</option><option>Mixte</option></select></div>
       </div>
       <div class="row3 p-frame">
@@ -2473,6 +2573,7 @@ select.inp{appearance:auto}
     try { if (!views.clients.hidden) render();
       if (current && !clientVisible(current) && ['fiche', 'vente', 'lent', 'suivi', 'detail', 'caisse', 'docs'].some(k => !views[k].hidden)) { current = null; go('clients'); }
     } catch(_) {}
+    try { majTuileAchat(); if (!views.achat.hidden) openAchat(); } catch(_) {}
     try { majTuileCaisse(); majTuileStat(); drawNotes(); if (!document.getElementById('v-stat').hidden) openStat(); if (!document.getElementById('v-cj').hidden) openCJ(); if (!document.getElementById('v-stock').hidden) openStock(); if (!document.getElementById('v-compta').hidden) openCompta(); } catch(_) {}
   }
   btn.addEventListener('click', e => { e.stopPropagation(); userMenu.hidden = true; menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
@@ -2490,11 +2591,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -3079,7 +3180,8 @@ select.inp{appearance:auto}
   F('mPx').addEventListener('input', recap);
   F('mDes').addEventListener('input', () => {
     const v = F('mDes').value.trim();
-    const p = produits.find(x => ['Monture', 'Solaire'].includes(x.cat) && (x.code === v.toUpperCase() || montureLabel(x) === v));
+    const e8 = String(v).replace(/\D/g, '').replace(/^0+/, '');
+    const p = produits.find(x => ['Monture', 'Solaire'].includes(x.cat) && (x.code === v.toUpperCase() || montureLabel(x) === v || (e8.length >= 8 && String(x.ean || '').replace(/\D/g, '').replace(/^0+/, '') === e8)));
     if (p) { montureSel = p; F('mDes').value = p.nom; F('mPx').value = p.prix; }
     else if (montureSel && v !== montureSel.nom) montureSel = null;
     montureInfo(); recap();
@@ -3759,7 +3861,7 @@ select.inp{appearance:auto}
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
     drawMags(); drawUsrs(); drawRap(); drawFiscal(); drawOph();
-    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox', 'decoBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
+    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox', 'decoBox', 'cleBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
     go('param');
@@ -3785,9 +3887,23 @@ select.inp{appearance:auto}
     try { const r = await window.DSYNC.connexionAdmin(F('pstMail').value.trim(), F('pstMdp').value); pstSession = r.session; pstCompte = r.compte; F('pstMdp').value = '';
       F('mdpBox').hidden = false; F('decoBox').hidden = false; F('decoSt').textContent = '';
       if (r.compte.role !== 'admin') { F('pstSt').textContent = `${r.org.nom} · compte d'activation (${(r.compte.magasins || []).join(', ')}) : il permet seulement d'activer des postes.`; F('pstBox').hidden = true; F('cptBox').hidden = true; return; }
-      F('pstSt').textContent = `${r.org.nom} · connecté en administrateur · ${r.postes.length} poste(s)`; drawPostes(r.postes); await chargerComptes(); }
+      F('pstSt').textContent = `${r.org.nom} · connecté en administrateur · ${r.postes.length} poste(s)`; drawPostes(r.postes); await chargerComptes(); await chargerCles(); }
     catch (er) { F('pstSt').textContent = er.message; }
   });
+  async function chargerCles(){
+    const r = await window.DSYNC.listeCles(pstSession); F('cleBox').hidden = false; F('cleUrl').textContent = location.origin + '/api/livraisons';
+    F('cleRows').innerHTML = r.cles.map(k => `<tr class="${k.actif ? '' : 'pt'}"><td><b>${esc(k.nom)}</b></td><td><code>${esc(k.debut)}…</code></td><td>${fmtJ(k.cree_le)}</td><td>${fmtJ(k.vu_le)}</td>
+      <td>${k.actif ? 'Active' : '<b style="color:var(--pin)">Désactivée</b>'}</td><td><button class="ghost" type="button" data-cle="${esc(k.id)}" data-on="${k.actif ? 0 : 1}">${k.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">Aucune clé. Créez-en une pour relier Prismea.</td></tr>';
+  }
+  F('cleNew').addEventListener('click', async () => {
+    try { const r = await window.DSYNC.creerCle(pstSession, 'Prismea'); await chargerCles();
+      F('cleSt').innerHTML = `Clé créée : <code style="user-select:all">${esc(r.cle)}</code><br>Copiez-la maintenant dans les réglages de Prismea : elle ne sera plus affichée.`; }
+    catch (er) { F('cleSt').textContent = er.message; }
+  });
+  F('cleRows').addEventListener('click', async e => { const id = e.target.dataset.cle; if (!id) return; const on = e.target.dataset.on === '1';
+    if (!on && !confirm('Désactiver cette clé ? Prismea ne pourra plus envoyer de livraisons avec.')) return;
+    try { await window.DSYNC.cleActive(pstSession, id, on); await chargerCles(); } catch (er) { F('cleSt').textContent = er.message; } });
   async function chargerComptes(){
     const r = await window.DSYNC.listeComptes(pstSession); cptListe = r.comptes;
     F('cptBox').hidden = false;
@@ -5181,7 +5297,8 @@ select.inp{appearance:auto}
   }
   const produitsVisibles = () => produits.filter(p => produitVisible(p));
   const magasinCreation = () => boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : undefined;
-  const findProd = v => { v = (v || '').trim(); return produitsVisibles().find(p => p.code === v.toUpperCase() || prodLabel(p) === v); };
+  const normEan = v => String(v || '').replace(/\D/g, '').replace(/^0+/, '');
+  const findProd = v => { v = (v || '').trim(); const e = normEan(v); return produitsVisibles().find(p => p.code === v.toUpperCase() || prodLabel(p) === v || (e.length >= 8 && normEan(p.ean) === e)); };
 
   // --- Coût d'achat arrivé et prix conseillé
   const PA_DEF = { taux: 655.957, transport: 8, douane: 30, tva: 18, css: 1, divers: 2, tvaIncl: true, coefDefaut: 2.5, arrondi: 500, coefs: {} };
@@ -5302,6 +5419,7 @@ select.inp{appearance:auto}
     F('fProd').querySelectorAll('.f').forEach(f => { f.classList.remove('bad'); f.querySelector('.err')?.remove(); });
     F('pTitle').textContent = p ? `Produit ${p.code}` : 'Nouveau produit';
     F('pSave').textContent = p ? 'Enregistrer' : 'Créer le produit';
+    F('pEan').value = p?.ean || '';
     if (p) {
       F('pCat').value = p.cat; F('pCode').value = p.code; F('pMarque').value = p.marque || ''; F('pModele').value = p.modele || p.nom;
       F('pCouleur').value = p.couleur || ''; F('pTaille').value = p.taille || ''; F('pMatiere').value = p.matiere || ''; F('pGenre').value = p.genre || '';
@@ -5334,7 +5452,7 @@ select.inp{appearance:auto}
     const data = { cat, marque, modele, nom: [marque, modele].filter(Boolean).join(' '), prix,
       importe: imp, achatEur: imp ? av : null, achatHT: imp ? null : Math.round(av), achat: cr.arr,
       couleur: frame ? F('pCouleur').value.trim() : '', taille: frame ? F('pTaille').value.trim() : '', matiere: frame ? F('pMatiere').value : '',
-      genre: frame ? F('pGenre').value : '', fournisseur: F('pFour').value.trim(), rapide: F('pRapide').checked };
+      genre: frame ? F('pGenre').value : '', fournisseur: F('pFour').value.trim(), rapide: F('pRapide').checked, ean: F('pEan').value.replace(/\s/g, '') };
     let p = pEdit;
     if (p) { p.code = codeSaisi || (p.cat !== cat ? nouveauCode(cat) : p.code); Object.assign(p, data); delete p.exemple; }
     else {
@@ -5385,6 +5503,198 @@ select.inp{appearance:auto}
   });
   F('recHist').addEventListener('click', e => { const b = e.target.closest('[data-rec]'); if (!b) return; const r = receptions.find(x => x.numero === b.dataset.rec);
     openDocs({ kind:'etiq', numero: r.numero, items: r.lignes.map(l => ({ p: produits.find(p => p.id === l.pid), n: l.q })).filter(x => x.p), titre:`Étiquettes de la réception ${r.numero}` }); });
+
+  /* ================= Achats : livraisons Prismea et factures fournisseurs ================= */
+  let livraisons = ld0('livraisons', []), facturesFourn = ld0('facturesFourn', []), acTab = 'liv', livCur = null, livRecu = [];
+  const saveAch = () => { try { localStorage.setItem('livraisons', JSON.stringify(livraisons)); localStorage.setItem('facturesFourn', JSON.stringify(facturesFourn)); } catch(_) {} };
+  const fmtDev = (mt, dev) => dev && dev !== 'FCFA' ? `${(Math.round((mt || 0) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ | /g, ' ')} ${dev === 'EUR' ? '€' : dev}` : money(mt);
+  const enFcfa = (mt, dev) => dev === 'EUR' ? Math.round((mt || 0) * PA.taux) : dev === 'USD' ? Math.round((mt || 0) * (PA.tauxUsd || 600)) : Math.round(mt || 0);
+  // magasin de destination indiqué par Prismea → magasin DIOPTRA correspondant (nom exact ou approchant)
+  const magDe = n => { const k = norm(n || ''); if (!k) return ''; return BOUTIQUES.find(b => norm(b) === k) || BOUTIQUES.find(b => norm(b).includes(k) || k.includes(norm(b).replace(/^magasin/, ''))) || ''; };
+  const livVisible = l => { const m = magDe(l.magasin); return boutiqueCour() === 'Toutes les boutiques' ? user.role === 'admin' : !m || m === boutiqueCour(); };
+  const prodDeLigne = l => { const e = normEan(l.ean); return produits.find(p => (e.length >= 8 && normEan(p.ean) === e)) || (l.ref ? produits.find(p => p.refFourn && p.refFourn === l.ref) : null) || null; };
+  const libLigne = l => [[l.marque, l.modele].filter(Boolean).join(' '), l.coloris, l.taille].filter(Boolean).join(' · ') || l.ref || l.ean;
+  const coutLigne = (l, dev) => coutArrive({ importe: dev !== 'FCFA', achatEur: l.pu, achatHT: l.pu }).arr;
+
+  function majTuileAchat(){
+    F('tAchLiv').textContent = livraisons.filter(l => l.statut === 'À réceptionner' && livVisible(l)).length;
+    const ouv = facturesFourn.filter(f => facVisible(f) && resteFac(f) > 0.005), ret = ouv.filter(f => f.echeance && f.echeance < dayKey()).length;
+    F('tAchFac').innerHTML = ouv.length + (ret ? ` <span class="fac-retard">(${ret} en retard)</span>` : '');
+  }
+  function openAchat(tab = acTab){
+    if (user.role === 'vendeur' && !droit('produits') && !droit('compta')) { show('Achats réservés au responsable.'); return; }
+    acTab = tab; F('acTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.ac === tab));
+    document.querySelectorAll('.ac-p').forEach(p => p.hidden = p.dataset.p !== tab);
+    F('acSub').textContent = boutiqueCour();
+    if (tab === 'liv') { F('livListe').hidden = false; F('livRec').hidden = true; drawLiv(); } else drawFac();
+    go('achat');
+  }
+  F('goAchat').addEventListener('click', () => openAchat());
+  F('acTabs').addEventListener('click', e => { const b = e.target.closest('[data-ac]'); if (b) openAchat(b.dataset.ac); });
+
+  // --- Livraisons
+  function drawLiv(){
+    const L = livraisons.filter(livVisible).sort((a, b) => (a.statut === 'À réceptionner' ? 0 : 1) - (b.statut === 'À réceptionner' ? 0 : 1) || (b.recuLe || b.date || '').localeCompare(a.recuLe || a.date || ''));
+    F('livRows').innerHTML = L.map(l => `<tr data-liv="${esc(l.id)}"><td>${l.date ? fmtDate(l.date) : '—'}</td><td><b>${esc(l.numero)}</b>${l.bl ? `<br><small class="muted">BL ${esc(l.bl)}</small>` : ''}</td><td>${esc(l.fournisseur || l.source || '')}</td>
+      <td>${esc(magDe(l.magasin) || l.magasin || '—')}</td><td style="text-align:right">${l.lignes.reduce((a, x) => a + x.qte, 0)}</td><td style="text-align:right">${fmtDev(l.total, l.devise)}</td>
+      <td>${l.statut === 'À réceptionner' ? '<span class="chip warn">À réceptionner</span>' : `<span class="chip">Réceptionnée</span><br><small class="muted">${l.reception || ''}</small>`}</td></tr>`).join('');
+    F('livNone').hidden = L.length > 0;
+  }
+  F('livRows').addEventListener('click', e => { const tr = e.target.closest('[data-liv]'); if (!tr) return; const l = livraisons.find(x => x.id === tr.dataset.liv); if (!l) return;
+    if (l.statut !== 'À réceptionner') { const r = receptions.find(x => x.numero === l.reception);
+      if (r) openDocs({ kind:'etiq', numero: r.numero, items: r.lignes.map(x => ({ p: produits.find(p => p.id === x.pid), n: x.q })).filter(x => x.p), titre:`Étiquettes de la réception ${r.numero} (${l.numero})` }); return; }
+    ouvrirLiv(l); });
+  function ouvrirLiv(l){
+    livCur = l; livRecu = l.lignes.map(x => x.qte);
+    F('livTitre').textContent = `${l.fournisseur || l.source} · ${l.numero}`;
+    F('livInfo').textContent = `Facture / BL du ${l.date ? fmtDate(l.date) : '—'}${l.echeance ? ' · échéance ' + fmtDate(l.echeance) : ''} · ${fmtDev(l.total, l.devise)}${l.devise === 'EUR' ? ` (≈ ${money(enFcfa(l.total, 'EUR'))} au taux ${String(PA.taux).replace('.', ',')})` : ''}${l.commentaire ? ' · ' + l.commentaire : ''}`;
+    const mags = magasinsVisibles(), m = magDe(l.magasin) || (boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : mags[0]);
+    F('livMag').innerHTML = mags.map(b => `<option${b === m ? ' selected' : ''}>${esc(b)}</option>`).join('');
+    F('livListe').hidden = true; F('livRec').hidden = false; drawLivLines(); F('livScan').focus();
+  }
+  function drawLivLines(){
+    const l = livCur, dev = l.devise || 'EUR';
+    F('livLines').innerHTML = l.lignes.map((x, i) => { const p = prodDeLigne(x), arr = coutLigne(x, dev), pv = p ? p.prix : prixConseille(arr, x.marque), r = livRecu[i];
+      return `<tr class="${r === x.qte ? 'ok' : 'manque'}"><td><code>${esc(x.ref || '')}</code>${x.ean ? `<br><small class="muted">${esc(x.ean)}</small>` : ''}</td><td><b>${esc(libLigne(x))}</b></td>
+        <td>${p ? `<code>${esc(p.code)}</code>` : '<span class="liv-new">nouvelle fiche</span>'}</td><td style="text-align:right">${fmtDev(x.pu, dev)}</td><td style="text-align:right">${voirMarges() ? money(arr) : '—'}</td>
+        <td style="text-align:right">${money(pv)}</td><td style="text-align:right">${x.qte}</td><td style="text-align:right"><input class="inp" data-lr="${i}" inputmode="numeric" value="${r}"></td></tr>`; }).join('');
+    const att = l.lignes.reduce((a, x) => a + x.qte, 0), rec = livRecu.reduce((a, x) => a + x, 0), nv = l.lignes.filter((x, i) => livRecu[i] && !prodDeLigne(x)).length;
+    F('livTot').textContent = `${rec} reçue${rec > 1 ? 's' : ''} sur ${att} attendue${att > 1 ? 's' : ''}${rec < att ? ` · ${att - rec} manquante${att - rec > 1 ? 's' : ''}` : ''}${nv ? ` · ${nv} nouvelle${nv > 1 ? 's' : ''} fiche${nv > 1 ? 's' : ''} produit` : ''}`;
+  }
+  F('livLines').addEventListener('input', e => { const i = e.target.dataset.lr; if (i == null) return; livRecu[i] = Math.max(0, intOf(e.target.value)); const tr = e.target.closest('tr');
+    tr.className = livRecu[i] === livCur.lignes[i].qte ? 'ok' : 'manque'; const att = livCur.lignes.reduce((a, x) => a + x.qte, 0), rec = livRecu.reduce((a, x) => a + x, 0);
+    F('livTot').textContent = `${rec} reçue${rec > 1 ? 's' : ''} sur ${att} attendue${att > 1 ? 's' : ''}${rec < att ? ` · ${att - rec} manquante${att - rec > 1 ? 's' : ''}` : ''}`; });
+  F('livRetour').addEventListener('click', () => openAchat('liv'));
+  F('livTout').addEventListener('click', () => { livRecu = livCur.lignes.map(x => x.qte); drawLivLines(); });
+  F('livRien').addEventListener('click', () => { livRecu = livCur.lignes.map(() => 0); drawLivLines(); F('livScan').focus(); });
+  // contrôle à la douchette : chaque pochette scannée compte une monture reçue
+  F('livScan').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return; e.preventDefault(); const v = F('livScan').value.trim(); F('livScan').value = ''; if (!v) return;
+    const k = normEan(v), i = livCur.lignes.findIndex((x, j) => ((k.length >= 8 && normEan(x.ean) === k) || (x.ref && x.ref.toUpperCase() === v.toUpperCase())) && livRecu[j] < x.qte);
+    const j = i >= 0 ? i : livCur.lignes.findIndex(x => (k.length >= 8 && normEan(x.ean) === k) || (x.ref && x.ref.toUpperCase() === v.toUpperCase()));
+    if (j < 0) { show(`${v} : cette monture n'est pas sur ce bon de livraison.`); return; }
+    if (i < 0) show('Toutes les montures de cette référence sont déjà comptées.');
+    else { livRecu[i]++; show(`${libLigne(livCur.lignes[i])} · ${livRecu[i]}/${livCur.lignes[i].qte}`); }
+    drawLivLines();
+  });
+  F('livOk').addEventListener('click', () => {
+    if (user.role === 'vendeur' && !droit('produits')) { show('Réception réservée au responsable.'); return; }
+    const l = livCur, b = F('livMag').value, dev = l.devise || 'EUR', imp = dev !== 'FCFA', now = new Date().toISOString();
+    const att = l.lignes.reduce((a, x) => a + x.qte, 0), rec = livRecu.reduce((a, x) => a + x, 0);
+    if (!b) { show('Choisissez le magasin qui reçoit.'); return; }
+    if (!rec) { show('Aucune monture reçue : indiquez les quantités reçues.'); return; }
+    if (rec < att && !confirm(`${att - rec} monture(s) manquante(s) par rapport au bon de livraison. Valider quand même ? La facture à payer reprendra le montant total facturé.`)) return;
+    const r = { numero: nextNum('REC'), date: now, boutique: b, fournisseur: l.fournisseur || l.source, doc: l.numero, par: user.nom, livraison: l.id, lignes: [] };
+    l.lignes.forEach((x, i) => { const q = livRecu[i]; if (!q) return;
+      let p = prodDeLigne(x); const arr = coutLigne(x, dev);
+      if (!p) {
+        p = { id: 'p' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), cat: 'Monture', code: nouveauCode('Monture'), marque: x.marque, modele: x.modele,
+          nom: [x.marque, x.modele].filter(Boolean).join(' ') || x.ref || 'Monture', couleur: x.coloris || '', taille: x.taille || '', ean: x.ean || '', refFourn: x.ref || '',
+          fournisseur: l.fournisseur || l.source, importe: imp, achatEur: imp ? x.pu : null, achatHT: imp ? null : Math.round(x.pu), achat: arr, prix: prixConseille(arr, x.marque) || 0, stock: {}, magasin: b, creeLe: now };
+        produits.push(p);
+      } else { p.achat = arr; if (imp) { p.achatEur = x.pu; p.importe = true; } else p.achatHT = Math.round(x.pu); if (!p.ean && x.ean) p.ean = x.ean; if (!p.refFourn && x.ref) p.refFourn = x.ref; }
+      mvtStock(p.id, b, q, 'Réception', r.numero);
+      r.lignes.push({ pid: p.id, code: p.code, nom: p.nom, q, pa: arr, brut: x.pu, devise: imp ? 'EUR' : 'FCFA' });
+    });
+    receptions.push(r);
+    // la facture du fournisseur passe dans les factures à payer (montant facturé, même si des montures manquent)
+    if (!facturesFourn.some(f => f.livraison === l.id))
+      facturesFourn.push({ id: 'ff' + Date.now().toString(36), fournisseur: l.fournisseur || l.source, numero: l.numero, date: l.date || dayKey(), echeance: l.echeance || dayKey(new Date(Date.now() + 30 * 864e5)),
+        montant: l.total, devise: dev, boutique: b, nature: 'Montures', livraison: l.id, reception: r.numero, note: rec < att ? `${att - rec} monture(s) manquante(s) à la réception` : '', paiements: [], creeLe: now, par: user.nom });
+    l.statut = 'Réceptionnée'; l.reception = r.numero; l.recuPar = user.nom; l.recuDate = now; l.magasinRecu = b; l.recus = livRecu.slice();
+    saveR(); saveSt(); saveAch(); livCur = null;
+    openDocs({ kind:'etiq', numero: r.numero, items: r.lignes.map(x => ({ p: produits.find(p => p.id === x.pid), n: x.q })).filter(x => x.p), titre:`Réception ${r.numero} (${l.numero}) validée · étiquettes` });
+    show(`${rec} monture(s) entrée(s) en stock à ${b}`);
+  });
+  // BL Prismea reçu en fichier (même format que l'envoi automatique)
+  F('livFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { const d = JSON.parse(await f.text()), L = Array.isArray(d) ? d : [d]; let n = 0;
+      L.forEach(b => { const lignes = (b.lignes || []).map((x, i) => ({ n: i + 1, ean: String(x.ean || '').replace(/\s/g, ''), ref: String(x.etiquette || x.ref || ''), marque: x.marque || '', modele: x.modele || '', coloris: x.coloris || x.couleur || '', taille: x.taille || '', qte: Math.max(0, Math.round(+x.qte || +x.quantite || 1)), pu: +x.pu || +x.prix || 0 }));
+        const numero = String(b.numero || b.facture || b.bl || '').trim(); if (!numero || !lignes.length) return;
+        const id = 'liv-' + String(b.source || 'prismea').toLowerCase().replace(/[^a-z0-9]+/g, '') + '-' + numero.replace(/[^\w.-]+/g, '_');
+        const ex = livraisons.find(x => x.id === id); if (ex && ex.statut !== 'À réceptionner') return;
+        const data = { id, source: b.source || 'Prismea', numero, bl: b.bl || '', date: b.date || dayKey(), echeance: b.echeance || '', devise: (b.devise || 'EUR').toUpperCase(), fournisseur: b.fournisseur || b.source || 'Prismea',
+          magasin: b.magasin || '', commentaire: b.commentaire || '', lignes, total: b.total != null ? +b.total : Math.round(lignes.reduce((a, x) => a + x.qte * x.pu, 0) * 100) / 100, statut: 'À réceptionner', recuLe: new Date().toISOString() };
+        if (ex) Object.assign(ex, data); else livraisons.push(data); n++; });
+      saveAch(); drawLiv(); majTuileAchat(); show(n ? `${n} livraison(s) importée(s)` : 'Aucune nouvelle livraison dans ce fichier.');
+    } catch(_) { show('Fichier illisible : attendu un bon de livraison Prismea (.json).'); }
+  });
+
+  // --- Factures fournisseurs à payer
+  const payeFac = f => (f.paiements || []).reduce((a, p) => a + (p.montant || 0), 0);
+  const resteFac = f => Math.max(0, (f.montant || 0) - payeFac(f));
+  const facVisible = f => boutiqueCour() === 'Toutes les boutiques' ? user.role === 'admin' : !f.boutique || f.boutique === boutiqueCour();
+  const statutFac = f => resteFac(f) <= 0.005 ? 'Payée' : f.echeance && f.echeance < dayKey() ? 'En retard' : payeFac(f) > 0 ? 'Partiellement payée' : 'À payer';
+  function drawFac(){
+    const V = facturesFourn.filter(facVisible), fl = F('facFiltre').value, auj = dayKey(), sous7 = dayKey(new Date(Date.now() + 7 * 864e5));
+    const ouv = V.filter(f => resteFac(f) > 0.005), ret = ouv.filter(f => f.echeance && f.echeance < auj), bient = ouv.filter(f => f.echeance >= auj && f.echeance <= sous7);
+    const tot = L => L.reduce((a, f) => a + enFcfa(resteFac(f), f.devise), 0);
+    const mois = dayKey().slice(0, 7), payeMois = V.reduce((a, f) => a + (f.paiements || []).filter(p => (p.date || '').slice(0, 7) === mois).reduce((x, p) => x + enFcfa(p.montant, f.devise), 0), 0);
+    F('facKpi').innerHTML = kpi('Reste à payer', money(tot(ouv)), `${ouv.length} facture${ouv.length > 1 ? 's' : ''} · contre-valeur FCFA`, 'main')
+      + kpi('En retard', money(tot(ret)), `${ret.length} facture${ret.length > 1 ? 's' : ''}`, ret.length ? 'warn-k' : '')
+      + kpi('Échéance sous 7 jours', money(tot(bient)), `${bient.length} facture${bient.length > 1 ? 's' : ''}`)
+      + kpi('Payé ce mois-ci', money(payeMois));
+    const L = V.filter(f => fl === 'ouvertes' ? resteFac(f) > 0.005 : fl === 'retard' ? resteFac(f) > 0.005 && f.echeance < auj : fl === 'payees' ? resteFac(f) <= 0.005 : true)
+      .sort((a, b) => fl === 'payees' ? (b.date || '').localeCompare(a.date || '') : (a.echeance || '').localeCompare(b.echeance || ''));
+    F('facRows').innerHTML = L.map(f => { const st = statutFac(f);
+      return `<tr data-fac="${esc(f.id)}"><td class="${st === 'En retard' ? 'fac-retard' : ''}">${f.echeance ? fmtDate(f.echeance) : '—'}</td><td><b>${esc(f.fournisseur)}</b>${f.nature ? `<br><small class="muted">${esc(f.nature)}</small>` : ''}</td><td>${esc(f.numero)}${f.reception ? `<br><small class="muted">${esc(f.reception)}</small>` : ''}</td>
+        <td>${fmtDate(f.date)}</td><td>${esc((f.boutique || '—').replace(/^Magasin /, ''))}</td><td style="text-align:right">${fmtDev(f.montant, f.devise)}${f.devise !== 'FCFA' ? `<br><small class="muted">≈ ${money(enFcfa(f.montant, f.devise))}</small>` : ''}</td>
+        <td style="text-align:right">${payeFac(f) ? fmtDev(payeFac(f), f.devise) : '—'}</td><td style="text-align:right"><b>${fmtDev(resteFac(f), f.devise)}</b></td>
+        <td>${st === 'Payée' ? '<span class="chip">Payée</span>' : st === 'En retard' ? '<span class="chip warn" style="background:var(--ic-rose);color:var(--ic-rose-fg)">En retard</span>' : `<span class="chip warn">${st}</span>`}</td>
+        <td style="white-space:nowrap">${st !== 'Payée' ? `<button class="act" type="button" data-fac-pay="${esc(f.id)}">Régler</button>` : ''}</td></tr>`; }).join('');
+    F('facNone').hidden = L.length > 0;
+  }
+  F('facFiltre').addEventListener('change', drawFac);
+  let facEdit = null, facRegl = null;
+  function ouvrirFac(f){
+    if (!droit('compta')) { show('Factures fournisseurs réservées au responsable.'); return; }
+    facEdit = f || null; F('facErr').textContent = '';
+    F('facTitle').textContent = f ? `Facture ${f.numero}` : 'Nouvelle facture fournisseur';
+    F('facFourList').innerHTML = [...new Set([...facturesFourn.map(x => x.fournisseur), ...produits.map(p => p.fournisseur)].filter(Boolean))].sort().map(x => `<option value="${esc(x)}">`).join('');
+    F('facMag').innerHTML = magasinsVisibles().map(b => `<option${(f ? f.boutique : boutiqueCour()) === b ? ' selected' : ''}>${esc(b)}</option>`).join('');
+    F('facFour').value = f?.fournisseur || ''; F('facNum').value = f?.numero || ''; F('facDate').value = f?.date || dayKey(); F('facEch').value = f?.echeance || dayKey(new Date(Date.now() + 30 * 864e5));
+    F('facMt').value = f ? String(f.montant).replace('.', ',') : ''; F('facDev').value = f?.devise || 'FCFA'; F('facCat').value = f?.nature || 'Montures'; F('facNote').value = f?.note || '';
+    const lock = !!(f && f.livraison);   // facture issue d'une livraison Prismea : montant et devise fixés
+    ['facFour', 'facNum', 'facMt', 'facDev'].forEach(id => F(id).disabled = lock);
+    F('facPays').innerHTML = f && (f.paiements || []).length ? `<span class="lbl">Règlements</span><ul class="c-lines">${f.paiements.map((p, i) => `<li><span>${fmtDate(p.date)} · ${esc(p.mode)}${p.ref ? ' · ' + esc(p.ref) : ''} · ${esc(p.par || '')}</span><span>${fmtDev(p.montant, f.devise)} <button class="del sm" type="button" data-pdel="${i}" aria-label="Retirer ce règlement">×</button></span></li>`).join('')}</ul>` : '';
+    F('facDel').hidden = !(f && !(f.paiements || []).length && !f.livraison && user.role !== 'vendeur');
+    F('dlgFac').hidden = false; (f ? F('facEch') : F('facFour')).focus();
+  }
+  F('facNew').addEventListener('click', () => ouvrirFac(null));
+  F('facRows').addEventListener('click', e => { const pay = e.target.dataset.facPay; if (pay) { ouvrirReg(facturesFourn.find(f => f.id === pay)); return; }
+    const tr = e.target.closest('[data-fac]'); if (tr) ouvrirFac(facturesFourn.find(f => f.id === tr.dataset.fac)); });
+  document.querySelectorAll('[data-close-fac]').forEach(b => b.addEventListener('click', () => F('dlgFac').hidden = true));
+  F('facPays').addEventListener('click', e => { const i = e.target.dataset.pdel; if (i == null || !facEdit) return; if (!confirm('Retirer ce règlement ?')) return;
+    facEdit.paiements.splice(i, 1); saveAch(); ouvrirFac(facEdit); drawFac(); majTuileAchat(); });
+  F('facDel').addEventListener('click', () => { if (!facEdit || !confirm(`Supprimer la facture ${facEdit.numero} ?`)) return; facturesFourn = facturesFourn.filter(f => f !== facEdit); saveAch(); F('dlgFac').hidden = true; drawFac(); majTuileAchat(); });
+  F('fFac').addEventListener('submit', e => {
+    e.preventDefault();
+    const d = { fournisseur: F('facFour').value.trim(), numero: F('facNum').value.trim(), date: F('facDate').value, echeance: F('facEch').value, montant: dec(F('facMt').value), devise: F('facDev').value,
+      boutique: F('facMag').value, nature: F('facCat').value, note: F('facNote').value.trim() };
+    const miss = []; if (!d.fournisseur) miss.push('le fournisseur'); if (!d.numero) miss.push('le n° de facture'); if (!d.date) miss.push('la date'); if (!d.echeance) miss.push('l\'échéance'); if (!(d.montant > 0)) miss.push('le montant');
+    if (miss.length) { F('facErr').textContent = 'À compléter : ' + miss.join(', ') + '.'; return; }
+    if (facturesFourn.some(f => f !== facEdit && norm(f.fournisseur) === norm(d.fournisseur) && f.numero === d.numero)) { F('facErr').textContent = 'Cette facture de ce fournisseur est déjà enregistrée.'; return; }
+    if (facEdit) { if (facEdit.livraison) { delete d.fournisseur; delete d.numero; delete d.montant; delete d.devise; } Object.assign(facEdit, d); }
+    else facturesFourn.push({ id: 'ff' + Date.now().toString(36), ...d, paiements: [], creeLe: new Date().toISOString(), par: user.nom });
+    saveAch(); F('dlgFac').hidden = true; drawFac(); majTuileAchat(); show('Facture enregistrée');
+  });
+  function ouvrirReg(f){
+    if (!droit('compta')) { show('Règlements fournisseurs réservés au responsable.'); return; }
+    facRegl = f; F('regErr').textContent = '';
+    F('regInfo').textContent = `${f.fournisseur} · facture ${f.numero} · reste ${fmtDev(resteFac(f), f.devise)}`;
+    F('regDate').value = dayKey(); F('regMt').value = String(Math.round(resteFac(f) * 100) / 100).replace('.', ','); F('regRef').value = '';
+    F('dlgReg').hidden = false; F('regMt').focus();
+  }
+  document.querySelectorAll('[data-close-reg]').forEach(b => b.addEventListener('click', () => F('dlgReg').hidden = true));
+  F('fReg').addEventListener('submit', e => {
+    e.preventDefault(); const f = facRegl, mt = dec(F('regMt').value);
+    if (!(mt > 0)) { F('regErr').textContent = 'Indiquez le montant payé.'; return; }
+    if (mt > resteFac(f) + 0.005) { F('regErr').textContent = `Le montant dépasse le reste à payer (${fmtDev(resteFac(f), f.devise)}).`; return; }
+    (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
+    saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
+  });
+  try { majTuileAchat(); } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
   let blData = null, blCtl = null;
@@ -6677,7 +6987,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
@@ -6689,7 +6999,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); } else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); } else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)

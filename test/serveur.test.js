@@ -4,7 +4,7 @@ const { construire, creerOrganisation } = require('../server/app');
 const { migrer, pool } = require('../server/db');
 (async () => {
   await migrer();
-  await pool.query('TRUNCATE dossiers, donnees, postes, sessions, comptes, organisations, envois CASCADE');
+  await pool.query('TRUNCATE cles_api, dossiers, donnees, postes, sessions, comptes, organisations, envois CASCADE');
   const app = construire();
   const post = (url, body, tok) => app.inject({ method: 'POST', url, payload: body, headers: tok ? { authorization: 'Bearer ' + tok } : {} }).then(r => ({ code: r.statusCode, ...r.json() }));
   await creerOrganisation({ nom: 'Fashion Vision', email: 'nico@fv.ga', motdepasse: 'motdepasse-solide', nomAdmin: 'Nicolas' });
@@ -50,6 +50,21 @@ const { migrer, pool } = require('../server/db');
   assert.deepEqual(dn.numeros, { 'FA-AKA1-2026-0002': 3, 'FA-LBV1-2026-0001': 1 });
   assert.equal((await post('/api/dossiers', { demandes: [{ vente: '' }] }, p1.jeton)).code, 400);
   assert.deepEqual((await post('/api/dossiers', { demandes: [{ vente: 'FA-LBV1-2026-0001', magasin: 'Libreville' }] }, q.jeton)).numeros, { 'FA-LBV1-2026-0001': 1 }, 'compteur séparé par opticien');
+  // intégration Prismea : clé d'API, envoi d'un bon de livraison, idempotence, refus après réception
+  const k = await post('/api/cles', { nom: 'Prismea' }, cx.session);
+  assert.ok(k.cle && k.cle.startsWith('dpt_'));
+  assert.equal((await post('/api/livraisons', { numero: 'X', lignes: [{ ean: '1', qte: 1 }] }, 'mauvaise')).code, 401);
+  const BL = { source: 'Prismea', numero: 'FA2026-0042', date: '2026-10-29', devise: 'EUR', magasin: 'Libreville', lignes: [{ ean: '8053672000001', etiquette: 'OZO-001', marque: 'OZ', modele: 'Lyon', coloris: 'Noir', taille: '52□18 140', qte: 2, pu: 35.5 }] };
+  let lv = await post('/api/livraisons', BL, k.cle);
+  assert.equal(lv.etat, 'creee'); assert.equal(lv.articles, 2);
+  assert.equal((await post('/api/livraisons', BL, k.cle)).etat, 'maj');
+  assert.equal((await post('/api/livraisons', { numero: 'Y', lignes: [{ marque: 'OZ' }] }, k.cle)).code, 400);
+  let rs = await post('/api/sync', { since: 0, changes: [] }, p1.jeton);
+  const liv = rs.changes.find(c => c.coll === 'livraisons');
+  assert.equal(liv.data.lignes[0].pu, 35.5); assert.equal(liv.data.total, 71); assert.equal(liv.data.statut, 'À réceptionner');
+  await post('/api/sync', { since: rs.rev, changes: [{ coll: 'livraisons', id: liv.id, data: { ...liv.data, statut: 'Réceptionnée' }, base: liv.data }] }, p1.jeton);
+  assert.equal((await post('/api/livraisons', BL, k.cle)).code, 409);
+  assert.equal((await post('/api/livraisons', BL, q.jeton)).code, 401, 'un jeton de poste n\'est pas une clé d\'intégration');
   // poste désactivé
   await post('/api/postes/' + p2.poste.id + '/actif', { actif: false }, cx.session);
   assert.equal((await post('/api/sync', { since: 0 }, p2.jeton)).code, 401);

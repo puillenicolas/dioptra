@@ -86,3 +86,16 @@ CREATE TABLE IF NOT EXISTS dossiers (
   PRIMARY KEY (org_id, vente)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS dossiers_num ON dossiers (org_id, magasin, num);
+
+-- Clés d'intégration : permettent à un autre logiciel (Prismea) d'envoyer des bons de livraison à DIOPTRA.
+-- Seul le hachage de la clé est conservé.
+CREATE TABLE IF NOT EXISTS cles_api (
+  id          text PRIMARY KEY,
+  org_id      text NOT NULL REFERENCES organisations(id),
+  nom         text NOT NULL,
+  cle_hash    text NOT NULL UNIQUE,
+  debut       text NOT NULL,
+  cree_le     timestamptz NOT NULL DEFAULT now(),
+  vu_le       timestamptz,
+  actif       boolean NOT NULL DEFAULT true
+);

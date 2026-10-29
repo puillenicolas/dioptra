@@ -244,6 +244,59 @@ function construire(opts = {}) {
     finally { cx.release(); }
     return { numeros };
   });
+  // ---------- Intégration : bons de livraison envoyés par un autre logiciel (Prismea) ----------
+  app.get('/api/cles', { preHandler: sessionAdmin }, async req => {
+    const { rows } = await pool.query('SELECT id, nom, debut, cree_le, vu_le, actif FROM cles_api WHERE org_id = $1 ORDER BY cree_le', [req.compte.org_id]);
+    return { cles: rows };
+  });
+  app.post('/api/cles', { preHandler: sessionAdmin }, async (req, rep) => {
+    const nom = String((req.body || {}).nom || '').trim().slice(0, 80);
+    if (!nom) return err(rep, 400, 'Donnez un nom à la clé (ex. Prismea).');
+    const cle = 'dpt_' + S.nouveauJeton(), id = S.nouvelId('k');
+    await pool.query('INSERT INTO cles_api (id, org_id, nom, cle_hash, debut) VALUES ($1,$2,$3,$4,$5)', [id, req.compte.org_id, nom, S.hacherJeton(cle), cle.slice(0, 10)]);
+    return { id, nom, cle };   // la clé complète n'est montrée qu'une fois
+  });
+  app.post('/api/cles/:id/actif', { preHandler: sessionAdmin }, async (req, rep) => {
+    const r = await pool.query('UPDATE cles_api SET actif = $1 WHERE id = $2 AND org_id = $3', [!!(req.body || {}).actif, req.params.id, req.compte.org_id]);
+    return r.rowCount ? { ok: true } : err(rep, 404, 'Clé introuvable.');
+  });
+  async function cleApi(req, rep) {
+    const j = (req.headers.authorization || '').replace(/^Bearer\s+/i, '') || req.headers['x-api-key'] || '';
+    const { rows } = await pool.query(`SELECT k.*, o.nom AS org_nom FROM cles_api k JOIN organisations o ON o.id = k.org_id WHERE k.cle_hash = $1 AND k.actif AND o.actif`, [S.hacherJeton(j || '-')]);
+    if (!rows[0]) return err(rep, 401, 'Clé d\'intégration invalide ou désactivée.');
+    req.cle = rows[0];
+    pool.query('UPDATE cles_api SET vu_le = now() WHERE id = $1', [rows[0].id]).catch(() => {});
+  }
+  const txt = (v, n = 200) => String(v == null ? '' : v).trim().slice(0, n);
+  const nb = v => { const n = Number(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
+  // Un bon de livraison / une facture Prismea → « livraison à réceptionner » dans DIOPTRA (même numéro renvoyé = mise à jour)
+  app.post('/api/livraisons', { preHandler: cleApi }, async (req, rep) => {
+    const b = req.body || {}, L = Array.isArray(b.lignes) ? b.lignes : null;
+    const numero = txt(b.numero || b.facture || b.bl, 60);
+    if (!numero) return err(rep, 400, 'Numéro du bon de livraison ou de la facture manquant.');
+    if (!L || !L.length || L.length > 2000) return err(rep, 400, 'Lignes manquantes (1 à 2000).');
+    const lignes = L.map((l, i) => ({ n: i + 1, ean: txt(l.ean, 20).replace(/\s/g, ''), ref: txt(l.etiquette || l.ref || l.reference, 40), marque: txt(l.marque, 60),
+      modele: txt(l.modele, 80), coloris: txt(l.coloris || l.couleur, 60), taille: txt(l.taille, 30), qte: Math.max(0, Math.round(nb(l.qte ?? l.quantite ?? 1))), pu: Math.max(0, nb(l.pu ?? l.prix ?? l.prixHT)) }));
+    if (lignes.some(l => !l.qte || !(l.ean || l.ref || l.modele))) return err(rep, 400, 'Chaque ligne doit avoir une quantité et un code EAN, une référence ou un modèle.');
+    const source = txt(b.source || req.cle.nom, 60), id = 'liv-' + source.toLowerCase().replace(/[^a-z0-9]+/g, '') + '-' + numero.replace(/[^\w.-]+/g, '_');
+    const devise = txt(b.devise || 'EUR', 3).toUpperCase();
+    const data = { id, source, numero, bl: txt(b.bl, 60), date: txt(b.date, 30) || new Date().toISOString().slice(0, 10), echeance: txt(b.echeance, 30), devise,
+      fournisseur: txt(b.fournisseur || source, 120), magasin: txt(b.magasin, 120), commentaire: txt(b.commentaire, 500), lignes,
+      total: b.total != null ? nb(b.total) : Math.round(lignes.reduce((a, l) => a + l.qte * l.pu, 0) * 100) / 100,
+      statut: 'À réceptionner', recuLe: new Date().toISOString() };
+    let etat = 'creee';
+    await tx(async c => {
+      const { rows } = await c.query(`SELECT data, supprime FROM donnees WHERE org_id = $1 AND coll = 'livraisons' AND id = $2 FOR UPDATE`, [req.cle.org_id, 'i:' + id]);
+      const cur = rows[0];
+      if (cur && !cur.supprime && cur.data.statut !== 'À réceptionner') { etat = 'deja'; return; }
+      if (cur && !cur.supprime) etat = 'maj';
+      await c.query(`INSERT INTO donnees (org_id, coll, id, data, rev, maj_le, poste_id, supprime) VALUES ($1,'livraisons',$2,$3,nextval('rev_seq'),now(),NULL,false)
+        ON CONFLICT (org_id, coll, id) DO UPDATE SET data = EXCLUDED.data, rev = EXCLUDED.rev, maj_le = now(), poste_id = NULL, supprime = false`, [req.cle.org_id, 'i:' + id, JSON.stringify(data)]);
+    });
+    if (etat === 'deja') return rep.code(409).send({ erreur: 'Cette livraison a déjà été réceptionnée dans DIOPTRA.', id });
+    return { ok: true, id, etat, articles: lignes.reduce((a, l) => a + l.qte, 0) };
+  });
+
   app.get('/api/sante', async () => ({ ok: true, version: 1, mail: SV.mailConfigure(), ia: SV.iaConfiguree() }));
   app.post('/api/mail', { preHandler: poste }, async (req, rep) => {
     const { to, subject, body, replyTo, attachments = [] } = req.body || {};
