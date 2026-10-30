@@ -299,7 +299,9 @@ function construire(opts = {}) {
 
   // ---------- Centrale d'achat Prismea : catalogue et commandes (la clé psm_ reste sur le serveur) ----------
   const centraleDe = async org => (await pool.query('SELECT url, cle FROM centrale WHERE org_id = $1', [org])).rows[0] || null;
-  const baseUrl = u => String(u || '').trim().replace(/\/+$/, '').replace(/\/api(\/(commandes|catalogue))?$/, '');
+  // adresse copiée depuis la barre du navigateur : on ne garde que le site (https://prismea.onrender.com), sans #page ni ?paramètres
+  const baseUrl = u => { u = String(u || '').trim(); if (u && !/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
+    try { const x = new URL(u); return (x.origin + x.pathname.replace(/\/(index\.html)?$/, '').replace(/\/api(\/.*)?$/, '')).replace(/\/+$/, ''); } catch (_) { return u.replace(/[#?].*$/, '').replace(/\/+$/, ''); } };
   const urlOk = u => { try { const x = new URL(u); return x.protocol === 'https:' || (process.env.NODE_ENV !== 'production' && /^(localhost|127\.0\.0\.1)$/.test(x.hostname)); } catch (_) { return false; } };
   async function versCentrale(org, chemin, opts = {}) {
     const c = await centraleDe(org);
@@ -307,18 +309,20 @@ function construire(opts = {}) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), opts.delai || 20000);
     let r;
     try {
-      r = await fetch(c.url + chemin, { method: opts.corps ? 'POST' : 'GET', signal: ctl.signal,
+      r = await fetch(baseUrl(c.url) + chemin, { method: opts.corps ? 'POST' : 'GET', signal: ctl.signal,
         headers: { authorization: 'Bearer ' + c.cle, accept: 'application/json', ...(opts.corps ? { 'content-type': 'application/json' } : {}) }, body: opts.corps ? JSON.stringify(opts.corps) : undefined });
     } catch (e) { const x = new Error(e.name === 'AbortError' ? 'La centrale ne répond pas, réessayez dans un instant.' : 'Centrale injoignable.'); x.status = 502; throw x; }
     finally { clearTimeout(t); }
     if (opts.brut) return r;
-    let j = {}; try { j = await r.json(); } catch (_) {}
+    let j = null; try { j = await r.json(); } catch (_) {}
+    if (r.ok && (!j || typeof j !== 'object')) { const x = new Error('Cette adresse ne répond pas comme Prismea : indiquez seulement l\'adresse du site, par exemple https://prismea-test.onrender.com'); x.status = 502; throw x; }
+    j = j || {};
     if (!r.ok) { const x = new Error(r.status === 401 ? 'Clé de la centrale refusée : vérifiez-la dans Paramètres › Postes et accès.' : (j.erreur || j.error || `Erreur de la centrale (${r.status})`)); x.status = r.status === 401 ? 400 : r.status; x.corps = j; throw x; }
     return j;
   }
   app.get('/api/centrale', { preHandler: sessionAdmin }, async req => {
     const c = await centraleDe(req.compte.org_id);
-    return { url: c ? c.url : '', cle: c && c.cle ? c.cle.slice(0, 8) + '…' + c.cle.slice(-4) : '', configure: !!(c && c.cle) };
+    return { url: c ? baseUrl(c.url) : '', cle: c && c.cle ? c.cle.slice(0, 8) + '…' + c.cle.slice(-4) : '', configure: !!(c && c.cle) };
   });
   app.post('/api/centrale', { preHandler: sessionAdmin }, async (req, rep) => {
     const b = req.body || {}, cur = await centraleDe(req.compte.org_id);
@@ -329,7 +333,7 @@ function construire(opts = {}) {
     else if (b.cle != null && String(b.cle).trim()) { cle = String(b.cle).trim(); if (!/^psm_[A-Za-z0-9_\-]{16,}$/.test(cle)) return err(rep, 400, 'La clé doit commencer par psm_ (créée dans Prismea › Paramètres › Commandes des opticiens).'); }
     await pool.query(`INSERT INTO centrale (org_id, url, cle, maj_le, maj_par) VALUES ($1,$2,$3,now(),$4)
       ON CONFLICT (org_id) DO UPDATE SET url = EXCLUDED.url, cle = EXCLUDED.cle, maj_le = now(), maj_par = EXCLUDED.maj_par`, [req.compte.org_id, url, cle, req.compte.email]);
-    if (cle && b.tester !== false) { try { const j = await versCentrale(req.compte.org_id, '/api/catalogue'); return { ok: true, test: `Connexion réussie : ${j.montures.length} montures disponibles à la centrale.` }; } catch (e) { return { ok: true, test: 'Enregistré, mais le test a échoué : ' + e.message }; } }
+    if (cle && b.tester !== false) { try { const j = await versCentrale(req.compte.org_id, '/api/catalogue'); if (!Array.isArray(j.montures)) throw new Error('Cette adresse ne répond pas comme Prismea : indiquez seulement l\'adresse du site, par exemple https://prismea-test.onrender.com'); return { ok: true, test: `Connexion réussie : ${j.montures.length} montures disponibles à la centrale.` }; } catch (e) { return { ok: true, test: 'Enregistré, mais le test a échoué : ' + e.message }; } }
     return { ok: true };
   });
   app.get('/api/centrale/etat', { preHandler: poste }, async req => { const c = await centraleDe(req.poste.org_id); return { configure: !!(c && c.cle) }; });

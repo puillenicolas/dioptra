@@ -42,6 +42,9 @@ const { migrer, pool } = require('../server/db');
   assert.equal((await post('/api/centrale', { url: URL0, cle: CLE }, p1.jeton)).code, 401, 'un poste ne peut pas régler la centrale');
   assert.equal((await post('/api/centrale', { url: URL0, cle: 'mauvaise' }, cx.session)).code, 400);
   assert.equal((await post('/api/centrale', { url: 'ftp://x', cle: CLE }, cx.session)).code, 400);
+  // adresse copiée depuis la barre du navigateur (#page) : on garde seulement le site
+  await post('/api/centrale', { url: URL0 + '/#parametres', cle: CLE }, cx.session);
+  assert.equal((await get('/api/centrale', cx.session)).url, URL0);
   const rg = await post('/api/centrale', { url: URL0 + '/api/commandes', cle: CLE }, cx.session);
   assert.ok(/1 montures/.test(rg.test), rg.test);
   const cf = await get('/api/centrale', cx.session);
