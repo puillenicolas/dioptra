@@ -673,6 +673,11 @@ tr.pt td{color:var(--muted)}
 .fac-retard{color:var(--pin);font-weight:700}
 .bk-rev input.inp,.bk-rev select.inp{padding:6px 8px;font-size:13px;min-width:0}.bk-rev td{vertical-align:middle}
 .bk-tbl td{vertical-align:middle}
+.ac-drop{display:flex;align-items:center;gap:14px;border:2px dashed var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px;cursor:pointer;background:var(--card);transition:border-color .15s,background .15s}
+.ac-drop svg{width:28px;height:28px;color:var(--primary);flex:none}.ac-drop b{display:block}.ac-drop span{font-size:13px;opacity:.7}
+.ac-drop:hover,.ac-drop:focus-visible{border-color:var(--primary)}.ac-drop.over{border-color:var(--primary);background:var(--ic-blue)}
+.ai-head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}@media (max-width:900px){.ai-head{grid-template-columns:1fr 1fr}}
+.ai-map{max-width:420px;margin:12px 0 8px}.ai-tbl input.inp{padding:6px 8px;font-size:13px;min-width:70px}
 .pt-form{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1.3fr;gap:12px}@media (max-width:900px){.pt-form{grid-template-columns:1fr 1fr}}
 .pt-br{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pt-chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;color:inherit;text-align:left}
 .pt-chip span{color:var(--primary);font-weight:600;margin-left:6px}.pt-chip.on{border-color:var(--primary);background:var(--ic-blue)}
@@ -1636,13 +1641,42 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><div><div class="k-lbl" id="acSub"></div><h1>Achats</h1></div></div>
-  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons Prismea</button><button class="tab" data-ac="fac">Factures à payer</button></div>
+  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons</button><button class="tab" data-ac="fac">Factures à payer</button></div>
+  <div class="ac-drop" id="acDrop" role="button" tabindex="0" aria-label="Importer une facture fournisseur">
+    <input type="file" id="acFile" accept=".pdf,.xlsx,.xls,.csv,.json,application/pdf,image/*,text/csv,application/json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+    <div><b>Importer une facture fournisseur</b><span>PDF, Excel ou CSV (ou BL Prismea .json) · cliquez ou glissez-déposez le fichier ici</span></div>
+  </div>
+  <div class="bl" id="aiSt" hidden></div>
+  <section class="blk" id="aiRev" hidden>
+    <div class="row-head"><h2>Facture importée</h2></div>
+    <div class="ai-head">
+      <div><label class="lbl" for="aiFour">Fournisseur *</label><input class="inp" id="aiFour" list="aiFourList" autocomplete="off"><datalist id="aiFourList"></datalist></div>
+      <div><label class="lbl" for="aiNum">N° de facture *</label><input class="inp" id="aiNum"></div>
+      <div><label class="lbl" for="aiDate">Date *</label><input class="inp" type="date" id="aiDate"></div>
+      <div><label class="lbl" for="aiEch">Échéance</label><input class="inp" type="date" id="aiEch"></div>
+      <div><label class="lbl" for="aiDev">Devise</label><select class="inp" id="aiDev"><option>FCFA</option><option>EUR</option><option>USD</option></select></div>
+      <div><label class="lbl" for="aiTot">Montant total *</label><input class="inp" id="aiTot" inputmode="decimal"></div>
+      <div><label class="lbl" for="aiMag">Magasin</label><select class="inp" id="aiMag"></select></div>
+    </div>
+    <div id="aiMapZ" hidden>
+      <div class="ai-map"><label class="lbl" for="aiHead">Ligne des titres de colonnes</label><select class="inp" id="aiHead"></select></div>
+      <span class="lbl">Colonnes reconnues (modifiables)</span><div class="xl-grid" id="aiCols"></div>
+    </div>
+    <div id="aiLignesZ" hidden>
+      <span class="lbl" style="margin-top:12px">Articles</span>
+      <div class="tbl-wrap"><table class="s-tbl ai-tbl"><thead><tr><th></th><th>EAN</th><th>Réf.</th><th>Marque</th><th>Modèle</th><th>Coloris</th><th>Taille</th><th style="text-align:right">Qté</th><th style="text-align:right">Prix unit.</th></tr></thead><tbody id="aiRows"></tbody></table></div>
+    </div>
+    <div class="st-foot"><span id="aiSum" style="font-size:13px"></span>
+      <span><button class="ghost" type="button" id="aiNo">Annuler</button> <button class="ghost" type="button" id="aiFac">Créer seulement la facture à payer</button> <button class="save" type="button" id="aiLiv">Créer la livraison à réceptionner</button></span></div>
+    <p class="sub" style="margin-top:8px">« Livraison à réceptionner » : les articles entrent en stock quand vous contrôlez l'arrivage, et la facture passe alors dans « Factures à payer ». Pour du transport, des fournitures ou un service, créez seulement la facture.</p>
+  </section>
 
   <div class="ac-p" data-p="liv">
     <section class="blk" id="livListe">
       <div class="row-head"><h2>Livraisons à réceptionner</h2>
-        <span class="bl-btns"><label class="ghost bl-btn"><input type="file" id="livFile" accept=".json,application/json" hidden>Importer un BL Prismea (fichier)</label></span></div>
-      <p class="sub">Les factures et bons de livraison envoyés par Prismea arrivent ici automatiquement. Vérifiez les quantités reçues puis validez : les montures entrent dans le stock du magasin et la facture passe dans « Factures à payer ».</p>
+      </div>
+      <p class="sub">Les factures et bons de livraison envoyés par Prismea arrivent ici automatiquement ; ceux des autres fournisseurs s'importent avec le cadre ci-dessus. Vérifiez les quantités reçues puis validez : les montures entrent dans le stock du magasin et la facture passe dans « Factures à payer ».</p>
       <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>N° facture / BL</th><th>Fournisseur</th><th>Magasin</th><th style="text-align:right">Montures</th><th style="text-align:right">Montant</th><th>Statut</th></tr></thead><tbody id="livRows"></tbody></table></div>
       <p class="muted" id="livNone" hidden>Aucune livraison pour l'instant.</p>
     </section>
@@ -6202,8 +6236,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     show(`${rec} monture(s) entrée(s) en stock à ${b}`);
   });
   // BL Prismea reçu en fichier (même format que l'envoi automatique)
-  F('livFile').addEventListener('change', async e => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  async function importBlJson(f){
     try { const d = JSON.parse(await f.text()), L = Array.isArray(d) ? d : [d]; let n = 0;
       L.forEach(b => { const lignes = (b.lignes || []).map((x, i) => ({ n: i + 1, ean: String(x.ean || '').replace(/\s/g, ''), ref: String(x.etiquette || x.ref || ''), marque: x.marque || '', modele: x.modele || '', coloris: x.coloris || x.couleur || '', taille: x.taille || '', qte: Math.max(0, Math.round(+x.qte || +x.quantite || 1)), pu: +x.pu || +x.prix || 0 }));
         const numero = String(b.numero || b.facture || b.bl || '').trim(); if (!numero || !lignes.length) return;
@@ -6214,7 +6247,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         if (ex) Object.assign(ex, data); else livraisons.push(data); n++; });
       saveAch(); drawLiv(); majTuileAchat(); show(n ? `${n} livraison(s) importée(s)` : 'Aucune nouvelle livraison dans ce fichier.');
     } catch(_) { show('Fichier illisible : attendu un bon de livraison Prismea (.json).'); }
-  });
+  }
 
   // --- Factures fournisseurs à payer
   const payeFac = f => (f.paiements || []).reduce((a, p) => a + (p.montant || 0), 0);
@@ -6501,6 +6534,164 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     blData = { fournisseur: four, numero: F('recDoc').value || xlName.replace(/\.[^.]+$/, ''), date: '', devise: F('xlDev').value, lignes };
     blReview();
   });
+
+
+  /* --- Import d'une facture fournisseur : PDF (lecture automatique), Excel ou CSV, par clic ou glisser-déposer --- */
+  let ai = null;   // { nom, src:'pdf'|'xl', rows (excel), lignes, … }
+  const AI_COLS = [
+    ['ean', 'EAN / code-barres', /ean|gtin|code.?barre|barcode|upc/i],
+    ['ref', 'Référence', /r[ée]f|article|sku|item|code/i],
+    ['marque', 'Marque', /marque|brand|fabricant/i],
+    ['modele', 'Modèle / désignation', /mod[eè]le|model|d[ée]signation|libell|description|nom|name/i],
+    ['coloris', 'Coloris', /couleur|colou?r|coloris|teinte/i],
+    ['taille', 'Taille', /taille|size|calibre|dimension/i],
+    ['qte', 'Quantité', /qt[ée]?|quant|qty|nombre|nb\b|pcs/i],
+    ['pu', 'Prix unitaire', /p\.?\s?u\b|unit|prix|price|tarif|net/i],
+  ];
+  const aiSt = (h, cls = '') => { F('aiSt').className = 'bl bl-st ' + cls; F('aiSt').innerHTML = h; F('aiSt').hidden = !h; };
+  const devDe = t => /€|\beur(os?)?\b/i.test(t || '') ? 'EUR' : /\busd\b|\$|\bdollars?\b/i.test(t || '') ? 'USD' : 'FCFA';
+  async function aiFichiers(files){
+    if (!droit('produits') && !droit('compta')) { show('Import réservé au responsable.'); return; }
+    for (const f of files) {
+      if (/\.json$/i.test(f.name) || f.type === 'application/json') { await importBlJson(f); continue; }
+      if (/\.(xlsx|xls|csv|txt)$/i.test(f.name) || /sheet|excel|csv/.test(f.type)) { await aiExcel(f); return; }
+      if (f.type === 'application/pdf' || /^image\//.test(f.type) || /\.pdf$/i.test(f.name)) { await aiPdf(f); return; }
+      show(`Format non pris en charge : ${f.name}. Formats acceptés : PDF, Excel, CSV (ou BL Prismea .json).`);
+    }
+  }
+  function aiOuvrir(d){
+    ai = d; F('aiRev').hidden = false;
+    F('aiFourList').innerHTML = [...new Set([...facturesFourn.map(x => x.fournisseur), ...livraisons.map(x => x.fournisseur), ...produits.map(p => p.fournisseur)].filter(Boolean))].sort().map(x => `<option value="${esc(x)}">`).join('');
+    F('aiMag').innerHTML = magasinsVisibles().map(b => `<option${b === (magDe(d.magasin) || boutiqueCour()) ? ' selected' : ''}>${esc(b)}</option>`).join('');
+    F('aiFour').value = d.fournisseur || ''; F('aiNum').value = d.numero || ''; F('aiDate').value = d.date || dayKey();
+    F('aiEch').value = d.echeance || dayKey(new Date(new Date((d.date || dayKey()) + 'T12:00').getTime() + 30 * 864e5));
+    F('aiDev').value = d.devise || 'FCFA'; F('aiTot').value = d.total ? String(d.total).replace('.', ',') : '';
+    F('aiMapZ').hidden = d.src !== 'xl'; if (d.src === 'xl') aiColonnes(true); else aiLignesDraw();
+    F('aiRev').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // --- PDF / photo : lecture automatique ; sans lecture, on reprend au moins l'en-tête trouvé dans le texte
+  async function aiPdf(file){
+    aiSt(`Lecture de <b>${esc(file.name)}</b>…`); F('aiRev').hidden = true;
+    let text = '', imgs = [];
+    try { if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) ({ text, imgs } = await pdfVers(file, 40)); else imgs = [file]; }
+    catch(_) { aiSt('Impossible d\'ouvrir ce fichier.', 'bad'); return; }
+    const sm = await sampleP;
+    if (sm) {
+      const prompt = `Tu lis une facture (ou un bon de livraison) d'un fournisseur d'un magasin d'optique : montures, verres, lentilles, fournitures, transport…
+Réponds uniquement avec ce JSON :
+{"fournisseur": "nom du fournisseur (émetteur de la facture)", "numero": "n° de facture", "date": "AAAA-MM-JJ", "echeance": "AAAA-MM-JJ ou vide", "devise": "EUR, FCFA ou USD", "total": 0,
+ "magasin": "magasin ou adresse de livraison s'il est indiqué", "nature": "Montures | Verres | Lentilles | Fournitures | Transport / transit | Loyer et charges | Autre",
+ "lignes": [{"ean": "", "ref": "réf. fournisseur", "marque": "", "modele": "modèle ou désignation", "coloris": "", "taille": "ex. 52-18-140", "qte": 1, "pu": 0}]}
+total = montant total à payer (TTC). pu = prix unitaire net après remise ligne. Nombres sans espace. Ne mets dans "lignes" que les articles (pas les totaux, frais de port, taxes). Champs inconnus : chaîne vide ou 0.
+${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourni en image(s).'}`;
+      try {
+        const d = await sm.json(prompt, { images: imgs.length ? imgs.slice(0, 5) : undefined, modelTier: 'default' });
+        const lignes = (d?.lignes || []).map(x => ({ on: true, ean: String(x.ean || '').replace(/\s/g, ''), ref: x.ref || '', marque: x.marque || '', modele: x.modele || '', coloris: x.coloris || '', taille: x.taille || '', qte: Math.max(0, Math.round(+x.qte || 0)), pu: +x.pu || 0 })).filter(x => x.qte > 0 && (x.ean || x.ref || x.modele));
+        aiSt(`Facture lue${d.fournisseur ? ' · ' + esc(d.fournisseur) : ''}${d.numero ? ' · n° ' + esc(d.numero) : ''} · ${lignes.length} ligne(s) d'article. Vérifiez puis choisissez quoi créer.`, 'ok');
+        aiOuvrir({ src: 'pdf', nom: file.name, fournisseur: d.fournisseur, numero: d.numero, date: /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') ? d.date : '', echeance: /^\d{4}-\d{2}-\d{2}$/.test(d.echeance || '') ? d.echeance : '',
+          devise: devDe(d.devise), total: +d.total || 0, magasin: d.magasin, nature: d.nature, lignes });
+        return;
+      } catch(_) { /* on passe à la lecture simplifiée */ }
+    }
+    // lecture simplifiée : n° de facture, date et total trouvés dans le texte, le reste se complète à la main
+    const t = (text || '').replace(/[ \t]+/g, ' ');
+    const num = (t.match(/factur[ea][^\n]{0,15}?(?:n[°o]|num[ée]ro)?\s*[:.]?\s*([A-Z0-9][A-Z0-9\/._-]{2,})/i) || [])[1] || '';
+    const dm = t.match(/(\d{2})[\/.-](\d{2})[\/.-](\d{4})/);
+    const tm = t.match(/(?:net\s+[àa]\s+payer|total\s+ttc|montant\s+ttc|total\s+[àa]\s+payer|total)[^\d\n]{0,25}(\d{1,3}(?:[ .  ]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+    aiSt(text ? 'Lecture simplifiée (lecture automatique non disponible) : vérifiez l\'en-tête et complétez la facture.' : 'Document scanné et lecture automatique non disponible : complétez la facture à la main.', 'warn');
+    aiOuvrir({ src: 'pdf', nom: file.name, numero: num, date: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '', devise: devDe(t.slice(0, 3000)), total: tm ? nbFr(tm[1]) : 0, lignes: [] });
+  }
+  // --- Excel / CSV : colonnes devinées puis ajustables
+  async function aiExcel(file){
+    if (!window.XLSX) { aiSt('Lecteur Excel indisponible : vérifiez la connexion internet puis réessayez.', 'bad'); return; }
+    let rows;
+    try { const buf = await file.arrayBuffer(), isCsv = /\.csv$|\.txt$/i.test(file.name) || /csv|text/.test(file.type);
+      let txt = ''; if (isCsv) { txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1252').decode(buf); }
+      const wb = isCsv ? XLSX.read(txt, { type: 'string', raw: true }) : XLSX.read(buf, { type: 'array', raw: false });
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false, defval: '' }).map(r => r.map(c => String(c ?? '').trim())).filter(r => r.some(Boolean));
+    } catch(_) { aiSt('Impossible de lire ce fichier. Formats acceptés : .xlsx, .xls, .csv', 'bad'); return; }
+    if (rows.length < 2) { aiSt('Le fichier ne contient pas assez de lignes.', 'bad'); return; }
+    // en-tête de la facture cherché dans les premières lignes du fichier
+    const haut = rows.slice(0, 15).map(r => r.join(' ')).join('\n');
+    const num = (haut.match(/factur[ea][^\n]{0,15}?(?:n[°o]|num[ée]ro)?\s*[:.]?\s*([A-Z0-9][A-Z0-9\/._-]{2,})/i) || [])[1] || '';
+    const dm = haut.match(/(\d{2})[\/.-](\d{2})[\/.-](\d{4})/);
+    aiSt(`Fichier <b>${esc(file.name)}</b> : ${rows.length} lignes. Vérifiez les colonnes reconnues et l'en-tête de la facture.`, 'ok');
+    aiOuvrir({ src: 'xl', nom: file.name, rows, numero: num || file.name.replace(/\.[^.]+$/, ''), date: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '', devise: devDe(haut), lignes: [] });
+  }
+  function aiColonnes(guess){
+    const R = ai.rows; let hi = +F('aiHead').value;
+    if (guess) { hi = R.findIndex(r => r.filter(c => AI_COLS.some(f => f[2].test(c))).length >= 2); if (hi < 0) hi = 0;
+      F('aiHead').innerHTML = R.slice(0, 20).map((r, i) => `<option value="${i}"${i === hi ? ' selected' : ''}>Ligne ${i + 1} : ${esc(r.filter(Boolean).slice(0, 4).join(' | ').slice(0, 60))}</option>`).join(''); }
+    const head = R[hi] || [], saved = guess && ld('mappingsXL', {})['ach:' + norm(F('aiFour').value)];
+    const opts = `<option value="">—</option>` + head.map((h, i) => `<option value="${i}">${esc(h || 'Colonne ' + (i + 1))}</option>`).join('');
+    const cur = {}; F('aiCols').querySelectorAll('select').forEach(x => cur[x.dataset.col] = x.value);
+    F('aiCols').innerHTML = AI_COLS.map(([k, l]) => `<label><span>${l}</span><select class="inp" data-col="${k}">${opts}</select></label>`).join('');
+    const used = new Set();
+    // l'EAN et la référence d'abord (sinon « code » serait pris pour la référence)
+    AI_COLS.forEach(([k, , rx]) => { const sl = F('aiCols').querySelector(`[data-col="${k}"]`); let v = guess ? '' : cur[k] || '';
+      if (guess && saved && saved[k] != null && head[saved[k]] != null) v = String(saved[k]);
+      else if (guess) { const i = head.findIndex((h, j) => !used.has(j) && rx.test(h)); if (i >= 0) v = String(i); }
+      sl.value = v; if (v !== '') used.add(+v); });
+    aiLignesXl();
+  }
+  function aiLignesXl(){
+    const m = {}; F('aiCols').querySelectorAll('select').forEach(x => { if (x.value !== '') m[x.dataset.col] = +x.value; });
+    const hi = +F('aiHead').value, g = (r, k) => m[k] != null ? (r[m[k]] || '') : '';
+    ai.map = m;
+    ai.lignes = ai.rows.slice(hi + 1).map(r => ({ on: true, ean: g(r, 'ean').replace(/\s/g, ''), ref: g(r, 'ref'), marque: g(r, 'marque'), modele: g(r, 'modele'), coloris: g(r, 'coloris'), taille: g(r, 'taille'),
+      qte: Math.round(numXL(g(r, 'qte'))), pu: numXL(g(r, 'pu')) }))
+      .filter(l => l.qte > 0 && (l.ean || l.ref || l.modele) && ![l.ref, l.marque, l.modele].some(x => /^(sous[- ]?)?total|^montant|^tva\b|^frais/i.test(x)));
+    if (!intOf(F('aiTot').value)) F('aiTot').value = String(Math.round(ai.lignes.reduce((a, l) => a + l.qte * l.pu, 0) * 100) / 100).replace('.', ',');
+    aiLignesDraw();
+  }
+  function aiLignesDraw(){
+    const L = ai.lignes;
+    F('aiRows').innerHTML = L.map((l, i) => `<tr><td><input type="checkbox" data-ai="${i}" data-k="on"${l.on ? ' checked' : ''}></td>
+      ${['ean', 'ref', 'marque', 'modele', 'coloris', 'taille'].map(k => `<td><input class="inp" data-ai="${i}" data-k="${k}" value="${esc(l[k] || '')}"></td>`).join('')}
+      <td><input class="inp num" data-ai="${i}" data-k="qte" value="${l.qte}" inputmode="numeric"></td><td><input class="inp num" data-ai="${i}" data-k="pu" value="${String(l.pu).replace('.', ',')}" inputmode="decimal"></td></tr>`).join('');
+    F('aiLignesZ').hidden = !L.length;
+    aiSum();
+  }
+  function aiSum(){
+    const L = ai.lignes.filter(l => l.on), dev = F('aiDev').value, st = L.reduce((a, l) => a + l.qte * l.pu, 0), tot = dec(F('aiTot').value);
+    F('aiSum').innerHTML = L.length ? `${L.length} ligne(s) · ${L.reduce((a, l) => a + l.qte, 0)} article(s) · total des lignes ${fmtDev(Math.round(st * 100) / 100, dev)}${tot && Math.abs(tot - st) > 0.5 ? ` <span class="muted">(facture ${fmtDev(tot, dev)} : l'écart = port, taxes ou remises)</span>` : ''}` : '<span class="muted">Aucune ligne d\'article : seule la facture à payer peut être créée.</span>';
+    F('aiLiv').disabled = !L.length;
+  }
+  F('aiRows').addEventListener('change', e => { const i = e.target.dataset.ai; if (i == null) return; const l = ai.lignes[i], k = e.target.dataset.k;
+    if (k === 'on') l.on = e.target.checked; else if (k === 'qte') l.qte = Math.max(0, intOf(e.target.value)); else if (k === 'pu') l.pu = dec(e.target.value); else l[k] = e.target.value.trim(); aiSum(); });
+  F('aiHead').addEventListener('change', () => aiColonnes(false));
+  F('aiCols').addEventListener('change', aiLignesXl);
+  ['aiDev', 'aiTot'].forEach(id => F(id).addEventListener('input', aiSum));
+  F('aiNo').addEventListener('click', () => { ai = null; F('aiRev').hidden = true; aiSt(''); });
+  function aiEntete(){
+    const d = { fournisseur: F('aiFour').value.trim(), numero: F('aiNum').value.trim(), date: F('aiDate').value, echeance: F('aiEch').value, devise: F('aiDev').value, total: dec(F('aiTot').value), magasin: F('aiMag').value };
+    const miss = []; if (!d.fournisseur) miss.push('le fournisseur'); if (!d.numero) miss.push('le n° de facture'); if (!d.date) miss.push('la date'); if (!(d.total > 0)) miss.push('le montant total');
+    if (miss.length) { show('À compléter : ' + miss.join(', ') + '.'); return null; }
+    if (facturesFourn.some(f => norm(f.fournisseur) === norm(d.fournisseur) && f.numero === d.numero) || livraisons.some(l => norm(l.fournisseur || '') === norm(d.fournisseur) && l.numero === d.numero)) { show(`La facture ${d.numero} de ${d.fournisseur} est déjà enregistrée.`); return null; }
+    if (ai.src === 'xl' && ai.map) { const all = ld('mappingsXL', {}); all['ach:' + norm(d.fournisseur)] = ai.map; try { localStorage.setItem('mappingsXL', JSON.stringify(all)); } catch(_) {} }
+    return d;
+  }
+  // facture à payer seulement (transport, fournitures, ou articles déjà en stock)
+  F('aiFac').addEventListener('click', () => { const d = aiEntete(); if (!d) return;
+    facturesFourn.push({ id: 'ff' + Date.now().toString(36), fournisseur: d.fournisseur, numero: d.numero, date: d.date, echeance: d.echeance || d.date, montant: d.total, devise: d.devise, boutique: d.magasin,
+      nature: ai.nature && [...F('facCat').options].some(o => o.value === ai.nature) ? ai.nature : (ai.lignes.some(l => l.on) ? 'Montures' : 'Autre'), note: `Importée depuis ${ai.nom}`, paiements: [], creeLe: new Date().toISOString(), par: user.nom });
+    saveAch(); ai = null; F('aiRev').hidden = true; aiSt(''); majTuileAchat(); openAchat('fac'); show(`Facture ${d.numero} ajoutée aux factures à payer`); });
+  // livraison à réceptionner : les articles entrent en stock au contrôle, la facture passe alors dans les factures à payer
+  F('aiLiv').addEventListener('click', () => { const d = aiEntete(); if (!d) return;
+    const lignes = ai.lignes.filter(l => l.on && l.qte > 0).map((l, i) => ({ n: i + 1, ean: l.ean, ref: l.ref, marque: l.marque, modele: l.modele, coloris: l.coloris, taille: l.taille, qte: l.qte, pu: l.pu }));
+    livraisons.push({ id: 'liv-' + norm(d.fournisseur).replace(/[^a-z0-9]+/g, '') + '-' + d.numero.replace(/[^\w.-]+/g, '_'), source: d.fournisseur, numero: d.numero, bl: '', date: d.date, echeance: d.echeance, devise: d.devise,
+      fournisseur: d.fournisseur, magasin: d.magasin, commentaire: `Importée depuis ${ai.nom}`, lignes, total: d.total, statut: 'À réceptionner', recuLe: new Date().toISOString() });
+    saveAch(); ai = null; F('aiRev').hidden = true; aiSt(''); majTuileAchat(); openAchat('liv'); show(`Livraison ${d.numero} créée : contrôlez-la à l'arrivée des articles`); });
+  // clic ou glisser-déposer (n'importe où sur l'écran Achats)
+  F('acDrop').addEventListener('click', e => { if (e.target.id !== 'acFile') F('acFile').click(); });
+  F('acDrop').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); F('acFile').click(); } });
+  F('acFile').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) aiFichiers(f); });
+  let dragN = 0;
+  const vAch = F('v-achat');
+  vAch.addEventListener('dragenter', e => { if (![...(e.dataTransfer?.types || [])].includes('Files')) return; e.preventDefault(); dragN++; F('acDrop').classList.add('over'); });
+  vAch.addEventListener('dragover', e => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+  vAch.addEventListener('dragleave', () => { if (--dragN <= 0) { dragN = 0; F('acDrop').classList.remove('over'); } });
+  vAch.addEventListener('drop', e => { e.preventDefault(); dragN = 0; F('acDrop').classList.remove('over'); const f = [...(e.dataTransfer?.files || [])]; if (f.length) aiFichiers(f); });
 
   // --- Transferts
   function drawTr(){
