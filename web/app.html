@@ -1107,6 +1107,17 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile" id="tCtr">
+      <button class="tile-link" id="goCtr" aria-label="Commander à la centrale">
+      <div class="ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.5l2.2 10.5h10.6L20.5 7H7"/><circle cx="9.5" cy="19" r="1.6" fill="currentColor"/><circle cx="17" cy="19" r="1.6" fill="currentColor"/></svg></div>
+      <h2>Commander à la centrale</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>Panier : <b id="tCtrPan">0</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Commandes en attente : <b id="tCtrEnc">0</b></span></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide" id="tStat">
       <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
       <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1326,7 +1337,7 @@ select.inp{appearance:auto}
 
     <div id="ctrBox" hidden>
       <div class="row-head" style="margin-top:24px"><h2>Centrale d'achat (Prismea)</h2></div>
-      <p class="sub">Pour consulter le catalogue de la centrale et lui passer commande depuis Achats › Commander à la centrale. La clé <code>psm_…</code> se crée dans Prismea › Paramètres › Commandes des opticiens ; elle reste sur le serveur de DIOPTRA.</p>
+      <p class="sub">Pour consulter le catalogue de la centrale et lui passer commande depuis le module « Commander à la centrale » de l'accueil. La clé <code>psm_…</code> se crée dans Prismea › Paramètres › Commandes des opticiens ; elle reste sur le serveur de DIOPTRA.</p>
       <div class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end">
         <div class="f"><label for="ctrUrl">Adresse de Prismea</label><input type="url" id="ctrUrl" placeholder="https://prismea.onrender.com"></div>
         <div class="f"><label for="ctrCle">Clé d'intégration</label><input type="password" id="ctrCle" autocomplete="new-password" placeholder="psm_…"></div>
@@ -1665,13 +1676,46 @@ select.inp{appearance:auto}
       <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
     </section>
 </main>
+<main id="v-ctr" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="ctrSub"></div><h1>Commander à la centrale</h1></div></div>
+    <section class="blk" id="cmdOff" hidden><h2>Centrale non reliée</h2><p class="sub">Pour commander à la centrale depuis DIOPTRA, un administrateur doit renseigner l'adresse de Prismea et la clé <code>psm_…</code> dans Paramètres › Postes et accès › Centrale d'achat.</p></section>
+    <div class="cmd-grid" id="cmdOn">
+      <section class="blk">
+        <div class="row-head"><h2>Catalogue de la centrale</h2><button class="ghost" type="button" id="cmdMaj">Actualiser</button></div>
+        <p class="sub" id="cmdInfo">Montures disponibles à la centrale, avec leur prix d'achat. Ajoutez-les au panier puis envoyez la commande.</p>
+        <div class="cmd-tools"><input class="inp" id="cmdQ" type="search" placeholder="Rechercher : marque, modèle, coloris, EAN…" autocomplete="off"><select class="inp sm" id="cmdMarque"></select><select class="inp sm" id="cmdMat"></select></div>
+        <div class="cmd-cat" id="cmdCat"></div>
+        <p class="muted" id="cmdNone" hidden></p>
+        <div style="text-align:center;margin-top:12px"><button class="ghost" type="button" id="cmdPlus" hidden>Afficher plus</button></div>
+      </section>
+      <aside class="blk cmd-panier">
+        <h2 style="margin-top:0">Panier</h2>
+        <label class="lbl" for="cmdMag">Magasin à livrer</label><select class="inp" id="cmdMag"></select>
+        <div id="cmdLignes" style="margin:10px 0"></div>
+        <label class="lbl" for="cmdCom">Commentaire pour la centrale</label><textarea class="inp" id="cmdCom" rows="2" placeholder="Ex. urgent, réassort vitrine"></textarea>
+        <p id="cmdTot" style="margin:10px 0;font-size:14px"></p>
+        <button class="save" type="button" id="cmdEnv" style="width:100%">Envoyer la commande</button>
+        <button class="ghost" type="button" id="cmdVider" style="width:100%;margin-top:6px">Vider le panier</button>
+        <p class="sub" style="margin-top:8px">La centrale prépare la commande et vous envoie la facture : elle arrivera dans « Livraisons » pour la réception en stock.</p>
+      </aside>
+    </div>
+    <section class="blk">
+      <div class="row-head"><h2>Mes commandes à la centrale</h2><button class="ghost" type="button" id="cmdSuivi">Actualiser les statuts</button></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>N° commande</th><th>Magasin</th><th style="text-align:right">Montures</th><th style="text-align:right">Montant</th><th>Statut</th></tr></thead><tbody id="cmdRows"></tbody></table></div>
+      <p class="muted" id="cmdHNone" hidden>Aucune commande envoyée pour l'instant.</p>
+    </section>
+</main>
 <main id="v-achat" hidden>
   <button class="crumb" data-go="accueil">
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
     Accueil
   </button>
   <div class="head"><div><div class="k-lbl" id="acSub"></div><h1>Achats</h1></div></div>
-  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons</button><button class="tab" data-ac="fac">Factures à payer</button><button class="tab" data-ac="cmd">Commander à la centrale</button></div>
+  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons</button><button class="tab" data-ac="fac">Factures à payer</button></div>
   <div class="ac-drop" id="acDrop" role="button" tabindex="0" aria-label="Importer une facture fournisseur">
     <input type="file" id="acFile" accept=".pdf,.xlsx,.xls,.csv,.json,application/pdf,image/*,text/csv,application/json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
@@ -1720,35 +1764,6 @@ select.inp{appearance:auto}
       </div>
       <div class="tbl-wrap"><table class="s-tbl liv-tbl"><thead><tr><th>Référence</th><th>Monture</th><th>Dans DIOPTRA</th><th style="text-align:right">Prix HT</th><th style="text-align:right">Coût arrivé</th><th style="text-align:right">Prix de vente</th><th style="text-align:right">Attendu</th><th style="text-align:right">Reçu</th></tr></thead><tbody id="livLines"></tbody></table></div>
       <div class="st-foot"><span class="muted" id="livTot"></span><span><button class="save" type="button" id="livOk">Valider la réception</button></span></div>
-    </section>
-  </div>
-
-  <div class="ac-p" data-p="cmd" hidden>
-    <section class="blk" id="cmdOff" hidden><h2>Centrale non reliée</h2><p class="sub">Pour commander à la centrale depuis DIOPTRA, un administrateur doit renseigner l'adresse de Prismea et la clé <code>psm_…</code> dans Paramètres › Postes et accès › Centrale d'achat.</p></section>
-    <div class="cmd-grid" id="cmdOn">
-      <section class="blk">
-        <div class="row-head"><h2>Catalogue de la centrale</h2><button class="ghost" type="button" id="cmdMaj">Actualiser</button></div>
-        <p class="sub" id="cmdInfo">Montures disponibles à la centrale, avec leur prix d'achat. Ajoutez-les au panier puis envoyez la commande.</p>
-        <div class="cmd-tools"><input class="inp" id="cmdQ" type="search" placeholder="Rechercher : marque, modèle, coloris, EAN…" autocomplete="off"><select class="inp sm" id="cmdMarque"></select><select class="inp sm" id="cmdMat"></select></div>
-        <div class="cmd-cat" id="cmdCat"></div>
-        <p class="muted" id="cmdNone" hidden></p>
-        <div style="text-align:center;margin-top:12px"><button class="ghost" type="button" id="cmdPlus" hidden>Afficher plus</button></div>
-      </section>
-      <aside class="blk cmd-panier">
-        <h2 style="margin-top:0">Panier</h2>
-        <label class="lbl" for="cmdMag">Magasin à livrer</label><select class="inp" id="cmdMag"></select>
-        <div id="cmdLignes" style="margin:10px 0"></div>
-        <label class="lbl" for="cmdCom">Commentaire pour la centrale</label><textarea class="inp" id="cmdCom" rows="2" placeholder="Ex. urgent, réassort vitrine"></textarea>
-        <p id="cmdTot" style="margin:10px 0;font-size:14px"></p>
-        <button class="save" type="button" id="cmdEnv" style="width:100%">Envoyer la commande</button>
-        <button class="ghost" type="button" id="cmdVider" style="width:100%;margin-top:6px">Vider le panier</button>
-        <p class="sub" style="margin-top:8px">La centrale prépare la commande et vous envoie la facture : elle arrivera dans « Livraisons » pour la réception en stock.</p>
-      </aside>
-    </div>
-    <section class="blk">
-      <div class="row-head"><h2>Mes commandes à la centrale</h2><button class="ghost" type="button" id="cmdSuivi">Actualiser les statuts</button></div>
-      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>N° commande</th><th>Magasin</th><th style="text-align:right">Montures</th><th style="text-align:right">Montant</th><th>Statut</th></tr></thead><tbody id="cmdRows"></tbody></table></div>
-      <p class="muted" id="cmdHNone" hidden>Aucune commande envoyée pour l'instant.</p>
     </section>
   </div>
 
@@ -2822,11 +2837,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), ctr: document.getElementById('v-ctr'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -6225,14 +6240,22 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     acTab = tab; F('acTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.ac === tab));
     document.querySelectorAll('.ac-p').forEach(p => p.hidden = p.dataset.p !== tab);
     F('acSub').textContent = boutiqueCour();
-    F('acDrop').hidden = tab === 'cmd'; if (tab === 'cmd') { F('aiRev').hidden = true; F('aiSt').hidden = true; }
-    if (tab === 'liv') { F('livListe').hidden = false; F('livRec').hidden = true; drawLiv(); } else if (tab === 'cmd') ouvrirCmd(); else drawFac();
+    if (tab === 'liv') { F('livListe').hidden = false; F('livRec').hidden = true; drawLiv(); } else drawFac();
     go('achat');
   }
   F('goAchat').addEventListener('click', () => openAchat());
   F('acTabs').addEventListener('click', e => { const b = e.target.closest('[data-ac]'); if (b) openAchat(b.dataset.ac); });
 
-  // --- Commander à la centrale (Prismea)
+  // --- Commander à la centrale (Prismea) : module à part entière, tuile sur l'accueil
+  function openCtr(){
+    if (user.role === 'vendeur' && !droit('produits') && !droit('compta')) { show('Commandes à la centrale réservées au responsable.'); return; }
+    F('ctrSub').textContent = boutiqueCour(); go('ctr'); ouvrirCmd();
+  }
+  F('goCtr').addEventListener('click', openCtr);
+  function majTuileCtr(){
+    const nb = cmdPanier.reduce((a, x) => a + x.qte, 0); F('tCtrPan').textContent = nb ? `${nb} monture${nb > 1 ? 's' : ''}` : 'vide';
+    F('tCtrEnc').textContent = cmdCentrale.filter(c => (boutiqueCour() === 'Toutes les boutiques' || c.magasin === boutiqueCour()) && (!c.suivi || ['nouvelle', 'inconnue'].includes(c.suivi.statut))).length;
+  }
   let cmdCentrale = ld0('cmdCentrale', []), cmdCat = null, cmdLim = 60, cmdCharge = false;
   let cmdPanier = ld0('cmdPanier', []), cmdMeta = ld0('cmdPanierMeta', {});
   const saveCmd = () => { try { localStorage.setItem('cmdCentrale', JSON.stringify(cmdCentrale)); } catch(_) {} };
@@ -6261,6 +6284,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   async function chargerCat(){
     cmdCharge = true; F('cmdInfo').textContent = 'Chargement du catalogue de la centrale…'; F('cmdOff').hidden = true; F('cmdOn').hidden = false;
+    if (!window.DSYNC?.centrale) { F('cmdOff').hidden = false; F('cmdOn').hidden = true; F('cmdOff').querySelector('.sub').textContent = 'La commande à la centrale fonctionne dans la version en ligne de DIOPTRA (app.dioptra.pro), reliée à Prismea.'; cmdCharge = false; return; }
     try {
       const et = await window.DSYNC.centrale.etat().catch(() => ({ configure: true }));
       if (!et.configure) { F('cmdOff').hidden = false; F('cmdOn').hidden = true; cmdCharge = false; return; }
@@ -6520,7 +6544,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
-  try { majTuileAchat(); majTuileBanque(); majTuileAss(); } catch(_) {}
+  try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
   let blData = null, blCtl = null;
@@ -7971,7 +7995,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, cmdCentrale: () => cmdCentrale, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
@@ -7983,7 +8007,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); } else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } else if (v === 'ctr') drawCmdHist(); else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)
