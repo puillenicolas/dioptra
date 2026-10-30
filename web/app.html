@@ -501,7 +501,19 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg
 .etq-l1 span{font-weight:700;font-size:calc(6.75pt * var(--k))}
 .etq-bc{display:block;width:100%;flex:none;margin-top:calc(.9mm * var(--k))}
 .etq-l2,.etq-l3{font-size:calc(5.8pt * var(--k));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:calc(.5mm * var(--k))}
-.etq-l2{font-weight:700}
+.etq-l2{font-weight:700}.etq-l2.n{font-weight:400}
+.etq-c.pli-v,.etq-c.pli-h{padding:0}.etq-c.pli-v{flex-direction:row}.etq-c.pli-h{flex-direction:column}
+.etq-moitie{flex:1 1 0;min-width:0;min-height:0;padding:var(--pad);display:flex;flex-direction:column;overflow:hidden}
+.etq-c.pli-h .etq-info{transform:rotate(180deg)}
+.etq-c.pli-v::before,.etq-c.pli-v::after{content:'';position:absolute;left:50%;width:0;height:1.2mm;border-left:.15mm solid #999}
+.etq-c.pli-v::before{top:0}.etq-c.pli-v::after{bottom:0}
+.etq-c.pli-h::before,.etq-c.pli-h::after{content:'';position:absolute;top:50%;height:0;width:1.2mm;border-top:.15mm solid #999}
+.etq-c.pli-h::before{left:0}.etq-c.pli-h::after{right:0}
+.etq-c.vide::before,.etq-c.vide::after{display:none}
+.etq-moitie .etq-l1{font-size:calc(7pt * var(--k))}.etq-moitie .etq-bc{margin-top:.8mm}
+.etq-px{font-weight:700;font-size:calc(6.5pt * var(--k));white-space:nowrap}
+.etq-info .etq-l2,.etq-info .etq-l3{margin-top:calc(.4mm * var(--k))}.pli-v .etq-info .etq-l2,.pli-v .etq-info .etq-l3{white-space:normal;overflow-wrap:anywhere;line-height:1.1}
+.pli-h .etq-info{justify-content:flex-start}.pli-h .etq-px{font-size:calc(6.2pt * var(--k))}.pli-h .etq-info .etq-l2{font-size:calc(5.6pt * var(--k))}.pli-h .etq-info .etq-l2,.pli-h .etq-info .etq-l3{margin-top:calc(.25mm * var(--k))}.etq-info .etq-l3{font-size:calc(5.2pt * var(--k))}
 .etq-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 24px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:0 auto 14px;max-width:820px}
 .etq-opts{display:flex;flex-direction:column;gap:8px}.etq-opts label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.etq-opts select{max-width:360px}
 .etq-perso{display:flex;flex-wrap:wrap;gap:6px 10px}.etq-perso .inp{width:70px}.etq-opts details .inp{width:70px}
@@ -7225,7 +7237,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   };
   // réglage propre à chaque poste (son imprimante, ses planches)
   const etqCfg = () => { let c = {}; try { c = JSON.parse(localStorage.getItem('etqCfg') || '{}'); } catch(_) {}
-    return { format: ETQ_FORMATS[c.format] ? c.format : 'a65', prix: c.prix !== false, dx: +c.dx || 0, dy: +c.dy || 0, perso: { cols: 3, rows: 8, w: 70, h: 37, gx: 0, gy: 0, ...(c.perso || {}) } }; };
+    return { format: ETQ_FORMATS[c.format] ? c.format : 'a65', prix: c.prix !== false, pli: ['v', 'h', 'non'].includes(c.pli) ? c.pli : 'v', dx: +c.dx || 0, dy: +c.dy || 0, perso: { cols: 3, rows: 8, w: 70, h: 37, gx: 0, gy: 0, ...(c.perso || {}) } }; };
   const saveEtqCfg = c => { try { localStorage.setItem('etqCfg', JSON.stringify(c)); } catch(_) {} };
   const fmtEtq = c => c.format === 'perso' ? { ...c.perso, nom: ETQ_FORMATS.perso.nom } : ETQ_FORMATS[c.format];
   let etqStart = 1;
@@ -7245,14 +7257,24 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       for (let i = 0; i < per; i++) {
         const pos = s * per + i, j = pos - (etqStart - 1), p = j >= 0 && j < L.length ? L[j] : null;
         const x = x0 + (i % f.cols) * (f.w + f.gx), y = y0 + Math.floor(i / f.cols) * (f.h + f.gy);
-        cells += `<div class="etq-c${p ? '' : ' vide'}" style="left:${x}mm;top:${y}mm;width:${f.w}mm;height:${f.h}mm;padding:${pad}mm;--k:${k}">${p ? `
-          <div class="etq-l1"><b>${esc(p.code)}</b>${c.prix && p.prix ? `<span>${esc(etqPrix(p))}</span>` : ''}</div>
-          <svg class="bc etq-bc" data-code="${esc(p.code)}" data-h="${Math.max(5, f.h * 0.36)}" data-w="${f.w - 2 * pad}" preserveAspectRatio="none"></svg>
-          <div class="etq-l2">${esc(etqDesig(p))}</div><div class="etq-l3">${esc(etqDet(p))}</div>` : ''}</div>`;
+        cells += `<div class="etq-c${p ? '' : ' vide'}${c.pli !== 'non' ? ' pli-' + c.pli : ''}" style="left:${x}mm;top:${y}mm;width:${f.w}mm;height:${f.h}mm;${c.pli === 'non' ? `padding:${pad}mm;` : ''}--k:${k};--pad:${pad}mm">${p ? etqCelluleHtml(p, f, c, pad) : ''}</div>`;
       }
       pages.push(`<div class="etq-page">${cells}</div>`);
     }
     return pages.join('');
+  }
+  // Contenu d'une étiquette. Pliée sur la branche : le code-barres sur une moitié, prix et désignation sur l'autre.
+  // Pli au milieu de la largeur (moitiés gauche / droite) ou de la hauteur (moitié basse imprimée à l'envers pour se lire une fois pliée).
+  function etqCelluleHtml(p, f, c, pad){
+    const prix = c.prix && p.prix ? esc(etqPrix(p)) : '';
+    if (c.pli === 'non') return `<div class="etq-l1"><b>${esc(p.code)}</b>${prix ? `<span>${prix}</span>` : ''}</div>
+          <svg class="bc etq-bc" data-code="${esc(p.code)}" data-h="${Math.max(5, f.h * 0.36)}" data-w="${f.w - 2 * pad}" preserveAspectRatio="none"></svg>
+          <div class="etq-l2">${esc(etqDesig(p))}</div><div class="etq-l3">${esc(etqDet(p))}</div>`;
+    const v = c.pli === 'v', hw = v ? f.w / 2 : f.w, hh = v ? f.h : f.h / 2;
+    const bh = v ? Math.max(5, hh - 2 * pad - 3.6) : Math.max(3.5, hh - 2 * pad - 2.9);
+    return `<div class="etq-moitie"><div class="etq-l1"><b>${esc(p.code)}</b></div>
+        <svg class="bc etq-bc" data-code="${esc(p.code)}" data-h="${bh}" data-w="${hw - 2 * pad}" preserveAspectRatio="none"></svg></div>
+      <div class="etq-moitie etq-info">${prix ? `<div class="etq-px">${prix}</div>` : ''}${v ? `<div class="etq-l2">${esc(p.marque || p.cat || '')}</div><div class="etq-l2 n">${esc(p.modele || (p.marque ? '' : p.nom) || '')}</div>` : `<div class="etq-l2">${esc(etqDesig(p))}</div>`}<div class="etq-l3">${esc(etqDet(p))}</div></div>`;
   }
   // PDF vectoriel (codes-barres nets), même mise en page, impression en taille réelle
   function etiquettesPdf(d, print){
@@ -7262,9 +7284,41 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     const k = Math.max(0.8, Math.min(1.6, f.h / 21.2)), pad = Math.min(2, f.w * 0.05);
     const fit = (s, max) => { s = t(s); if (pdf.getTextWidth(s) <= max) return s; while (s.length > 1 && pdf.getTextWidth(s + '…') > max) s = s.slice(0, -1); return s + '…'; };
     const bars = new Map();
+    const barres = (code, bx0, by, maxW, bh) => {
+      if (!bars.has(code)) { const o = {}; JsBarcode(o, String(code), { format: 'CODE128' }); bars.set(code, o.encodings.map(e => e.data).join('')); }
+      const bits = bars.get(code), mw = Math.min(0.5, maxW / bits.length), bw = bits.length * mw, bx = bx0 + (maxW - bw) / 2; pdf.setFillColor(0, 0, 0);
+      for (let j = 0; j < bits.length;) { if (bits[j] === '1') { let n = 1; while (bits[j + n] === '1') n++; pdf.rect(bx + j * mw, by, n * mw, bh, 'F'); j += n; } else j++; }
+    };
+    // texte réduit jusqu'à tenir dans la largeur
+    const ajuste = (s, fs, max) => { pdf.setFontSize(fs); s = t(s); while (fs > 4 && pdf.getTextWidth(s) > max) { fs -= 0.25; pdf.setFontSize(fs); } return fit(s, max); };
     L.forEach((p, i) => {
       const pos = etqStart - 1 + i, cell = pos % per; if (i > 0 && cell === 0) pdf.addPage();
       const x = x0 + (cell % f.cols) * (f.w + f.gx), y = y0 + Math.floor(cell / f.cols) * (f.h + f.gy), W = f.w - 2 * pad;
+      if (c.pli !== 'non') {
+        const v = c.pli === 'v', hw = v ? f.w / 2 : f.w, hh = v ? f.h : f.h / 2, HW = hw - 2 * pad;
+        // repères de pliage aux bords (petits traits)
+        pdf.setDrawColor(150); pdf.setLineWidth(0.15);
+        if (v) { pdf.line(x + hw, y, x + hw, y + 1.2); pdf.line(x + hw, y + f.h - 1.2, x + hw, y + f.h); }
+        else { pdf.line(x, y + hh, x + 1.2, y + hh); pdf.line(x + f.w - 1.2, y + hh, x + f.w, y + hh); }
+        // moitié 1 : code + code-barres
+        const fs1 = 7 * k; pdf.setFont('helvetica', 'bold'); let cy = y + pad + fs1 * 0.3528;
+        pdf.text(ajuste(p.code, fs1, HW), x + pad, cy);
+        const bh = v ? Math.max(5, hh - 2 * pad - 3.6) : Math.max(3.5, hh - 2 * pad - 2.9);
+        barres(p.code, x + pad, cy + 0.8, HW, bh);
+        // moitié 2 : prix, marque, modèle, coloris et taille (retournée de 180° si le pli est horizontal)
+        const lignes = [];
+        if (c.prix && p.prix) lignes.push(['bold', 7 * k, etqPrix(p)]);
+        if (v) { lignes.push(['bold', 5.8 * k, p.marque || p.cat || '']); if (p.modele || !p.marque) lignes.push(['normal', 5.8 * k, p.modele || p.nom || '']); }
+        else lignes.push(['bold', 5.6 * k, etqDesig(p)]);   // pli horizontal : moitié de 10 mm, trois lignes au plus
+        if (etqDet(p)) lignes.push(['normal', 5.2 * k, etqDet(p)]);
+        const ox = v ? x + hw : x, oy = v ? y : y + hh;
+        let ly = pad;
+        lignes.forEach(([st, fs, txt]) => { pdf.setFont('helvetica', st); const s2 = ajuste(txt, fs, HW), fz = pdf.getFontSize(); ly += fz * 0.3528;
+          if (v) pdf.text(s2, ox + pad, oy + ly);
+          else pdf.text(s2, ox + f.w - pad, oy + hh - ly, { angle: 180 });
+          ly += 0.6 * k; });
+        return;
+      }
       let cy = y + pad;
       const fs1 = 7.5 * k; pdf.setFont('helvetica', 'bold'); pdf.setFontSize(fs1); cy += fs1 * 0.3528;
       pdf.text(t(p.code), x + pad, cy);
@@ -7292,6 +7346,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     F('dEtq').innerHTML = `<div class="etq-opts">
         <label>Format de planche <select class="inp" id="etqFmt">${Object.entries(ETQ_FORMATS).map(([k, v]) => `<option value="${k}"${k === c.format ? ' selected' : ''}>${esc(v.nom)}</option>`).join('')}</select></label>
         ${c.format === 'perso' ? `<div class="etq-perso">${[['cols', 'Colonnes', 1], ['rows', 'Lignes', 1], ['w', 'Largeur mm', 0.1], ['h', 'Hauteur mm', 0.1], ['gx', 'Écart horiz. mm', 0.1], ['gy', 'Écart vert. mm', 0.1]].map(([k, l, st]) => `<label>${l}<input class="inp sm" type="number" min="0" step="${st}" data-etqp="${k}" value="${c.perso[k]}"></label>`).join('')}</div>` : ''}
+        <label>Pliage sur la branche <select class="inp" id="etqPli"><option value="v"${c.pli === 'v' ? ' selected' : ''}>Plié en deux (gauche : code-barres · droite : prix et modèle)</option><option value="h"${c.pli === 'h' ? ' selected' : ''}>Plié en deux (haut : code-barres · bas : prix et modèle)</option><option value="non"${c.pli === 'non' ? ' selected' : ''}>Non plié (tout sur la même face)</option></select></label>
         <label class="check" style="margin:0"><input type="checkbox" id="etqPrix"${c.prix ? ' checked' : ''}> Afficher le prix</label>
         <span class="muted">${n} étiquette${n > 1 ? 's' : ''} · ${feuilles} planche${feuilles > 1 ? 's' : ''}</span>
         <details><summary>Ajuster à l'imprimante</summary><label>Décalage horizontal <input class="inp sm" type="number" step="0.5" id="etqDx" value="${c.dx}"> mm</label> <label>Décalage vertical <input class="inp sm" type="number" step="0.5" id="etqDy" value="${c.dy}"> mm</label></details>
@@ -7302,7 +7357,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   }
   function majEtq(){ drawEtqPanel(); F('dPaper').innerHTML = etiquettesHtml(docSale); renderBarcodes(); }
   F('dEtq').addEventListener('change', e => { const c = etqCfg(), t = e.target;
-    if (t.id === 'etqFmt') { c.format = t.value; etqStart = 1; } else if (t.id === 'etqPrix') c.prix = t.checked; else if (t.id === 'etqDx') c.dx = +t.value || 0; else if (t.id === 'etqDy') c.dy = +t.value || 0;
+    if (t.id === 'etqFmt') { c.format = t.value; etqStart = 1; } else if (t.id === 'etqPrix') c.prix = t.checked; else if (t.id === 'etqPli') c.pli = t.value; else if (t.id === 'etqDx') c.dx = +t.value || 0; else if (t.id === 'etqDy') c.dy = +t.value || 0;
     else if (t.dataset.etqp) c.perso[t.dataset.etqp] = Math.max(t.dataset.etqp === 'cols' || t.dataset.etqp === 'rows' ? 1 : 0, +t.value || 0);
     else return; saveEtqCfg(c); majEtq(); });
   F('dEtq').addEventListener('click', e => { const b = e.target.closest('[data-etqs]'); if (b) { etqStart = +b.dataset.etqs; majEtq(); } });
