@@ -492,13 +492,23 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg
 .opt-chip:has(input:checked){border-color:var(--primary);background:var(--ic-blue)}
 .p-st{display:block;font-size:11px;font-weight:400;color:var(--muted)}
 .p-st.zero{color:var(--pin)}
-.etq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-.etq{border:1px dashed var(--paper-line);border-radius:4px;padding:6px 8px;text-align:center;display:grid;gap:1px;break-inside:avoid}
-.etq-t{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.etq-m{font-size:12px}
-.etq-c{font-size:10px;color:var(--paper-muted);min-height:12px}
-.etq svg{max-width:100%;height:auto;margin:2px auto 0}
-.etq-p{font-weight:600;font-size:15px}
+/* Étiquettes sur planches A4 (taille réelle) */
+#dPaper.etq-pages{width:210mm;max-width:none;padding:0;background:transparent;box-shadow:none}
+.etq-page{position:relative;width:210mm;height:297mm;background:#fff;margin:0 auto 18px;box-shadow:0 6px 30px rgb(0 0 0 / .12);overflow:hidden}
+.etq-c{position:absolute;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;font-family:Helvetica,Arial,sans-serif;color:#000;line-height:1.05}
+.etq-c.vide{outline:1px dashed #e2e2e2;outline-offset:-1px}
+.etq-l1{display:flex;justify-content:space-between;align-items:baseline;gap:2px;font-size:calc(7.5pt * var(--k));white-space:nowrap}
+.etq-l1 span{font-weight:700;font-size:calc(6.75pt * var(--k))}
+.etq-bc{display:block;width:100%;flex:none;margin-top:calc(.9mm * var(--k))}
+.etq-l2,.etq-l3{font-size:calc(5.8pt * var(--k));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:calc(.5mm * var(--k))}
+.etq-l2{font-weight:700}
+.etq-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 24px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:0 auto 14px;max-width:820px}
+.etq-opts{display:flex;flex-direction:column;gap:8px}.etq-opts label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.etq-opts select{max-width:360px}
+.etq-perso{display:flex;flex-wrap:wrap;gap:6px 10px}.etq-perso .inp{width:70px}.etq-opts details .inp{width:70px}
+.etq-start{display:flex;flex-direction:column;gap:6px;max-width:240px}
+.etq-mini{display:grid;gap:2px;width:150px}.etq-mini button{height:9px;border:1px solid var(--line);background:var(--card);border-radius:1px;padding:0;cursor:pointer}
+.etq-mini button.pris{background:var(--line)}.etq-mini button.plein{background:var(--primary);border-color:var(--primary)}
+@media (max-width:620px){.etq-panel{grid-template-columns:1fr}}
 .bc-fallback{font-family:ui-monospace,monospace;font-size:13px;letter-spacing:.1em;border:1px solid var(--paper-ink);padding:4px}
 @media (max-width:980px){.line-add{grid-template-columns:1fr 80px 110px}.line-add .save,.line-add .ghost{grid-column:span 1}}
 @media (max-width:620px){.row3{grid-template-columns:1fr}.st-bar{grid-template-columns:1fr}.line-add{grid-template-columns:1fr 1fr}.line-add input:first-child{grid-column:1/-1}}
@@ -776,6 +786,7 @@ select.inp{appearance:auto}
 .d-res h3{font-size:22px;letter-spacing:.06em;margin:10px 0 16px}
 
 @page ft{size:A4;margin:0}
+@page etq{size:A4;margin:0}
 /* Fiche technique : A4 réel, pliée en deux (moitié haute : fiche ; moitié basse : contrôle, appel, étiquette) */
 .paper.a4-exact{width:210mm;max-width:none;height:297mm;padding:0;overflow:hidden;font-size:11px;line-height:1.35}
 .ft{height:297mm;display:flex;flex-direction:column;position:relative}
@@ -832,6 +843,11 @@ select.inp{appearance:auto}
   #dPaper,#dPaper *{visibility:visible}
   #dPaper{position:absolute;left:0;top:0;width:100%;box-shadow:none;padding:0}
   #dPaper.a4-exact{page:ft;width:210mm;height:297mm}
+  #dPaper.etq-pages{page:etq;width:210mm}
+  .etq-page{margin:0;box-shadow:none;break-after:page}
+  .etq-page:last-child{break-after:auto}
+  .etq-c.vide{outline:none}
+  #dEtq{display:none!important}
   #dCalib{display:none!important}
   .topbar,body::before{display:none}
 }
@@ -2597,6 +2613,7 @@ select.inp{appearance:auto}
     <button class="ghost sm-btn" type="button" id="dCalibOk">Corriger</button><button class="ghost sm-btn" type="button" id="dCalibRaz">Réinitialiser</button>
     <span class="muted" id="dCalibSt"></span>
   </div>
+  <div class="etq-panel" id="dEtq" hidden></div>
   <div class="paper-wrap"><article class="paper" id="dPaper"></article></div>
 </main>
 
@@ -4603,6 +4620,7 @@ select.inp{appearance:auto}
     return new Promise((ok, ko) => canvas.toBlob(b => b ? ok(b) : ko(new Error('image')), type, 0.85));
   }
   async function docPdf(opts = {}){
+    if (docSale?.kind === 'etiq') { if (!window.jspdf || !window.JsBarcode) throw { code: 'lib' }; return etiquettesPdf(docSale, opts.print); }
     if (!window.html2canvas || !window.jspdf) throw { code: 'lib' };
     const el = F('dPaper'), ticket = el.classList.contains('ticket-paper');
     const canvas = await html2canvas(el, { scale: opts.print ? 2 : opts.mail ? 1.25 : 1.6, backgroundColor: '#ffffff', useCORS: true });
@@ -7196,16 +7214,103 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       || `<tr><td colspan="7" class="muted">Aucun mouvement.</td></tr>`;
   }
 
-  // --- Étiquettes
+  // --- Étiquettes sur planches A4 adhésives (mêmes formats que Prismea ; format 65 par défaut)
+  // Formats Avery : colonnes × lignes, taille d'une étiquette et écarts en mm ; la planche est centrée sur la feuille.
+  const ETQ_FORMATS = {
+    a65: { nom: '65 par planche · 38,1 × 21,2 mm (Avery L7651 / 3666)', cols: 5, rows: 13, w: 38.1, h: 21.2, gx: 2.5, gy: 0 },
+    a40: { nom: '40 par planche · 45,7 × 25,4 mm (Avery L7654)', cols: 4, rows: 10, w: 45.7, h: 25.4, gx: 2.5, gy: 0 },
+    a21: { nom: '21 par planche · 63,5 × 38,1 mm (Avery L7160)', cols: 3, rows: 7, w: 63.5, h: 38.1, gx: 2.5, gy: 0 },
+    a24: { nom: '24 par planche · 70 × 37 mm (Avery 3474)', cols: 3, rows: 8, w: 70, h: 37, gx: 0, gy: 0 },
+    perso: { nom: 'Autre format (à mesurer sur la planche)' },
+  };
+  // réglage propre à chaque poste (son imprimante, ses planches)
+  const etqCfg = () => { let c = {}; try { c = JSON.parse(localStorage.getItem('etqCfg') || '{}'); } catch(_) {}
+    return { format: ETQ_FORMATS[c.format] ? c.format : 'a65', prix: c.prix !== false, dx: +c.dx || 0, dy: +c.dy || 0, perso: { cols: 3, rows: 8, w: 70, h: 37, gx: 0, gy: 0, ...(c.perso || {}) } }; };
+  const saveEtqCfg = c => { try { localStorage.setItem('etqCfg', JSON.stringify(c)); } catch(_) {} };
+  const fmtEtq = c => c.format === 'perso' ? { ...c.perso, nom: ETQ_FORMATS.perso.nom } : ETQ_FORMATS[c.format];
+  let etqStart = 1;
+  const etqListe = d => { const all = []; d.items.forEach(({ p, n }) => { for (let i = 0; i < Math.max(0, n); i++) all.push(p); }); return all; };
+  const etqDesig = p => [p.marque, p.modele].filter(Boolean).join(' ') || p.nom || p.cat || '';
+  const etqDet = p => [p.couleur, p.taille].filter(Boolean).join(' · ');
+  const etqPrix = p => money(p.prix).replace(/ | /g, ' ');
+  const L0T0 = (f, c) => [(210 - f.cols * f.w - (f.cols - 1) * f.gx) / 2 + c.dx, (297 - f.rows * f.h - (f.rows - 1) * f.gy) / 2 + c.dy];
+  // aperçu et impression : planches A4 en taille réelle (une page par planche)
   function etiquettesHtml(d){
-    const all = []; d.items.forEach(({ p, n }) => { for (let i = 0; i < Math.max(1, n); i++) all.push(p); });
-    return `<div class="etq-grid">${all.map(p => `<div class="etq"><div class="etq-t">${esc(p.marque || p.cat)}</div><div class="etq-m">${esc(p.modele || p.nom)}</div>
-      <div class="etq-c">${esc([p.couleur, p.taille].filter(Boolean).join(' · '))}</div><svg class="bc" data-code="${p.code}"></svg>
-      <div class="etq-p">${money(p.prix)}</div></div>`).join('')}</div>`;
+    const c = etqCfg(), f = fmtEtq(c), per = f.cols * f.rows, L = etqListe(d), [x0, y0] = L0T0(f, c);
+    if (etqStart > per) etqStart = 1;
+    const k = Math.max(0.8, Math.min(1.6, f.h / 21.2)), pad = Math.min(2, f.w * 0.05);
+    const nb = Math.max(1, Math.ceil((etqStart - 1 + L.length) / per)), pages = [];
+    for (let s = 0; s < nb; s++) {
+      let cells = '';
+      for (let i = 0; i < per; i++) {
+        const pos = s * per + i, j = pos - (etqStart - 1), p = j >= 0 && j < L.length ? L[j] : null;
+        const x = x0 + (i % f.cols) * (f.w + f.gx), y = y0 + Math.floor(i / f.cols) * (f.h + f.gy);
+        cells += `<div class="etq-c${p ? '' : ' vide'}" style="left:${x}mm;top:${y}mm;width:${f.w}mm;height:${f.h}mm;padding:${pad}mm;--k:${k}">${p ? `
+          <div class="etq-l1"><b>${esc(p.code)}</b>${c.prix && p.prix ? `<span>${esc(etqPrix(p))}</span>` : ''}</div>
+          <svg class="bc etq-bc" data-code="${esc(p.code)}" data-h="${Math.max(5, f.h * 0.36)}" data-w="${f.w - 2 * pad}" preserveAspectRatio="none"></svg>
+          <div class="etq-l2">${esc(etqDesig(p))}</div><div class="etq-l3">${esc(etqDet(p))}</div>` : ''}</div>`;
+      }
+      pages.push(`<div class="etq-page">${cells}</div>`);
+    }
+    return pages.join('');
   }
+  // PDF vectoriel (codes-barres nets), même mise en page, impression en taille réelle
+  function etiquettesPdf(d, print){
+    const c = etqCfg(), f = fmtEtq(c), per = f.cols * f.rows, L = etqListe(d), [x0, y0] = L0T0(f, c);
+    const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    const t = s => String(s ?? '').replace(/[  ]/g, ' ').replace(/□/g, '/').replace(/[−–]/g, '-');
+    const k = Math.max(0.8, Math.min(1.6, f.h / 21.2)), pad = Math.min(2, f.w * 0.05);
+    const fit = (s, max) => { s = t(s); if (pdf.getTextWidth(s) <= max) return s; while (s.length > 1 && pdf.getTextWidth(s + '…') > max) s = s.slice(0, -1); return s + '…'; };
+    const bars = new Map();
+    L.forEach((p, i) => {
+      const pos = etqStart - 1 + i, cell = pos % per; if (i > 0 && cell === 0) pdf.addPage();
+      const x = x0 + (cell % f.cols) * (f.w + f.gx), y = y0 + Math.floor(cell / f.cols) * (f.h + f.gy), W = f.w - 2 * pad;
+      let cy = y + pad;
+      const fs1 = 7.5 * k; pdf.setFont('helvetica', 'bold'); pdf.setFontSize(fs1); cy += fs1 * 0.3528;
+      pdf.text(t(p.code), x + pad, cy);
+      if (c.prix && p.prix) { pdf.setFontSize(fs1 * 0.9); pdf.text(t(etqPrix(p)), x + f.w - pad, cy, { align: 'right' }); }
+      if (!bars.has(p.code)) { const o = {}; JsBarcode(o, String(p.code), { format: 'CODE128' }); bars.set(p.code, o.encodings.map(e => e.data).join('')); }
+      const bits = bars.get(p.code), mw = Math.min(0.5, (W - 2) / bits.length), bw = bits.length * mw, bh = Math.max(5, f.h * 0.36);
+      cy += 0.9 * k; const bx = x + (f.w - bw) / 2; pdf.setFillColor(0, 0, 0);
+      for (let j = 0; j < bits.length;) { if (bits[j] === '1') { let n = 1; while (bits[j + n] === '1') n++; pdf.rect(bx + j * mw, cy, n * mw, bh, 'F'); j += n; } else j++; }
+      cy += bh;
+      const fs2 = 5.8 * k; pdf.setFont('helvetica', 'bold'); pdf.setFontSize(fs2); cy += fs2 * 0.3528 + 0.7 * k;
+      pdf.text(fit(etqDesig(p), W), x + pad, cy);
+      pdf.setFont('helvetica', 'normal'); cy += fs2 * 0.3528 + 0.3 * k;
+      pdf.text(fit(etqDet(p), W), x + pad, cy);
+    });
+    try { pdf.viewerPreferences({ PrintScaling: 'None' }); } catch(_) {}
+    if (print) pdf.autoPrint();
+    return pdf.output('blob');
+  }
+  // panneau de réglage au-dessus de l'aperçu (non imprimé)
+  function drawEtqPanel(){
+    const c = etqCfg(), f = fmtEtq(c), per = f.cols * f.rows, n = etqListe(docSale).length;
+    if (etqStart > per) etqStart = 1;
+    const feuilles = n ? Math.ceil((etqStart - 1 + n) / per) : 0;
+    F('dEtq').hidden = false;
+    F('dEtq').innerHTML = `<div class="etq-opts">
+        <label>Format de planche <select class="inp" id="etqFmt">${Object.entries(ETQ_FORMATS).map(([k, v]) => `<option value="${k}"${k === c.format ? ' selected' : ''}>${esc(v.nom)}</option>`).join('')}</select></label>
+        ${c.format === 'perso' ? `<div class="etq-perso">${[['cols', 'Colonnes', 1], ['rows', 'Lignes', 1], ['w', 'Largeur mm', 0.1], ['h', 'Hauteur mm', 0.1], ['gx', 'Écart horiz. mm', 0.1], ['gy', 'Écart vert. mm', 0.1]].map(([k, l, st]) => `<label>${l}<input class="inp sm" type="number" min="0" step="${st}" data-etqp="${k}" value="${c.perso[k]}"></label>`).join('')}</div>` : ''}
+        <label class="check" style="margin:0"><input type="checkbox" id="etqPrix"${c.prix ? ' checked' : ''}> Afficher le prix</label>
+        <span class="muted">${n} étiquette${n > 1 ? 's' : ''} · ${feuilles} planche${feuilles > 1 ? 's' : ''}</span>
+        <details><summary>Ajuster à l'imprimante</summary><label>Décalage horizontal <input class="inp sm" type="number" step="0.5" id="etqDx" value="${c.dx}"> mm</label> <label>Décalage vertical <input class="inp sm" type="number" step="0.5" id="etqDy" value="${c.dy}"> mm</label></details>
+      </div>
+      <div class="etq-start"><span class="lbl">Première étiquette libre sur la planche</span>
+        <div class="etq-mini" style="grid-template-columns:repeat(${f.cols},1fr)">${Array.from({ length: per }, (_, i) => `<button type="button" class="${i < etqStart - 1 ? 'pris' : i < etqStart - 1 + n ? 'plein' : ''}" data-etqs="${i + 1}" title="Commencer à l'étiquette ${i + 1}"></button>`).join('')}</div>
+        <small class="muted">Planche déjà entamée : cliquez sur la première case libre. Imprimez en <b>taille réelle (100 %)</b>, marges « Aucune ».</small></div>`;
+  }
+  function majEtq(){ drawEtqPanel(); F('dPaper').innerHTML = etiquettesHtml(docSale); renderBarcodes(); }
+  F('dEtq').addEventListener('change', e => { const c = etqCfg(), t = e.target;
+    if (t.id === 'etqFmt') { c.format = t.value; etqStart = 1; } else if (t.id === 'etqPrix') c.prix = t.checked; else if (t.id === 'etqDx') c.dx = +t.value || 0; else if (t.id === 'etqDy') c.dy = +t.value || 0;
+    else if (t.dataset.etqp) c.perso[t.dataset.etqp] = Math.max(t.dataset.etqp === 'cols' || t.dataset.etqp === 'rows' ? 1 : 0, +t.value || 0);
+    else return; saveEtqCfg(c); majEtq(); });
+  F('dEtq').addEventListener('click', e => { const b = e.target.closest('[data-etqs]'); if (b) { etqStart = +b.dataset.etqs; majEtq(); } });
   function renderBarcodes(){
     F('dPaper').querySelectorAll('svg.bc').forEach(svg => {
-      if (window.JsBarcode) { try { JsBarcode(svg, svg.dataset.code, { format:'CODE128', height:34, width:1.4, fontSize:11, margin:0, background:'#ffffff', lineColor:'#000000' }); } catch(_) {} }
+      if (window.JsBarcode) { try { JsBarcode(svg, svg.dataset.code, { format:'CODE128', height:34, width:1.4, fontSize:11, margin:0, background:'#ffffff', lineColor:'#000000', displayValue: !svg.classList.contains('etq-bc') });
+        if (svg.classList.contains('etq-bc')) { const w = svg.getAttribute('width'), h = svg.getAttribute('height'); svg.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('preserveAspectRatio', 'none'); const mods = parseFloat(w) / 1.4, bw = Math.min(0.5 * mods, +svg.dataset.w - 2);   // même largeur de barre que le PDF (0,5 mm max), centré
+          svg.style.cssText = `height:${svg.dataset.h}mm;width:${bw}mm;margin-left:auto;margin-right:auto`; } } catch(_) {} }
       else svg.outerHTML = `<div class="bc-fallback">${svg.dataset.code}</div>`;
     });
   }
@@ -7636,7 +7741,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   const DOCS = { journal:'Journal', bord:'Bordereau', etiq:'Étiquettes', rapportZ:'Rapport Z', ticket:'Ticket de caisse', frapide:'Facture', flent:'Fiche lentilles', facture:'Facture', technique:'Fiche technique', assurance:'Facture assurance', devis:'Devis', reservation:'Réservation monture' };
   const docsFor = s => s.kind === 'journal' ? ['journal'] : s.kind === 'bord' ? ['bord'] : s.kind === 'etiq' ? ['etiq'] : s.kind === 'z' ? ['rapportZ'] : s.kind === 'rapide' ? ['frapide'] : s.type === 'devis' ? (s.kind === 'lentille' ? ['devis'] : ['devis', 'reservation']) : ['facture', ...(s.kind === 'lentille' ? ['flent'] : s.contenu === 'monture' ? [] : ['technique']), ...pecsDe(s).map((p, i) => 'assurance:' + i)];
   function openDocs(s, kinds = docsFor(s)){
-    docSale = s;
+    docSale = s; if (s.kind === 'etiq') etqStart = 1;
     F('dBack').textContent = s.kind === 'journal' ? 'Retour à la comptabilité' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'bord' ? 'Retour aux prises en charge' : s.kind === 'etiq' ? 'Retour au stock' : s.kind === 'z' ? 'Retour à la caisse' : s.kind === 'rapide' ? 'Nouvelle vente rapide' : 'Retour à la vente';
     F('dTitle').textContent = s.kind === 'journal' ? `${s.titre} · ${s.sous}` : s.kind === 'z' && s.provisoire ? `Point de caisse · ${hhmm(s.date)}` : s.kind === 'bord' ? `Bordereau ${s.numero}` : s.kind === 'etiq' ? s.titre : s.kind === 'z' ? `Clôture ${s.numero}` : s.kind === 'rapide' ? `Vente rapide ${s.numero} encaissée` : s.type === 'devis' ? `Devis ${s.numero} ${s.modifieLe ? 'modifié' : 'créé'}` : `Vente ${s.numero} ${s.modifieLe ? 'modifiée' : 'encaissée'}`;
     const libDoc = k => k.startsWith('assurance:') ? (pecsDe(s).length > 1 ? 'Facture ' + (pecsDe(s)[+k.split(':')[1]]?.organisme || 'assurance') : DOCS.assurance) : DOCS[k];
@@ -7733,11 +7838,11 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (PARAM.app.pied && !['etiq', 'technique'].includes(k)) F('dPaper').insertAdjacentHTML('beforeend', `<p class="d-foot">${esc(PARAM.app.pied)}</p>`);
   }
   function showDoc0(k){
-    docTab = k; F('dPaper').classList.remove('a4-exact'); try { majDocMail(); } catch(_) {}
+    docTab = k; F('dPaper').classList.remove('a4-exact', 'etq-pages'); F('dEtq').hidden = true; try { majDocMail(); } catch(_) {}
     const s = docSale; let h = '';
     if (s.kind === 'journal') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = journalHtml(s); return; }
     if (s.kind === 'bord') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = bordereauHtml(s); return; }
-    if (s.kind === 'etiq') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = etiquettesHtml(s); renderBarcodes(); return; }
+    if (s.kind === 'etiq') { F('dCalib').hidden = true; F('dPaper').classList.remove('ticket-paper'); F('dPaper').classList.add('etq-pages'); majEtq(); return; }
     if (s.kind === 'z') { F('dPaper').classList.remove('ticket-paper'); F('dPaper').innerHTML = rapportZHtml(s); return; }
     if (s.kind === 'rapide') { F('dPaper').innerHTML = k === 'ticket' ? ticketHtml(s) : factureRapideHtml(s); F('dPaper').classList.toggle('ticket-paper', k === 'ticket'); return; }
     F('dPaper').classList.remove('ticket-paper', 'a4-exact');
