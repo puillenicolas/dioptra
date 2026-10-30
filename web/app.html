@@ -6606,7 +6606,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     if (!window.XLSX) { aiSt('Lecteur Excel indisponible : vérifiez la connexion internet puis réessayez.', 'bad'); return; }
     let rows;
     try { const buf = await file.arrayBuffer(), isCsv = /\.csv$|\.txt$/i.test(file.name) || /csv|text/.test(file.type);
-      let txt = ''; if (isCsv) { txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1252').decode(buf); }
+      let txt = ''; if (isCsv) { txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('\uFFFD')) txt = new TextDecoder('windows-1252').decode(buf); }
       const wb = isCsv ? XLSX.read(txt, { type: 'string', raw: true }) : XLSX.read(buf, { type: 'array', raw: false });
       rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false, defval: '' }).map(r => r.map(c => String(c ?? '').trim())).filter(r => r.some(Boolean));
     } catch(_) { aiSt('Impossible de lire ce fichier. Formats acceptés : .xlsx, .xls, .csv', 'bad'); return; }
