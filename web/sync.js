@@ -183,6 +183,28 @@
     return touchees;
   }
 
+  // ------------------------------------------------------------------ Remise à zéro décidée par l'administrateur
+  // L'activité locale (données synchronisées, compteurs, panier) est effacée ; le poste, l'utilisateur choisi,
+  // le magasin et le calibrage d'impression sont gardés. Tout le reste est rechargé depuis le serveur.
+  // (même liste que le serveur, plus les produits et comptes bancaires qu'il a modifiés ; le paramétrage reste sur place)
+  const COLLS_ACTIVITE = ['clients', 'ventesRapides', 'mouvements', 'clotures', 'mvtsStock', 'receptions', 'transferts', 'inventaires', 'bordereaux',
+    'verresAchat', 'waLog', 'notes', 'livraisons', 'facturesFourn', 'cmdCentrale', 'opsBq', 'reglAss', 'pointages', 'paire2Mag', 'produits', 'comptesBq'];
+  const LOCAL_ACTIVITE = ['compteurs', 'cmdPanier', 'cmdPanierMeta'];
+  async function viderActivite() {
+    [...COLLS_ACTIVITE, ...LOCAL_ACTIVITE].forEach(k => { S.mem.delete(k); IDB.ecrire('ls:' + k, undefined); });
+    COLLS_ACTIVITE.forEach(c => { delete S.snaps[c]; IDB.ecrire('snap:' + c, undefined); });
+    S.dirty.clear(); S.meta.since = 0;
+    await IDB.vider();
+  }
+  async function reinitialiser(rep) {
+    clearTimeout(S.minuteur);
+    await viderActivite();
+    S.meta.remise = rep.remise || 0; if (rep.org) S.meta.org = { ...S.meta.org, ...rep.org };
+    sauverMeta(); await IDB.vider();
+    try { sessionStorage.setItem('dioptraRemise', '1'); } catch (_) {}
+    location.reload();
+  }
+
   // ------------------------------------------------------------------ Cycle de synchronisation
   function planifier(ms) { clearTimeout(S.minuteur); S.minuteur = setTimeout(cycle, ms); }
   // une modification locale vient d'être enregistrée : envoi groupé dans moins d'une seconde
@@ -216,7 +238,9 @@
             const c = changes[i++]; lot.push(c);
             taille += JSON.stringify(c.data ?? null).length + JSON.stringify(c.base ?? null).length;
           }
-          const rep = await api('/api/sync', { since: S.meta.since || 0, changes: lot }, S.meta.jeton);
+          const rep = await api('/api/sync', { since: S.meta.since || 0, remise: S.meta.remise || 0, changes: lot }, S.meta.jeton);
+          if (rep.reinitialiser) { await reinitialiser(rep); return; }
+          if (rep.org && S.meta.org && rep.org.nom !== S.meta.org.nom) { S.meta.org.nom = rep.org.nom; sauverMeta(); }
           appliquer(rep.changes || [], lot);
           S.meta.since = rep.rev; sauverMeta();
           S.attente = Math.max(0, changes.length - i);
@@ -363,12 +387,13 @@
             b.textContent = 'Récupération des données…';
             const ancienOrg = S.meta.org && S.meta.org.id;
             if (ancienOrg && ancienOrg !== r.org.id) { await IDB.effacerTout(); S.mem.clear(); S.snaps = {}; S.meta = {}; }
-            S.meta = { ...S.meta, jeton: r.jeton, poste: r.poste, org: r.org, compte: r.compte, since: ancienOrg === r.org.id ? S.meta.since : 0 };
+            if (ancienOrg === r.org.id && (S.meta.remise || 0) !== (r.org.remise || 0)) await viderActivite();
+            S.meta = { ...S.meta, jeton: r.jeton, poste: r.poste, org: r.org, compte: r.compte, remise: r.org.remise || 0, since: ancienOrg === r.org.id ? S.meta.since : 0 };
             sauverMeta();
             // première récupération complète
             let plus = true;
             while (plus) {
-              const rep = await api('/api/sync', { since: S.meta.since || 0, changes: [] }, S.meta.jeton);
+              const rep = await api('/api/sync', { since: S.meta.since || 0, remise: S.meta.remise || 0, changes: [] }, S.meta.jeton);
               appliquer(rep.changes || [], []); S.meta.since = rep.rev; plus = !!rep.plus;
             }
             if (!S.mem.get('parametres')) semer(mag, cx.compte);
@@ -434,6 +459,9 @@
       listeComptes: session => api('/api/comptes', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
       creerCompte: (session, d) => api('/api/comptes', d, session).catch(enLigneSinon('Pas de connexion internet.')),
       majCompte: (session, id, d) => api('/api/comptes/' + encodeURIComponent(id), d, session).catch(enLigneSinon('Pas de connexion internet.')),
+      organisation: session => api('/api/organisation', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
+      renommerOrg: (session, nom) => api('/api/organisation', { nom }, session).catch(enLigneSinon('Pas de connexion internet.')),
+      remiseAZero: (session, d) => api('/api/organisation/remise-a-zero', d, session).catch(enLigneSinon('Pas de connexion internet : la remise à zéro a besoin d\'internet.')),
       changerMdp: (session, ancien, nouveau) => api('/api/moi/motdepasse', { ancien, nouveau }, session).catch(enLigneSinon('Pas de connexion internet.')),
       // Déconnecte ce poste : vérifie que tout est envoyé, désactive le poste (si administrateur), vide les données locales
       deconnecter: async (session, estAdmin) => {

@@ -678,6 +678,7 @@ tr.pt td{color:var(--muted)}
 .ac-drop:hover,.ac-drop:focus-visible{border-color:var(--primary)}.ac-drop.over{border-color:var(--primary);background:var(--ic-blue)}
 .ai-head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}@media (max-width:900px){.ai-head{grid-template-columns:1fr 1fr}}
 .ai-map{max-width:420px;margin:12px 0 8px}.ai-tbl input.inp{padding:6px 8px;font-size:13px;min-width:70px}
+.save.danger{background:var(--ic-rose-fg);border-color:var(--ic-rose-fg)}.save.danger:disabled{opacity:.45}.raz-card{border-color:var(--ic-rose-fg)}
 .pt-form{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1.3fr;gap:12px}@media (max-width:900px){.pt-form{grid-template-columns:1fr 1fr}}
 .pt-br{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pt-chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;color:inherit;text-align:left}
 .pt-chip span{color:var(--primary);font-weight:600;margin-left:6px}.pt-chip.on{border-color:var(--primary);background:var(--ic-blue)}
@@ -1328,9 +1329,33 @@ select.inp{appearance:auto}
       </form>
     </div>
 
+    <div id="orgBox" hidden>
+      <div class="row-head" style="margin-top:24px"><h2>Passage du test au réel</h2></div>
+      <p class="sub">À faire une seule fois, juste avant le démarrage réel (par exemple le 31 décembre au soir). Pensez aussi à corriger les adresses e-mail des comptes ci-dessus et celles des magasins (Paramètres › Magasins).</p>
+      <div class="fx-card">
+        <b>Nom de l'opticien</b>
+        <div class="rap-grid" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
+          <div class="f"><label for="orgNom">Nom affiché à la connexion et sur les postes</label><input type="text" id="orgNom" maxlength="80"></div>
+          <div class="f"><button class="save" type="button" id="orgNomOk">Renommer</button></div>
+        </div>
+      </div>
+      <div class="fx-card raz-card" style="margin-top:12px">
+        <b>Remise à zéro avant démarrage</b>
+        <p class="sub" style="margin:6px 0">Efface toute l'activité de test de <b>tous les magasins</b> : clients, ventes, devis et factures, caisses et clôtures, mouvements de stock, prises en charge, bordereaux et règlements d'assurance, livraisons et factures fournisseurs, commandes à la centrale, opérations bancaires, post-it. Les numéros (dossiers, clients, factures, devis, bordereaux) repartent à 0001.<br>
+          <b>Gardé :</b> magasins, utilisateurs et codes PIN, droits, fiscalité, ophtalmologues, modèles de messages, taux d'achat, postes activés, comptes d'accès, liaison Prismea, comptes bancaires (à qui il faudra redonner un solde de départ).</p>
+        <div class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+          <div class="f"><label for="razCat">Catalogue de montures et produits</label><select class="inp" id="razCat"><option value="garder">Garder les produits, stocks remis à 0 (inventaire de départ à faire)</option><option value="effacer">Tout effacer, produits compris</option></select></div>
+          <div class="f"><label for="razMdp">Votre mot de passe</label><input type="password" id="razMdp" autocomplete="current-password"></div>
+          <div class="f"><label for="razTxt">Pour confirmer, tapez : REMISE À ZÉRO</label><input type="text" id="razTxt" autocomplete="off"></div>
+          <div class="f" style="align-self:end"><button class="save danger" type="button" id="razOk" disabled>Tout remettre à zéro</button></div>
+        </div>
+        <p class="muted" id="razSt" style="font-size:13px"></p>
+      </div>
+    </div>
+
     <div id="cleBox" hidden>
       <div class="row-head" style="margin-top:24px"><h2>Intégration Prismea</h2><button class="ghost" type="button" id="cleNew">+ Créer une clé</button></div>
-      <p class="sub">Prismea envoie ses factures et bons de livraison à DIOPTRA avec une clé d'intégration : ils arrivent dans Achats › Livraisons Prismea. Adresse d'envoi : <code id="cleUrl"></code> (méthode POST, en-tête <code>Authorization: Bearer &lt;clé&gt;</code>).</p>
+      <p class="sub">Prismea envoie ses factures et bons de livraison à DIOPTRA avec une clé d'intégration : ils arrivent dans Achats › Livraisons. Adresse d'envoi : <code id="cleUrl"></code> (méthode POST, en-tête <code>Authorization: Bearer &lt;clé&gt;</code>).</p>
       <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Nom</th><th>Début de la clé</th><th>Créée le</th><th>Dernier envoi</th><th>État</th><th></th></tr></thead><tbody id="cleRows"></tbody></table></div>
       <p class="muted" id="cleSt" style="font-size:13px"></p>
     </div>
@@ -4107,7 +4132,7 @@ select.inp{appearance:auto}
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
     drawMags(); drawUsrs(); drawRap(); drawFiscal(); drawOph();
-    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'ctrBox', 'mdpBox', 'decoBox', 'cleBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
+    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'ctrBox', 'orgBox', 'mdpBox', 'decoBox', 'cleBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
     go('param');
@@ -4146,8 +4171,28 @@ select.inp{appearance:auto}
     try { const r = await window.DSYNC.centrale.regler(pstSession, { url: F('ctrUrl').value.trim(), cle: F('ctrCle').value.trim() }); await chargerCentrale(); F('ctrSt').textContent = r.test || 'Enregistré.'; }
     catch (er) { F('ctrSt').textContent = er.message; }
   });
+  async function chargerOrg(){
+    try { const o = await window.DSYNC.organisation(pstSession); F('orgBox').hidden = false; F('orgNom').value = o.nom || ''; } catch (_) {}
+  }
+  F('orgNomOk').addEventListener('click', async () => {
+    const nom = F('orgNom').value.trim(); if (!nom) { show('Donnez un nom.'); return; }
+    try { await window.DSYNC.renommerOrg(pstSession, nom); show(`Opticien renommé : ${nom}`); } catch (er) { show(er.message); }
+  });
+  const razOkTxt = () => F('razTxt').value.trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'REMISE A ZERO';
+  ['razTxt', 'razMdp'].forEach(id => F(id).addEventListener('input', () => { F('razOk').disabled = !(razOkTxt() && F('razMdp').value); }));
+  F('razOk').addEventListener('click', async () => {
+    const cat = F('razCat').value;
+    if (!confirm(`Dernière confirmation : effacer TOUTE l'activité de tous les magasins${cat === 'effacer' ? ', produits compris' : ''} ? Cette opération est définitive.`)) return;
+    F('razOk').disabled = true; F('razSt').textContent = 'Remise à zéro en cours…';
+    try {
+      const r = await window.DSYNC.remiseAZero(pstSession, { confirmation: F('razTxt').value, motdepasse: F('razMdp').value, catalogue: cat });
+      F('razSt').textContent = `Terminé : ${r.effaces} enregistrement(s) effacé(s)${cat === 'garder' ? `, ${r.produits} produit(s) gardé(s) avec un stock à 0` : `, ${r.produits} produit(s) effacé(s)`}. Ce poste va se recharger ; les autres postes s'effaceront à leur prochaine connexion.`;
+      F('razTxt').value = ''; F('razMdp').value = '';
+      setTimeout(() => window.DSYNC.synchroniser(), 1500);
+    } catch (er) { F('razSt').textContent = er.message; F('razOk').disabled = false; }
+  });
   async function chargerCles(){
-    chargerCentrale();
+    chargerCentrale(); chargerOrg();
     const r = await window.DSYNC.listeCles(pstSession); F('cleBox').hidden = false; F('cleUrl').textContent = location.origin + '/api/livraisons';
     F('cleRows').innerHTML = r.cles.map(k => `<tr class="${k.actif ? '' : 'pt'}"><td><b>${esc(k.nom)}</b></td><td><code>${esc(k.debut)}…</code></td><td>${fmtJ(k.cree_le)}</td><td>${fmtJ(k.vu_le)}</td>
       <td>${k.actif ? 'Active' : '<b style="color:var(--pin)">Désactivée</b>'}</td><td><button class="ghost" type="button" data-cle="${esc(k.id)}" data-on="${k.actif ? 0 : 1}">${k.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>`).join('')
@@ -4161,12 +4206,14 @@ select.inp{appearance:auto}
   F('cleRows').addEventListener('click', async e => { const id = e.target.dataset.cle; if (!id) return; const on = e.target.dataset.on === '1';
     if (!on && !confirm('Désactiver cette clé ? Prismea ne pourra plus envoyer de livraisons avec.')) return;
     try { await window.DSYNC.cleActive(pstSession, id, on); await chargerCles(); } catch (er) { F('cleSt').textContent = er.message; } });
+  let cptMoi = null;
   async function chargerComptes(){
     const r = await window.DSYNC.listeComptes(pstSession); cptListe = r.comptes;
     F('cptBox').hidden = false;
     F('cptRows').innerHTML = cptListe.map(c => `<tr class="${c.actif ? '' : 'pt'}"><td><b>${esc(c.nom)}</b>${c.id === r.moi ? ' <span class="chip">vous</span>' : ''}</td><td>${esc(c.email)}</td><td>${ROLES_CPT[c.role] || c.role}</td>
       <td>${c.role === 'admin' ? '<span class="muted">Tous</span>' : esc((c.magasins || []).join(', '))}</td><td>${c.actif ? 'Actif' : '<b style="color:var(--pin)">Désactivé</b>'}</td>
-      <td style="white-space:nowrap">${c.id === r.moi ? '' : `<button class="ghost" type="button" data-cpt-mod="${c.id}">Modifier</button> <button class="ghost" type="button" data-cpt-on="${c.id}" data-on="${c.actif ? 0 : 1}">${c.actif ? 'Désactiver' : 'Réactiver'}</button>`}</td></tr>`).join('');
+      <td style="white-space:nowrap"><button class="ghost" type="button" data-cpt-mod="${c.id}">Modifier</button>${c.id === r.moi ? '' : ` <button class="ghost" type="button" data-cpt-on="${c.id}" data-on="${c.actif ? 0 : 1}">${c.actif ? 'Désactiver' : 'Réactiver'}</button>`}</td></tr>`).join('');
+    cptMoi = r.moi;
   }
   const mdpAlea = () => { const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let x = ''; const r = crypto.getRandomValues(new Uint32Array(12)); r.forEach(n => x += a[n % a.length]); return x; };
   function drawCptMags(sel){
@@ -4177,8 +4224,8 @@ select.inp{appearance:auto}
   function ouvrirCpt(c){
     cptEdit = c || null; F('cptForm').hidden = false; F('cptSt').textContent = '';
     F('cptFormT').textContent = c ? `Modifier · ${c.nom}` : 'Nouveau compte';
-    F('cptNom').value = c ? c.nom : ''; F('cptNom').disabled = !!c; F('cptMail').value = c ? c.email : ''; F('cptMail').disabled = !!c;
-    F('cptRole').value = c ? c.role : 'activation';
+    F('cptNom').value = c ? c.nom : ''; F('cptMail').value = c ? c.email : '';
+    F('cptRole').value = c ? c.role : 'activation'; F('cptRole').disabled = !!(c && c.id === cptMoi);
     F('cptMdpL').textContent = c ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe initial (10 caractères minimum)';
     F('cptMdpN').value = c ? '' : mdpAlea();
     drawCptMags(c ? c.magasins : (magasinsVisibles()[0] && boutiqueCour() !== 'Toutes les boutiques' ? [boutiqueCour()] : []));
@@ -4192,7 +4239,8 @@ select.inp{appearance:auto}
     const mags = [...F('cptMags').querySelectorAll('[data-cpt-mag]:checked')].map(x => x.dataset.cptMag), mdp = F('cptMdpN').value.trim();
     const d = { role: F('cptRole').value, magasins: mags };
     try {
-      if (cptEdit) { if (mdp) d.motdepasse = mdp; await window.DSYNC.majCompte(pstSession, cptEdit.id, d); }
+      if (cptEdit) { if (mdp) d.motdepasse = mdp; d.nom = F('cptNom').value.trim(); d.email = F('cptMail').value.trim(); await window.DSYNC.majCompte(pstSession, cptEdit.id, d);
+        if (cptEdit.id === cptMoi && d.email !== cptEdit.email) show(`Votre identifiant de connexion est maintenant ${d.email}`); }
       else await window.DSYNC.creerCompte(pstSession, { ...d, nom: F('cptNom').value.trim(), email: F('cptMail').value.trim(), motdepasse: mdp });
       F('cptForm').hidden = true; await chargerComptes();
       show(cptEdit ? 'Compte modifié' : 'Compte créé');
@@ -6545,6 +6593,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
   try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } catch(_) {}
+  try { if (sessionStorage.getItem('dioptraRemise')) { sessionStorage.removeItem('dioptraRemise'); setTimeout(() => show('Remise à zéro effectuée par l\'administrateur : les données de test ont été effacées de ce poste.'), 800); } } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
   let blData = null, blCtl = null;

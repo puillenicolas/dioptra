@@ -27,7 +27,7 @@ function construire(opts = {}) {
     const j = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     if (!j) return err(rep, 401, 'Poste non activé.');
     const { rows } = await pool.query(
-      `SELECT p.*, o.nom AS org_nom, o.actif AS org_actif FROM postes p JOIN organisations o ON o.id = p.org_id WHERE p.jeton_hash = $1`, [S.hacherJeton(j)]);
+      `SELECT p.*, o.nom AS org_nom, o.actif AS org_actif, o.remise AS org_remise FROM postes p JOIN organisations o ON o.id = p.org_id WHERE p.jeton_hash = $1`, [S.hacherJeton(j)]);
     const p = rows[0];
     if (!p || !p.actif || !p.org_actif) return err(rep, 401, 'Ce poste a été désactivé. Demandez à l\'administrateur de le réactiver.');
     req.poste = p;
@@ -36,7 +36,7 @@ function construire(opts = {}) {
   async function session(req, rep) {
     const j = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     const { rows } = await pool.query(
-      `SELECT c.*, o.nom AS org_nom FROM sessions s JOIN comptes c ON c.id = s.compte_id JOIN organisations o ON o.id = c.org_id
+      `SELECT c.*, o.nom AS org_nom, o.remise AS org_remise FROM sessions s JOIN comptes c ON c.id = s.compte_id JOIN organisations o ON o.id = c.org_id
        WHERE s.jeton_hash = $1 AND s.expire_le > now() AND c.actif AND o.actif`, [S.hacherJeton(j || '-')]);
     if (!rows[0]) return err(rep, 401, 'Session expirée, reconnectez-vous.');
     req.compte = rows[0];
@@ -95,7 +95,7 @@ function construire(opts = {}) {
            RETURNING id, num, code, nom, magasin`, [id, req.compte.org_id, n, code, nom, magasin, S.hacherJeton(jeton), req.compte.email]);
         return rows[0];
       });
-      return { jeton, poste: p, org: { id: req.compte.org_id, nom: req.compte.org_nom }, compte: compteInfo(req.compte) };
+      return { jeton, poste: p, org: { id: req.compte.org_id, nom: req.compte.org_nom, remise: req.compte.org_remise || 0 }, compte: compteInfo(req.compte) };
     } catch (e) {
       if (e.code === '23505') return err(rep, 409, `Le code ${code} est déjà utilisé par un autre poste.`);
       throw e;
@@ -139,11 +139,51 @@ function construire(opts = {}) {
     if (id === req.compte.id && (!actif || role !== 'admin')) return err(rep, 400, 'Vous ne pouvez pas désactiver votre propre compte ni retirer vos droits d\'administrateur.');
     if (role === 'activation' && !magasins.length) return err(rep, 400, 'Choisissez au moins un magasin pour ce compte.');
     if (b.motdepasse != null && String(b.motdepasse).length < 10) return err(rep, 400, 'Le mot de passe doit faire au moins 10 caractères.');
-    await pool.query('UPDATE comptes SET role = $1, actif = $2, magasins = $3' + (b.motdepasse ? ', mdp_hash = $5' : '') + ' WHERE id = $4',
-      [role, actif, JSON.stringify(role === 'admin' ? [] : magasins), id, ...(b.motdepasse ? [S.hacherMdp(b.motdepasse)] : [])]);
-    if (!actif || b.motdepasse) await pool.query('DELETE FROM sessions WHERE compte_id = $1', [id]);
+    const email = b.email != null ? String(b.email).trim().toLowerCase() : c.email, nom = b.nom != null ? String(b.nom).trim().slice(0, 80) : c.nom;
+    if (!emailOk(email)) return err(rep, 400, 'Adresse e-mail invalide.');
+    if (!nom) return err(rep, 400, 'Le nom est obligatoire.');
+    try {
+      await pool.query('UPDATE comptes SET role = $1, actif = $2, magasins = $3, email = $5, nom = $6' + (b.motdepasse ? ', mdp_hash = $7' : '') + ' WHERE id = $4',
+        [role, actif, JSON.stringify(role === 'admin' ? [] : magasins), id, email, nom, ...(b.motdepasse ? [S.hacherMdp(b.motdepasse)] : [])]);
+    } catch (e) { if (e.code === '23505') return err(rep, 409, 'Cette adresse e-mail est déjà utilisée par un autre compte.'); throw e; }
+    if ((!actif || b.motdepasse) && id !== req.compte.id) await pool.query('DELETE FROM sessions WHERE compte_id = $1', [id]);
     return { ok: true };
   });
+  // ---------- Passage du test au réel ----------
+  app.get('/api/organisation', { preHandler: sessionAdmin }, async req => ({ id: req.compte.org_id, nom: req.compte.org_nom, remise: req.compte.org_remise || 0 }));
+  app.post('/api/organisation', { preHandler: sessionAdmin }, async (req, rep) => {
+    const nom = String((req.body || {}).nom || '').trim().slice(0, 80);
+    if (!nom) return err(rep, 400, 'Donnez un nom à l\'opticien.');
+    await pool.query('UPDATE organisations SET nom = $1 WHERE id = $2', [nom, req.compte.org_id]);
+    return { ok: true, nom };
+  });
+  // Efface toute l'activité (clients, ventes, caisses, stock, achats, banque, assurances…) et garde le paramétrage.
+  // Chaque poste efface sa copie locale à sa prochaine synchronisation (numéro de remise).
+  const COLLS_ACTIVITE = ['clients', 'ventesRapides', 'mouvements', 'clotures', 'mvtsStock', 'receptions', 'transferts', 'inventaires', 'bordereaux',
+    'verresAchat', 'waLog', 'notes', 'livraisons', 'facturesFourn', 'cmdCentrale', 'opsBq', 'reglAss', 'pointages', 'paire2Mag'];
+  app.post('/api/organisation/remise-a-zero', { preHandler: sessionAdmin }, async (req, rep) => {
+    const b = req.body || {};
+    if (String(b.confirmation || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') !== 'REMISE A ZERO') return err(rep, 400, 'Tapez exactement REMISE À ZÉRO pour confirmer.');
+    if (!S.verifierMdp(String(b.motdepasse || ''), req.compte.mdp_hash)) return err(rep, 401, 'Mot de passe incorrect.');
+    const catalogue = b.catalogue === 'effacer' ? 'effacer' : 'garder', org = req.compte.org_id;
+    const r = await tx(async c => {
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [org]);
+      const { rowCount: effaces } = await c.query('DELETE FROM donnees WHERE org_id = $1 AND (coll = ANY($2::text[]) OR supprime)', [org, COLLS_ACTIVITE]);
+      let produits = 0;
+      if (catalogue === 'effacer') ({ rowCount: produits } = await c.query(`DELETE FROM donnees WHERE org_id = $1 AND coll = 'produits'`, [org]));
+      else ({ rowCount: produits } = await c.query(`UPDATE donnees SET data = jsonb_set(data, '{stock}', '{}'::jsonb), rev = nextval('rev_seq'), maj_le = now()
+        WHERE org_id = $1 AND coll = 'produits' AND jsonb_typeof(data) = 'object'`, [org]));
+      // comptes bancaires gardés, sans les opérations : nouveau solde de départ à saisir
+      await c.query(`UPDATE donnees SET data = data - 'soldeInit' - 'dateInit', rev = nextval('rev_seq'), maj_le = now() WHERE org_id = $1 AND coll = 'comptesBq' AND jsonb_typeof(data) = 'object'`, [org]);
+      await c.query('DELETE FROM dossiers WHERE org_id = $1', [org]);
+      await c.query('DELETE FROM envois WHERE org_id = $1', [org]);
+      const { rows: [o] } = await c.query('UPDATE organisations SET remise = remise + 1 WHERE id = $1 RETURNING remise', [org]);
+      return { effaces, produits, remise: o.remise };
+    });
+    app.log.warn({ org, par: req.compte.email, catalogue }, 'remise à zéro des données');
+    return { ok: true, catalogue, ...r };
+  });
+
   // changer son propre mot de passe
   app.post('/api/moi/motdepasse', { preHandler: session }, async (req, rep) => {
     const { ancien, nouveau } = req.body || {};
@@ -164,6 +204,8 @@ function construire(opts = {}) {
     const org = req.poste.org_id;
     const { since = 0, changes = [] } = req.body || {};
     if (!Array.isArray(changes)) return err(rep, 400, 'Format invalide.');
+    const remise = req.poste.org_remise || 0;
+    if ((Number(req.body.remise) || 0) !== remise) return { reinitialiser: true, remise, org: { id: org, nom: req.poste.org_nom, remise } };
     for (const ch of changes) {
       if (!ch || !M.COLLS[ch.coll] || typeof ch.id !== 'string' || ch.id.length > 300) return err(rep, 400, `Enregistrement invalide (${ch && ch.coll}).`);
     }
@@ -218,6 +260,7 @@ function construire(opts = {}) {
       plus: rows.length === LIMITE_PULL,
       changes: [...rows.map(fmt), ...echos.map(fmt)],
       heure: new Date().toISOString(),
+      org: { id: org, nom: req.poste.org_nom, remise },
     };
   });
 

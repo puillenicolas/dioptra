@@ -109,3 +109,6 @@ CREATE TABLE IF NOT EXISTS centrale (
   maj_le      timestamptz NOT NULL DEFAULT now(),
   maj_par     text
 );
+
+-- Remise à zéro avant démarrage : chaque remise incrémente ce numéro ; un poste resté sur l'ancien numéro efface sa copie locale.
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS remise integer NOT NULL DEFAULT 0;
