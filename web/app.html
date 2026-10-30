@@ -6045,7 +6045,16 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
 
   // Code étiquette unique : lettre de catégorie + numéro séquentiel
   // Codes étiquette courts : M1, M2… pour les montures, S1, S2… pour les solaires, etc. (numéro suivant le plus grand déjà utilisé)
-  function nouveauCode(cat){
+  // Montures et solaires : 2 premières lettres de la marque + numéro sur 3 chiffres (Fred → FR001, FR002…, puis FR1000 au-delà de 999).
+  // Autres produits, ou monture sans marque : lettre de la catégorie + numéro (E1, A1, M1…).
+  const prefixeMarque = m => { const l = String(m || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, ''); return l ? (l + 'X').slice(0, 2) : ''; };
+  function nouveauCode(cat, marque){
+    const pm = ['Monture', 'Solaire'].includes(cat) ? prefixeMarque(marque) : '';
+    if (pm) {
+      const re = new RegExp('^' + pm + '(\\d{3,7})$');
+      const n = produits.reduce((m, p) => { const x = re.exec(p.code || ''); return x ? Math.max(m, +x[1]) : m; }, 0) + 1;
+      return pm + String(n).padStart(3, '0');
+    }
     const pre = PREFIX[cat] || 'X', re = new RegExp('^' + pre + '([1-9]\\d{0,6})$');
     const n = produits.reduce((m, p) => { const x = re.exec(p.code || ''); return x ? Math.max(m, +x[1]) : m; }, 0) + 1;
     return pre + n;
@@ -6053,14 +6062,14 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
   const codeValide = c => /^[A-Z0-9][A-Z0-9._\/-]{0,23}$/.test(c);
   const codeEnDouble = (c, id) => produits.some(p => p.id !== id && (p.code || '').toUpperCase() === c);
   // Mise à niveau des produits existants (vente rapide) : code + stock par magasin
-  produits.forEach(p => { if (!p.code) p.code = nouveauCode(p.cat); if (!p.stock) p.stock = {}; });
+  produits.forEach(p => { if (!p.code) p.code = nouveauCode(p.cat, p.marque); if (!p.stock) p.stock = {}; });
   if (!EN_LIGNE && !produits.some(p => p.cat === 'Monture')) {
     [ ['Ray-Ban','RB5154 Clubmaster','Écaille / or','51-21-145','Acétate','Mixte',62000,120000],
       ['IKA','2201','Noir mat','53-17-140','Injecté','Homme',12000,35000],
       ['IKA','3105','Rose cristal','49-18-135','Acétate','Femme',14000,40000],
       ['Guess','GU2700','Bordeaux','52-16-135','Métal','Femme',38000,85000] ].forEach(([m, mo, co, ta, ma, ge, pa, pv], i) => {
       const p = { id:'pm' + i, cat:'Monture', marque:m, modele:mo, couleur:co, taille:ta, matiere:ma, genre:ge, achat:pa, achatHT:pa, prix:pv, rapide:false, exemple:true, stock:{} };
-      p.nom = `${m} ${mo}`; p.code = nouveauCode('Monture'); p.stock[BOUTIQUES[0]] = i % 2 ? 1 : 2; produits.push(p);
+      p.nom = `${m} ${mo}`; p.code = nouveauCode('Monture', m); p.stock[BOUTIQUES[0]] = i % 2 ? 1 : 2; produits.push(p);
     });
     [['Anti-rayures teinté 15 %', 15000], ['Teinte solaire catégorie 3', 20000], ['Traitement hydrophobe', 10000]].forEach(([n, px], i) =>
       produits.push({ id:'po' + i, cat:'Option verre', nom:n, modele:n, prix:px, rapide:false, exemple:true, stock:{}, code: nouveauCode('Option verre') }));
@@ -6223,7 +6232,8 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     pFormMode(); pCalc(); F('dlgProd').hidden = false; F('pMarque').focus();
   }
   // code proposé automatiquement, que l'opticien peut remplacer par le sien
-  function pCodeAide(){ F('pCode').placeholder = `Automatique : ${pEdit && pEdit.cat === F('pCat').value ? pEdit.code : nouveauCode(F('pCat').value)}`; }
+  function pCodeAide(){ F('pCode').placeholder = `Automatique : ${pEdit && pEdit.cat === F('pCat').value ? pEdit.code : nouveauCode(F('pCat').value, F('pMarque').value)}`; }
+  F('pMarque').addEventListener('input', pCodeAide);
   F('pCat').addEventListener('change', () => { pFormMode(); pCodeAide(); });
   document.querySelectorAll('[data-close-p]').forEach(b => b.addEventListener('click', () => F('dlgProd').hidden = true));
   F('fProd').addEventListener('submit', e => {
@@ -6246,9 +6256,9 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       couleur: frame ? F('pCouleur').value.trim() : '', taille: frame ? F('pTaille').value.trim() : '', matiere: frame ? F('pMatiere').value : '',
       genre: frame ? F('pGenre').value : '', fournisseur: F('pFour').value.trim(), rapide: F('pRapide').checked, ean: F('pEan').value.replace(/\s/g, '') };
     let p = pEdit;
-    if (p) { p.code = codeSaisi || (p.cat !== cat ? nouveauCode(cat) : p.code); Object.assign(p, data); delete p.exemple; }
+    if (p) { p.code = codeSaisi || (p.cat !== cat ? nouveauCode(cat, marque) : p.code); Object.assign(p, data); delete p.exemple; }
     else {
-      p = { id: 'p' + Date.now(), ...data, code: codeSaisi || nouveauCode(cat), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom };
+      p = { id: 'p' + Date.now(), ...data, code: codeSaisi || nouveauCode(cat, marque), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom };
       produits.push(p);
       const q0 = intOf(F('pStock').value);
       if (q0 && geresEnStock(p) && !needShop()) mvtStock(p.id, boutiqueCour(), q0, 'Stock initial', '');
@@ -6517,7 +6527,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     l.lignes.forEach((x, i) => { const q = livRecu[i]; if (!q) return;
       let p = prodDeLigne(x); const arr = coutLigne(x, dev);
       if (!p) {
-        p = { id: 'p' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), cat: 'Monture', code: nouveauCode('Monture'), marque: x.marque, modele: x.modele,
+        p = { id: 'p' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), cat: 'Monture', code: nouveauCode('Monture', x.marque), marque: x.marque, modele: x.modele,
           nom: [x.marque, x.modele].filter(Boolean).join(' ') || x.ref || 'Monture', couleur: x.coloris || '', taille: x.taille || '', ean: x.ean || '', refFourn: x.ref || '',
           fournisseur: l.fournisseur || l.source, importe: imp, achatEur: imp ? x.pu : null, achatHT: imp ? null : Math.round(x.pu), achat: arr, prix: prixConseille(arr, x.marque) || 0, stock: {}, magasin: b, creeLe: now };
         produits.push(p);
@@ -6738,7 +6748,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
         p = { id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), cat: l._cat, marque, modele, nom: [marque, modele].filter(Boolean).join(' '),
           couleur: frame ? (l.couleur || '') : '', taille: frame ? (l.taille || '') : '', reference: l.reference || '', fournisseur: blData.fournisseur || '',
           importe: eur, achatEur: eur ? l._px : null, achatHT: eur ? null : Math.round(l._px), achat: cr.arr, prix: prixConseille(cr.arr, marque) || cr.arr,
-          rapide: false, code: nouveauCode(l._cat), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom, creeDepuis: 'Bon de livraison' };
+          rapide: false, code: nouveauCode(l._cat, marque), stock: {}, magasin: magasinCreation(), creeLe: new Date().toISOString(), creePar: user.nom, creeDepuis: 'Bon de livraison' };
         produits.push(p); crees++;
       }
       p.importe = eur;   // la devise du bon fait foi : en euros = produit importé
