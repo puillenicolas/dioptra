@@ -416,6 +416,16 @@
       listeCles: session => api('/api/cles', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
       creerCle: (session, nom) => api('/api/cles', { nom }, session).catch(enLigneSinon('Pas de connexion internet.')),
       cleActive: (session, id, actif) => api('/api/cles/' + encodeURIComponent(id) + '/actif', { actif }, session).catch(enLigneSinon('Pas de connexion internet.')),
+      // centrale d'achat Prismea : catalogue et commandes (la clé psm_ reste sur le serveur)
+      centrale: {
+        config: session => api('/api/centrale', undefined, session).catch(enLigneSinon('Pas de connexion internet.')),
+        regler: (session, d) => api('/api/centrale', d, session).catch(enLigneSinon('Pas de connexion internet.')),
+        etat: () => api('/api/centrale/etat', undefined, S.meta.jeton),
+        catalogue: () => api('/api/centrale/catalogue', undefined, S.meta.jeton).catch(enLigneSinon('Pas de connexion internet : le catalogue de la centrale a besoin d\'internet.')),
+        commander: corps => api('/api/centrale/commandes', corps, S.meta.jeton).catch(enLigneSinon('Pas de connexion internet : la commande n\'est pas partie. Votre panier est conservé, réessayez quand la connexion revient.')),
+        statuts: numeros => api('/api/centrale/statuts', { numeros }, S.meta.jeton),
+        photo: async id => { const r = await fetch('/api/centrale/photo/' + encodeURIComponent(id), { headers: { authorization: 'Bearer ' + S.meta.jeton } }); if (!r.ok) throw new Error('photo'); return URL.createObjectURL(await r.blob()); },
+      },
       // numéros de dossier atelier attribués par le serveur (un compteur par magasin)
       numerosDossier: demandes => api('/api/dossiers', { demandes }, S.meta.jeton),
       connexionAdmin: (email, motdepasse) => api('/api/connexion', { email, motdepasse }).catch(enLigneSinon('Pas de connexion internet.')),

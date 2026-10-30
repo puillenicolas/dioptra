@@ -4,7 +4,7 @@ const { construire, creerOrganisation } = require('../server/app');
 const { migrer, pool } = require('../server/db');
 (async () => {
   await migrer();
-  await pool.query('TRUNCATE cles_api, dossiers, donnees, postes, sessions, comptes, organisations, envois CASCADE');
+  await pool.query('TRUNCATE centrale, cles_api, dossiers, donnees, postes, sessions, comptes, organisations, envois CASCADE');
   const app = construire();
   const post = (url, body, tok) => app.inject({ method: 'POST', url, payload: body, headers: tok ? { authorization: 'Bearer ' + tok } : {} }).then(r => ({ code: r.statusCode, ...r.json() }));
   await creerOrganisation({ nom: 'Fashion Vision', email: 'nico@fv.ga', motdepasse: 'motdepasse-solide', nomAdmin: 'Nicolas' });

@@ -99,3 +99,13 @@ CREATE TABLE IF NOT EXISTS cles_api (
   vu_le       timestamptz,
   actif       boolean NOT NULL DEFAULT true
 );
+
+-- Centrale d'achat (Prismea) : adresse et clé pour consulter son catalogue et lui envoyer des commandes.
+-- La clé est nécessaire en clair pour appeler Prismea : elle ne quitte jamais le serveur.
+CREATE TABLE IF NOT EXISTS centrale (
+  org_id      text PRIMARY KEY REFERENCES organisations(id),
+  url         text NOT NULL,
+  cle         text NOT NULL DEFAULT '',
+  maj_le      timestamptz NOT NULL DEFAULT now(),
+  maj_par     text
+);

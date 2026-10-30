@@ -297,6 +297,72 @@ function construire(opts = {}) {
     return { ok: true, id, etat, articles: lignes.reduce((a, l) => a + l.qte, 0) };
   });
 
+  // ---------- Centrale d'achat Prismea : catalogue et commandes (la clé psm_ reste sur le serveur) ----------
+  const centraleDe = async org => (await pool.query('SELECT url, cle FROM centrale WHERE org_id = $1', [org])).rows[0] || null;
+  const baseUrl = u => String(u || '').trim().replace(/\/+$/, '').replace(/\/api(\/(commandes|catalogue))?$/, '');
+  const urlOk = u => { try { const x = new URL(u); return x.protocol === 'https:' || (process.env.NODE_ENV !== 'production' && /^(localhost|127\.0\.0\.1)$/.test(x.hostname)); } catch (_) { return false; } };
+  async function versCentrale(org, chemin, opts = {}) {
+    const c = await centraleDe(org);
+    if (!c || !c.cle) { const e = new Error('La centrale n\'est pas configurée. Un administrateur doit renseigner l\'adresse et la clé Prismea (Paramètres › Postes et accès).'); e.status = 400; throw e; }
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), opts.delai || 20000);
+    let r;
+    try {
+      r = await fetch(c.url + chemin, { method: opts.corps ? 'POST' : 'GET', signal: ctl.signal,
+        headers: { authorization: 'Bearer ' + c.cle, accept: 'application/json', ...(opts.corps ? { 'content-type': 'application/json' } : {}) }, body: opts.corps ? JSON.stringify(opts.corps) : undefined });
+    } catch (e) { const x = new Error(e.name === 'AbortError' ? 'La centrale ne répond pas, réessayez dans un instant.' : 'Centrale injoignable.'); x.status = 502; throw x; }
+    finally { clearTimeout(t); }
+    if (opts.brut) return r;
+    let j = {}; try { j = await r.json(); } catch (_) {}
+    if (!r.ok) { const x = new Error(r.status === 401 ? 'Clé de la centrale refusée : vérifiez-la dans Paramètres › Postes et accès.' : (j.erreur || j.error || `Erreur de la centrale (${r.status})`)); x.status = r.status === 401 ? 400 : r.status; x.corps = j; throw x; }
+    return j;
+  }
+  app.get('/api/centrale', { preHandler: sessionAdmin }, async req => {
+    const c = await centraleDe(req.compte.org_id);
+    return { url: c ? c.url : '', cle: c && c.cle ? c.cle.slice(0, 8) + '…' + c.cle.slice(-4) : '', configure: !!(c && c.cle) };
+  });
+  app.post('/api/centrale', { preHandler: sessionAdmin }, async (req, rep) => {
+    const b = req.body || {}, cur = await centraleDe(req.compte.org_id);
+    const url = baseUrl(b.url || (cur && cur.url));
+    if (!urlOk(url)) return err(rep, 400, 'Adresse invalide : elle doit commencer par https:// (ex. https://prismea.onrender.com).');
+    let cle = cur ? cur.cle : '';
+    if (b.retirer) cle = '';
+    else if (b.cle != null && String(b.cle).trim()) { cle = String(b.cle).trim(); if (!/^psm_[A-Za-z0-9_\-]{16,}$/.test(cle)) return err(rep, 400, 'La clé doit commencer par psm_ (créée dans Prismea › Paramètres › Commandes des opticiens).'); }
+    await pool.query(`INSERT INTO centrale (org_id, url, cle, maj_le, maj_par) VALUES ($1,$2,$3,now(),$4)
+      ON CONFLICT (org_id) DO UPDATE SET url = EXCLUDED.url, cle = EXCLUDED.cle, maj_le = now(), maj_par = EXCLUDED.maj_par`, [req.compte.org_id, url, cle, req.compte.email]);
+    if (cle && b.tester !== false) { try { const j = await versCentrale(req.compte.org_id, '/api/catalogue'); return { ok: true, test: `Connexion réussie : ${j.montures.length} montures disponibles à la centrale.` }; } catch (e) { return { ok: true, test: 'Enregistré, mais le test a échoué : ' + e.message }; } }
+    return { ok: true };
+  });
+  app.get('/api/centrale/etat', { preHandler: poste }, async req => { const c = await centraleDe(req.poste.org_id); return { configure: !!(c && c.cle) }; });
+  app.get('/api/centrale/catalogue', { preHandler: poste }, async (req, rep) => {
+    try { return await versCentrale(req.poste.org_id, '/api/catalogue'); } catch (e) { return err(rep, e.status || 502, e.message); }
+  });
+  app.get('/api/centrale/photo/:id', { preHandler: poste }, async (req, rep) => {
+    if (!/^[a-f0-9]{32}$/.test(req.params.id)) return err(rep, 404, 'Photo introuvable.');
+    try {
+      const r = await versCentrale(req.poste.org_id, '/api/catalogue/photo/' + req.params.id, { brut: true });
+      if (!r.ok) return err(rep, r.status === 401 ? 400 : 404, 'Photo indisponible.');
+      rep.header('content-type', r.headers.get('content-type') || 'image/jpeg').header('cache-control', 'private, max-age=31536000, immutable');
+      return rep.send(Buffer.from(await r.arrayBuffer()));
+    } catch (e) { return err(rep, e.status || 502, e.message); }
+  });
+  app.post('/api/centrale/commandes', { preHandler: poste }, async (req, rep) => {
+    const b = req.body || {}, L = Array.isArray(b.lignes) ? b.lignes : [];
+    const numero = txt(b.numero, 60);
+    if (!/^[A-Z0-9][A-Z0-9-]{3,59}$/.test(numero)) return err(rep, 400, 'Numéro de commande invalide.');
+    if (!L.length || L.length > 1000) return err(rep, 400, 'La commande est vide.');
+    const mags = await magasinsDe(req.poste.org_id), magasin = txt(b.magasin, 120) || req.poste.magasin;
+    if (mags.length && !mags.some(m => m.nom === magasin)) return err(rep, 400, 'Magasin inconnu.');
+    const corps = { source: 'DIOPTRA', numero, magasin, date: new Date().toISOString().slice(0, 10), commentaire: txt(b.commentaire, 500),
+      lignes: L.map(l => ({ ean: txt(l.ean, 20), etiquette: txt(l.etiquette, 40), marque: txt(l.marque, 60), modele: txt(l.modele, 80), coloris: txt(l.coloris, 60), taille: txt(l.taille, 30), qte: Math.max(0, Math.round(nb(l.qte))) })).filter(l => l.qte) };
+    if (!corps.lignes.length) return err(rep, 400, 'La commande est vide.');
+    try { return await versCentrale(req.poste.org_id, '/api/commandes', { corps }); } catch (e) { return err(rep, e.status || 502, e.message); }
+  });
+  app.post('/api/centrale/statuts', { preHandler: poste }, async (req, rep) => {
+    const n = Array.isArray((req.body || {}).numeros) ? req.body.numeros.slice(0, 200).map(x => txt(x, 60)) : [];
+    if (!n.length) return { commandes: [] };
+    try { return await versCentrale(req.poste.org_id, '/api/commandes/statuts', { corps: { source: 'DIOPTRA', numeros: n } }); } catch (e) { return err(rep, e.status || 502, e.message); }
+  });
+
   app.get('/api/sante', async () => ({ ok: true, version: 1, mail: SV.mailConfigure(), ia: SV.iaConfiguree() }));
   app.post('/api/mail', { preHandler: poste }, async (req, rep) => {
     const { to, subject, body, replyTo, attachments = [] } = req.body || {};

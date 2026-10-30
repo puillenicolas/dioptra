@@ -955,6 +955,25 @@ select.inp{appearance:auto}
   .dialog .actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));background:var(--card);margin:0 -18px -20px;padding:12px 18px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);z-index:2}
 }
 
+/* Commandes à la centrale (Prismea) */
+.cmd-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.cmd-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.cmd-tools .inp{flex:1;min-width:160px}
+.cmd-cat{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.cmd-card{border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--card,#fff)}
+.cmd-ph{height:96px;border-radius:8px;background:#f4f5f7;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#bbb;font-size:12px}
+.cmd-ph img{width:100%;height:100%;object-fit:contain;background:#fff}
+.cmd-card b{font-size:14px;line-height:1.25}
+.cmd-card small{color:var(--muted,#667);line-height:1.3}
+.cmd-prix{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:13px}
+.cmd-q{display:flex;align-items:center;gap:6px;margin-top:auto}
+.cmd-q button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line,#ddd);background:none;cursor:pointer;font-size:16px}
+.cmd-q input{width:52px;text-align:center}
+.cmd-card.on{border-color:var(--ink,#111);box-shadow:0 0 0 1px var(--ink,#111)}
+.cmd-panier{position:sticky;top:12px}
+.cmd-l{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#eee);font-size:13px}
+.cmd-l span:first-child{min-width:0}
+@media (max-width:900px){.cmd-grid{grid-template-columns:1fr}.cmd-panier{position:static}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -1305,6 +1324,17 @@ select.inp{appearance:auto}
       <p class="muted" id="cleSt" style="font-size:13px"></p>
     </div>
 
+    <div id="ctrBox" hidden>
+      <div class="row-head" style="margin-top:24px"><h2>Centrale d'achat (Prismea)</h2></div>
+      <p class="sub">Pour consulter le catalogue de la centrale et lui passer commande depuis Achats › Commander à la centrale. La clé <code>psm_…</code> se crée dans Prismea › Paramètres › Commandes des opticiens ; elle reste sur le serveur de DIOPTRA.</p>
+      <div class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end">
+        <div class="f"><label for="ctrUrl">Adresse de Prismea</label><input type="url" id="ctrUrl" placeholder="https://prismea.onrender.com"></div>
+        <div class="f"><label for="ctrCle">Clé d'intégration</label><input type="password" id="ctrCle" autocomplete="new-password" placeholder="psm_…"></div>
+        <div class="f"><button class="save" type="button" id="ctrOk">Enregistrer et tester</button></div>
+      </div>
+      <p class="muted" id="ctrSt" style="font-size:13px"></p>
+    </div>
+
     <div id="mdpBox" hidden>
       <h2 style="margin-top:24px">Changer mon mot de passe</h2>
       <form id="mdpForm" class="rap-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end" autocomplete="off">
@@ -1641,7 +1671,7 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><div><div class="k-lbl" id="acSub"></div><h1>Achats</h1></div></div>
-  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons</button><button class="tab" data-ac="fac">Factures à payer</button></div>
+  <div class="tabs" id="acTabs"><button class="tab on" data-ac="liv">Livraisons</button><button class="tab" data-ac="fac">Factures à payer</button><button class="tab" data-ac="cmd">Commander à la centrale</button></div>
   <div class="ac-drop" id="acDrop" role="button" tabindex="0" aria-label="Importer une facture fournisseur">
     <input type="file" id="acFile" accept=".pdf,.xlsx,.xls,.csv,.json,application/pdf,image/*,text/csv,application/json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
@@ -1690,6 +1720,35 @@ select.inp{appearance:auto}
       </div>
       <div class="tbl-wrap"><table class="s-tbl liv-tbl"><thead><tr><th>Référence</th><th>Monture</th><th>Dans DIOPTRA</th><th style="text-align:right">Prix HT</th><th style="text-align:right">Coût arrivé</th><th style="text-align:right">Prix de vente</th><th style="text-align:right">Attendu</th><th style="text-align:right">Reçu</th></tr></thead><tbody id="livLines"></tbody></table></div>
       <div class="st-foot"><span class="muted" id="livTot"></span><span><button class="save" type="button" id="livOk">Valider la réception</button></span></div>
+    </section>
+  </div>
+
+  <div class="ac-p" data-p="cmd" hidden>
+    <section class="blk" id="cmdOff" hidden><h2>Centrale non reliée</h2><p class="sub">Pour commander à la centrale depuis DIOPTRA, un administrateur doit renseigner l'adresse de Prismea et la clé <code>psm_…</code> dans Paramètres › Postes et accès › Centrale d'achat.</p></section>
+    <div class="cmd-grid" id="cmdOn">
+      <section class="blk">
+        <div class="row-head"><h2>Catalogue de la centrale</h2><button class="ghost" type="button" id="cmdMaj">Actualiser</button></div>
+        <p class="sub" id="cmdInfo">Montures disponibles à la centrale, avec leur prix d'achat. Ajoutez-les au panier puis envoyez la commande.</p>
+        <div class="cmd-tools"><input class="inp" id="cmdQ" type="search" placeholder="Rechercher : marque, modèle, coloris, EAN…" autocomplete="off"><select class="inp sm" id="cmdMarque"></select><select class="inp sm" id="cmdMat"></select></div>
+        <div class="cmd-cat" id="cmdCat"></div>
+        <p class="muted" id="cmdNone" hidden></p>
+        <div style="text-align:center;margin-top:12px"><button class="ghost" type="button" id="cmdPlus" hidden>Afficher plus</button></div>
+      </section>
+      <aside class="blk cmd-panier">
+        <h2 style="margin-top:0">Panier</h2>
+        <label class="lbl" for="cmdMag">Magasin à livrer</label><select class="inp" id="cmdMag"></select>
+        <div id="cmdLignes" style="margin:10px 0"></div>
+        <label class="lbl" for="cmdCom">Commentaire pour la centrale</label><textarea class="inp" id="cmdCom" rows="2" placeholder="Ex. urgent, réassort vitrine"></textarea>
+        <p id="cmdTot" style="margin:10px 0;font-size:14px"></p>
+        <button class="save" type="button" id="cmdEnv" style="width:100%">Envoyer la commande</button>
+        <button class="ghost" type="button" id="cmdVider" style="width:100%;margin-top:6px">Vider le panier</button>
+        <p class="sub" style="margin-top:8px">La centrale prépare la commande et vous envoie la facture : elle arrivera dans « Livraisons » pour la réception en stock.</p>
+      </aside>
+    </div>
+    <section class="blk">
+      <div class="row-head"><h2>Mes commandes à la centrale</h2><button class="ghost" type="button" id="cmdSuivi">Actualiser les statuts</button></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>N° commande</th><th>Magasin</th><th style="text-align:right">Montures</th><th style="text-align:right">Montant</th><th>Statut</th></tr></thead><tbody id="cmdRows"></tbody></table></div>
+      <p class="muted" id="cmdHNone" hidden>Aucune commande envoyée pour l'instant.</p>
     </section>
   </div>
 
@@ -4033,7 +4092,7 @@ select.inp{appearance:auto}
     F('prApp').value = PD.app.nom; F('prPied').value = PD.app.pied || '';
     PD.pays = PD.pays && PD.pays.length ? PD.pays : JSON.parse(JSON.stringify(PARAM_DEF.pays));
     drawMags(); drawUsrs(); drawRap(); drawFiscal(); drawOph();
-    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'mdpBox', 'decoBox', 'cleBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
+    if (tab === 'pst') { F('pstCe').textContent = POSTE ? `Ce poste : ${POSTE.nom} (${POSTE.code})${POSTE.magasin ? ' · ' + POSTE.magasin : ''}` : ''; if (!pstSession) { ['pstBox', 'cptBox', 'ctrBox', 'mdpBox', 'decoBox', 'cleBox'].forEach(x => F(x).hidden = true); F('pstSt').textContent = ''; } }
     F('prOrgs').value = PD.organismes.join('\n'); F('prMotifs').value = PD.motifs.join('\n');
     F('prDroits').innerHTML = DROITS.map(([k, l]) => `<label class="check pr-dr"><input type="checkbox" data-dr="${k}"${PD.droits[k] ? ' checked' : ''}> ${l}</label>`).join('');
     go('param');
@@ -4062,7 +4121,18 @@ select.inp{appearance:auto}
       F('pstSt').textContent = `${r.org.nom} · connecté en administrateur · ${r.postes.length} poste(s)`; drawPostes(r.postes); await chargerComptes(); await chargerCles(); }
     catch (er) { F('pstSt').textContent = er.message; }
   });
+  async function chargerCentrale(){
+    try { const c = await window.DSYNC.centrale.config(pstSession); F('ctrBox').hidden = false; F('ctrUrl').value = c.url || ''; F('ctrCle').value = '';
+      F('ctrCle').placeholder = c.cle ? 'Clé enregistrée (' + c.cle + ') : laissez vide pour la garder' : 'psm_…';
+      F('ctrSt').textContent = c.configure ? 'Centrale reliée.' : 'Centrale non reliée.'; } catch (er) { F('ctrSt').textContent = er.message; }
+  }
+  F('ctrOk').addEventListener('click', async () => {
+    F('ctrSt').textContent = 'Enregistrement et test…';
+    try { const r = await window.DSYNC.centrale.regler(pstSession, { url: F('ctrUrl').value.trim(), cle: F('ctrCle').value.trim() }); await chargerCentrale(); F('ctrSt').textContent = r.test || 'Enregistré.'; }
+    catch (er) { F('ctrSt').textContent = er.message; }
+  });
   async function chargerCles(){
+    chargerCentrale();
     const r = await window.DSYNC.listeCles(pstSession); F('cleBox').hidden = false; F('cleUrl').textContent = location.origin + '/api/livraisons';
     F('cleRows').innerHTML = r.cles.map(k => `<tr class="${k.actif ? '' : 'pt'}"><td><b>${esc(k.nom)}</b></td><td><code>${esc(k.debut)}…</code></td><td>${fmtJ(k.cree_le)}</td><td>${fmtJ(k.vu_le)}</td>
       <td>${k.actif ? 'Active' : '<b style="color:var(--pin)">Désactivée</b>'}</td><td><button class="ghost" type="button" data-cle="${esc(k.id)}" data-on="${k.actif ? 0 : 1}">${k.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>`).join('')
@@ -6155,11 +6225,139 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     acTab = tab; F('acTabs').querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.ac === tab));
     document.querySelectorAll('.ac-p').forEach(p => p.hidden = p.dataset.p !== tab);
     F('acSub').textContent = boutiqueCour();
-    if (tab === 'liv') { F('livListe').hidden = false; F('livRec').hidden = true; drawLiv(); } else drawFac();
+    F('acDrop').hidden = tab === 'cmd'; if (tab === 'cmd') { F('aiRev').hidden = true; F('aiSt').hidden = true; }
+    if (tab === 'liv') { F('livListe').hidden = false; F('livRec').hidden = true; drawLiv(); } else if (tab === 'cmd') ouvrirCmd(); else drawFac();
     go('achat');
   }
   F('goAchat').addEventListener('click', () => openAchat());
   F('acTabs').addEventListener('click', e => { const b = e.target.closest('[data-ac]'); if (b) openAchat(b.dataset.ac); });
+
+  // --- Commander à la centrale (Prismea)
+  let cmdCentrale = ld0('cmdCentrale', []), cmdCat = null, cmdLim = 60, cmdCharge = false;
+  let cmdPanier = ld0('cmdPanier', []), cmdMeta = ld0('cmdPanierMeta', {});
+  const saveCmd = () => { try { localStorage.setItem('cmdCentrale', JSON.stringify(cmdCentrale)); } catch(_) {} };
+  const savePanier = () => { try { localStorage.setItem('cmdPanier', JSON.stringify(cmdPanier)); localStorage.setItem('cmdPanierMeta', JSON.stringify(cmdMeta)); } catch(_) {} };
+  const eur = n => (Math.round((n || 0) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ | /g, ' ') + ' €';
+  const cleCat = m => normEan(m.ean) || m.etiquette;
+  const photos = new Map();
+  let obs = null;
+  function chargerPhotos(){
+    if (obs) obs.disconnect();
+    obs = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; obs.unobserve(e.target); poserPhoto(e.target); }), { rootMargin: '200px' }) : null;
+    document.querySelectorAll('#cmdCat [data-ph]').forEach(el => obs ? obs.observe(el) : poserPhoto(el));
+  }
+  async function poserPhoto(el){
+    const id = el.dataset.ph; if (!id) return;
+    try { if (!photos.has(id)) photos.set(id, window.DSYNC.centrale.photo(id)); const u = await photos.get(id); el.innerHTML = `<img src="${u}" alt="">`; }
+    catch (_) { photos.delete(id); el.textContent = 'Photo indisponible'; }
+  }
+  async function ouvrirCmd(){
+    drawPanier(); drawCmdHist();
+    const mags = magasinsVisibles(), cur = boutiqueCour();
+    F('cmdMag').innerHTML = mags.map(m => `<option ${m === (cmdMeta.magasin || (mags.includes(cur) ? cur : '')) ? 'selected' : ''}>${esc(m)}</option>`).join('');
+    if (!cmdCat && !cmdCharge) await chargerCat();
+    else drawCat();
+    suivreCmd(true);
+  }
+  async function chargerCat(){
+    cmdCharge = true; F('cmdInfo').textContent = 'Chargement du catalogue de la centrale…'; F('cmdOff').hidden = true; F('cmdOn').hidden = false;
+    try {
+      const et = await window.DSYNC.centrale.etat().catch(() => ({ configure: true }));
+      if (!et.configure) { F('cmdOff').hidden = false; F('cmdOn').hidden = true; cmdCharge = false; return; }
+      const r = await window.DSYNC.centrale.catalogue(); cmdCat = r.montures || [];
+      F('cmdInfo').textContent = `${cmdCat.length} montures disponibles à la centrale · mis à jour à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Prix d'achat hors taxes en euros.`;
+      const marques = [...new Set(cmdCat.map(m => m.marque).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+      const mats = [...new Set(cmdCat.map(m => m.matiere).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+      F('cmdMarque').innerHTML = '<option value="">Toutes les marques</option>' + marques.map(m => `<option>${esc(m)}</option>`).join('');
+      F('cmdMat').innerHTML = '<option value="">Toutes les matières</option>' + mats.map(m => `<option>${esc(m)}</option>`).join('');
+      F('cmdMat').hidden = !mats.length;
+      drawCat();
+    } catch (er) { F('cmdInfo').textContent = er.message; F('cmdCat').innerHTML = ''; }
+    cmdCharge = false;
+  }
+  function filtreCat(){
+    const q = norm(F('cmdQ').value || ''), mq = F('cmdMarque').value, mt = F('cmdMat').value;
+    return (cmdCat || []).filter(m => (!mq || m.marque === mq) && (!mt || m.matiere === mt) && (!q || norm([m.marque, m.modele, m.coloris, m.etiquette, m.ean, m.taille].join(' ')).includes(q)));
+  }
+  function drawCat(){
+    const L = filtreCat(), vus = L.slice(0, cmdLim);
+    F('cmdCat').innerHTML = vus.map(m => { const k = cleCat(m), p = cmdPanier.find(x => x.k === k), q = p ? p.qte : 0;
+      return `<div class="cmd-card${q ? ' on' : ''}"><div class="cmd-ph" data-ph="${esc(m.photo || '')}">${m.photo ? '' : 'Pas de photo'}</div>
+        <b>${esc(m.marque)} ${esc(m.modele)}</b><small>${esc([m.coloris, m.taille, m.matiere].filter(Boolean).join(' · '))}</small>
+        <div class="cmd-prix"><b>${eur(m.prix)}</b><small>≈ ${money(enFcfa(m.prix, 'EUR'))}</small></div>
+        <small>${m.disponible} disponible${m.disponible > 1 ? 's' : ''} · ${esc(m.etiquette)}</small>
+        <div class="cmd-q"><button type="button" data-cq="${esc(k)}" data-d="-1" aria-label="Retirer">−</button><input class="inp sm" type="number" min="0" max="${m.disponible}" value="${q}" data-cqi="${esc(k)}" aria-label="Quantité"><button type="button" data-cq="${esc(k)}" data-d="1" aria-label="Ajouter">+</button></div></div>`; }).join('');
+    F('cmdNone').hidden = L.length > 0; F('cmdNone').textContent = cmdCat && cmdCat.length ? 'Aucune monture ne correspond à la recherche.' : 'La centrale n\'a aucune monture disponible pour l\'instant.';
+    F('cmdPlus').hidden = L.length <= cmdLim;
+    chargerPhotos();
+  }
+  function setQte(k, q){
+    const m = (cmdCat || []).find(x => cleCat(x) === k);
+    q = Math.max(0, Math.round(q || 0)); if (m) q = Math.min(q, m.disponible);
+    let p = cmdPanier.find(x => x.k === k);
+    if (!q) cmdPanier = cmdPanier.filter(x => x.k !== k);
+    else if (p) p.qte = q;
+    else if (m) cmdPanier.push({ k, ean: m.ean, etiquette: m.etiquette, marque: m.marque, modele: m.modele, coloris: m.coloris, taille: m.taille, prix: m.prix, qte: q });
+    savePanier(); drawPanier(); drawCat();
+  }
+  function drawPanier(){
+    const nb = cmdPanier.reduce((a, x) => a + x.qte, 0), tot = cmdPanier.reduce((a, x) => a + x.qte * (x.prix || 0), 0);
+    F('cmdLignes').innerHTML = cmdPanier.length ? cmdPanier.map(x => `<div class="cmd-l"><span><b>${esc(x.marque)} ${esc(x.modele)}</b><br><small class="muted">${esc([x.coloris, x.taille].filter(Boolean).join(' · '))}</small></span><span style="white-space:nowrap">${x.qte} × ${eur(x.prix)} <button class="ghost" type="button" data-cq="${esc(x.k)}" data-d="-999" aria-label="Retirer" style="padding:2px 6px">×</button></span></div>`).join('')
+      : '<p class="muted" style="margin:0">Le panier est vide.</p>';
+    F('cmdTot').innerHTML = nb ? `<b>${nb} monture${nb > 1 ? 's' : ''} · ${eur(tot)} HT</b><br><small class="muted">≈ ${money(enFcfa(tot, 'EUR'))} au taux ${String(PA.taux).replace('.', ',')}</small>` : '';
+    F('cmdEnv').disabled = !nb; F('cmdVider').hidden = !nb;
+  }
+  F('cmdCat').addEventListener('click', e => { const b = e.target.closest('[data-cq]'); if (!b) return; const p = cmdPanier.find(x => x.k === b.dataset.cq); setQte(b.dataset.cq, (p ? p.qte : 0) + Number(b.dataset.d)); });
+  F('cmdCat').addEventListener('change', e => { const i = e.target.closest('[data-cqi]'); if (i) setQte(i.dataset.cqi, Number(i.value)); });
+  F('cmdLignes').addEventListener('click', e => { const b = e.target.closest('[data-cq]'); if (b) setQte(b.dataset.cq, 0); });
+  F('cmdQ').addEventListener('input', () => { cmdLim = 60; drawCat(); });
+  F('cmdMarque').addEventListener('change', () => { cmdLim = 60; drawCat(); });
+  F('cmdMat').addEventListener('change', () => { cmdLim = 60; drawCat(); });
+  F('cmdPlus').addEventListener('click', () => { cmdLim += 60; drawCat(); });
+  F('cmdMaj').addEventListener('click', () => { cmdCat = null; chargerCat(); });
+  F('cmdVider').addEventListener('click', () => { if (!confirm('Vider le panier ?')) return; cmdPanier = []; cmdMeta.numero = ''; savePanier(); drawPanier(); drawCat(); });
+  F('cmdMag').addEventListener('change', () => { cmdMeta.magasin = F('cmdMag').value; savePanier(); });
+  F('cmdEnv').addEventListener('click', async () => {
+    if (!cmdPanier.length) return;
+    const magasin = F('cmdMag').value; if (!magasin) { show('Choisissez le magasin à livrer.'); return; }
+    const code = (window.DSYNC.poste && window.DSYNC.poste.code) || 'CMD';
+    const numero = cmdMeta.numero || `CMD-${code}-${Date.now().toString(36).toUpperCase()}`;   // gardé en cas de nouvel essai : pas de doublon chez la centrale
+    cmdMeta.numero = numero; savePanier();
+    const b = F('cmdEnv'); b.disabled = true; b.textContent = 'Envoi…';
+    try {
+      const lignes = cmdPanier.map(x => ({ ean: x.ean, etiquette: x.etiquette, marque: x.marque, modele: x.modele, coloris: x.coloris, taille: x.taille, qte: x.qte }));
+      const r = await window.DSYNC.centrale.commander({ numero, magasin, commentaire: F('cmdCom').value.trim(), lignes });
+      cmdCentrale.push({ id: numero, numero, date: new Date().toISOString(), magasin, par: user.nom || '', commentaire: F('cmdCom').value.trim(),
+        lignes: cmdPanier.map(x => ({ ean: x.ean, etiquette: x.etiquette, marque: x.marque, modele: x.modele, coloris: x.coloris, taille: x.taille, qte: x.qte, prix: x.prix })),
+        total: Math.round(cmdPanier.reduce((a, x) => a + x.qte * (x.prix || 0), 0) * 100) / 100, statut: 'Envoyée', inconnues: r.inconnues || 0 });
+      saveCmd(); cmdPanier = []; cmdMeta.numero = ''; savePanier(); F('cmdCom').value = '';
+      drawPanier(); drawCat(); drawCmdHist();
+      show(`Commande ${numero} envoyée à la centrale`);
+    } catch (er) { show(er.message); }
+    b.disabled = false; b.textContent = 'Envoyer la commande';
+  });
+  const ST_CMD = { nouvelle: ['Envoyée', 'warn'], traitee: ['Traitée par la centrale', ''], archivee: ['Annulée par la centrale', 'pin'], inconnue: ['Envoyée', 'warn'] };
+  function drawCmdHist(){
+    const L = cmdCentrale.filter(c => boutiqueCour() === 'Toutes les boutiques' || c.magasin === boutiqueCour()).sort((a, b) => b.date.localeCompare(a.date));
+    F('cmdRows').innerHTML = L.map(c => { const sv = c.suivi || {}, [lib, cl] = ST_CMD[sv.statut] || ['Envoyée', 'warn'];
+      return `<tr><td>${fmtDate(c.date)}</td><td><b>${esc(c.numero)}</b>${c.inconnues ? `<br><small class="muted">${c.inconnues} réf. non reconnue(s) par la centrale</small>` : ''}</td><td>${esc(c.magasin)}</td>
+      <td style="text-align:right">${c.lignes.reduce((a, x) => a + x.qte, 0)}</td><td style="text-align:right">${eur(c.total)}</td>
+      <td><span class="chip ${cl}">${lib}</span>${sv.facture ? `<br><small class="muted">Facture ${esc(sv.facture)}</small>` : ''}</td></tr>`; }).join('');
+    F('cmdHNone').hidden = L.length > 0;
+  }
+  let suiviT = 0;
+  async function suivreCmd(auto){
+    const ouv = cmdCentrale.filter(c => !c.suivi || c.suivi.statut === 'nouvelle' || c.suivi.statut === 'inconnue');
+    if (!ouv.length || (auto && Date.now() - suiviT < 60000)) return; suiviT = Date.now();
+    try {
+      const r = await window.DSYNC.centrale.statuts(ouv.map(c => c.numero));
+      let ch = false;
+      (r.commandes || []).forEach(x => { const c = cmdCentrale.find(y => y.numero === x.numero); if (c && JSON.stringify(c.suivi || {}) !== JSON.stringify({ ...x, numero: undefined })) { c.suivi = { statut: x.statut, facture: x.facture || null, vente: x.vente || null, traiteeLe: x.traiteeLe || null }; ch = true; } });
+      if (ch) { saveCmd(); drawCmdHist(); }
+      if (!auto) show('Statuts à jour');
+    } catch (er) { if (!auto) show(er.message); }
+  }
+  F('cmdSuivi').addEventListener('click', () => suivreCmd(false));
 
   // --- Livraisons
   function drawLiv(){
