@@ -1788,8 +1788,9 @@ select.inp{appearance:auto}
     Accueil
   </button>
   <div class="head"><div><div class="k-lbl" id="foSub"></div><h1>Formation DIOPTRA</h1></div></div>
+  <div class="tabs" id="foTabs" hidden><button class="tab" data-fo-pc="responsable">Responsable de magasin</button><button class="tab" data-fo-pc="vendeur">Vendeur</button></div>
   <section class="blk fo-top">
-    <p class="sub" style="margin-top:0">Huit courtes leçons pour maîtriser DIOPTRA au comptoir. Pour chacune : la <b>visite guidée</b> vous montre les vrais écrans pas à pas (sans rien enregistrer), puis un <b>quiz</b> de quelques questions valide la leçon.</p>
+    <p class="sub" style="margin-top:0"><span id="foIntro"></span> Pour chacune : la <b>visite guidée</b> vous montre les vrais écrans pas à pas (sans rien enregistrer), puis un <b>quiz</b> de quelques questions valide la leçon.</p>
     <div class="fo-prog"><div class="fo-track"><div class="fo-bar" id="foBar"></div></div><span id="foProg"></span></div>
   </section>
   <div class="fo-list" id="foList"></div>
@@ -6056,15 +6057,157 @@ select.inp{appearance:auto}
         { q: 'Vous voulez changer le texte du message « lunettes prêtes ».', r: ['Ce n\'est pas possible', 'Onglet « Modèles » du module Commandes', 'Le réécrire à chaque fois'], ok: 1, e: 'Les modèles servent ensuite à tous les envois.' },
       ] },
   ];
+  // Parcours Responsable de magasin : caisse, stock, réceptions, centrale, inventaire, impayés, assurances, équipe
+  const LECONS_RESP = [
+    { id: 'r1', titre: 'Ouvrir et clôturer la caisse du jour', duree: 6,
+      objectif: 'Suivre les encaissements de la journée, enregistrer les sorties d\'espèces et faire la clôture Z.',
+      points: ['La caisse du jour montre tous les encaissements, par moyen de paiement.', 'Toute sortie d\'espèces s\'enregistre, avec son motif. Un dépôt en banque est une sortie « Dépôt en banque ».', 'Le point de caisse vérifie les espèces en cours de journée, sans clôturer.', 'Le soir, la clôture Z arrête la journée. Le rapport part par e-mail ou WhatsApp.', 'Une clôture se rouvre seulement en cas d\'erreur, par un responsable.'],
+      exercice: 'Faites un point de caisse, enregistrez une sortie d\'espèces de test, puis consultez la dernière clôture.',
+      visite: [
+        { go: () => openCJ(), sel: '#cjSub', t: 'La caisse du jour du magasin sélectionné.' },
+        { sel: '#cjStats', t: 'Le total encaissé et le nombre de ventes du jour.' },
+        { sel: ['#cjTbl', '#cjNone'], t: 'Chaque encaissement : heure, client, vendeur, mode et montant.' },
+        { sel: ['#cjModesBox', '#cjStats'], t: 'Le détail par moyen de paiement : c\'est ce que vous devez retrouver en caisse.' },
+        { sel: '#cjOut', t: 'Les sorties d\'espèces : achats de fournitures, transport, dépôt en banque… toujours avec un motif.' },
+        { sel: '#cjPoint', t: 'Le point de caisse : comptez les espèces en cours de journée, sans clôturer.' },
+        { sel: '#cjZ', t: 'La clôture Z du soir : elle arrête la journée et produit le rapport.' },
+        { sel: '#cjZs', t: 'Les clôtures précédentes, à revoir ou renvoyer.' },
+      ],
+      quiz: [
+        { q: 'Vous déposez la recette en espèces à la banque. Que faire dans DIOPTRA ?', r: ['Rien', 'Enregistrer une sortie d\'espèces « Dépôt en banque »', 'Supprimer les ventes en espèces'], ok: 1, e: 'La sortie garde la caisse juste. Le dépôt se retrouvera ensuite dans la Banque.' },
+        { q: 'À midi, vous voulez vérifier les espèces sans arrêter la journée.', r: ['Faire la clôture Z', 'Faire un point de caisse', 'Fermer DIOPTRA'], ok: 1, e: 'Le point de caisse se fait autant de fois que nécessaire. La clôture Z, une seule fois, le soir.' },
+        { q: 'Que se passe-t-il à la clôture Z ?', r: ['La journée est arrêtée et le rapport est produit', 'Les ventes du jour sont effacées', 'Le stock est remis à zéro'], ok: 0, e: 'Le rapport Z récapitule la journée et peut être envoyé par e-mail ou WhatsApp.' },
+      ] },
+    { id: 'r2', titre: 'Gérer le stock et imprimer les étiquettes', duree: 6,
+      objectif: 'Retrouver un produit, créer une fiche, comprendre les codes étiquette et imprimer les étiquettes à plier.',
+      points: ['Le stock affiché est celui du magasin sélectionné.', 'Code étiquette d\'une monture : 2 lettres de la marque + numéro (Fred → FR001, Ray-Ban → RB001).', 'Étiquettes : planche A4 de 65, pliée sur la branche (gauche : code-barres, droite : prix et modèle).', 'Imprimez à 100 %, marges « Aucune ». Sur une planche entamée, choisissez la première case libre.', 'L\'onglet Mouvements retrace chaque entrée et sortie de stock.'],
+      exercice: 'Sélectionnez trois montures et préparez leurs étiquettes en commençant à la case 10 d\'une planche.',
+      visite: [
+        { go: () => openStock('prod'), sel: '#stTabs', t: 'Le stock : produits, réception, transferts, inventaire, tarifs et mouvements.' },
+        { sel: '#stQ', t: 'Cherchez par marque, modèle, code étiquette ou code-barres.' },
+        { sel: '#stNew', t: 'Nouvelle fiche produit : le code étiquette est proposé automatiquement à partir de la marque.' },
+        { sel: '#stRows', t: 'La liste du stock. Cochez des produits pour imprimer leurs étiquettes.' },
+        { sel: '#stLabels', t: 'Imprimer les étiquettes : format 65, pliage gauche / droite, prix affiché ou non.' },
+        { sel: '[data-st="mvt"]', t: 'Les mouvements : qui a fait entrer ou sortir quoi, et quand.' },
+      ],
+      quiz: [
+        { q: 'Quel code recevra la première monture de la marque Ray-Ban ?', r: ['M1', 'RB001', 'RAY1'], ok: 1, e: 'Initiales des 2 premiers mots de la marque, puis un numéro sur 3 chiffres.' },
+        { q: 'Comment se plie l\'étiquette sur la branche ?', r: ['En deux : code-barres à gauche, prix et modèle à droite', 'Elle ne se plie pas', 'En quatre'], ok: 0, e: 'Les petits repères au milieu de l\'étiquette indiquent le pli.' },
+        { q: 'Vous voulez savoir qui a sorti une monture du stock.', r: ['Onglet Mouvements', 'Onglet Tarifs', 'Ce n\'est pas tracé'], ok: 0, e: 'Chaque entrée et sortie est datée et nominative.' },
+      ] },
+    { id: 'r3', titre: 'Réceptionner les livraisons et les factures', duree: 6,
+      objectif: 'Contrôler une livraison au scan, la faire entrer en stock et suivre les factures fournisseurs.',
+      points: ['Les factures Prismea arrivent seules dans Achats › Livraisons.', 'À l\'arrivée du colis : scannez chaque monture. Les manquantes sont signalées.', 'En validant, les montures entrent en stock et la facture passe dans « Factures à payer ».', 'Facture d\'un autre fournisseur : glissez le PDF, l\'Excel ou le CSV dans le cadre d\'import.', 'Transport, fournitures, service : créez seulement la facture à payer.'],
+      exercice: 'Importez une facture fournisseur de test (Excel ou PDF) et créez la livraison à réceptionner.',
+      visite: [
+        { go: () => openAchat('liv'), sel: '#acDrop', t: 'Le cadre d\'import : cliquez ou glissez une facture PDF, Excel ou CSV.' },
+        { sel: '#livRows', t: 'Les livraisons à réceptionner, dont celles envoyées par Prismea. Un clic ouvre le contrôle par scan.' },
+        { go: () => openAchat('fac'), sel: '#facKpi', t: 'Les factures fournisseurs : reste à payer, en retard, échéances proches.' },
+        { sel: '#facRows', t: 'Chaque facture et son échéance. « Régler » enregistre un paiement.' },
+        { sel: '#facNew', t: 'Une facture sans livraison (loyer, transport…) se saisit ici.' },
+      ],
+      quiz: [
+        { q: 'Une facture Prismea arrive. Où la trouver ?', r: ['Achats › Livraisons, automatiquement', 'Il faut la ressaisir', 'Dans la caisse du jour'], ok: 0, e: 'Prismea envoie la livraison directement. Il reste à la contrôler au scan.' },
+        { q: 'Vous recevez la facture d\'un transitaire, sans montures.', r: ['Créer une livraison à réceptionner', 'Créer seulement la facture à payer', 'L\'ignorer'], ok: 1, e: 'Sans articles à mettre en stock, seule la facture à payer est utile.' },
+        { q: 'Quand les montures entrent-elles en stock ?', r: ['À l\'import de la facture', 'À la validation du contrôle par scan', 'Au paiement de la facture'], ok: 1, e: 'Seul ce qui a été scanné à la réception entre en stock.' },
+      ] },
+    { id: 'r4', titre: 'Commander à la centrale', duree: 4,
+      objectif: 'Choisir des montures dans le catalogue de la centrale, envoyer la commande et suivre son statut.',
+      points: ['Le catalogue montre les montures disponibles à la centrale, avec photo et prix d\'achat.', 'Le panier est gardé même sans internet ; l\'envoi, lui, demande internet.', 'Choisissez le magasin à livrer avant d\'envoyer.', 'La facture de la centrale arrivera ensuite dans Achats › Livraisons.'],
+      exercice: 'Préparez un panier de réassort vitrine de trois montures (sans l\'envoyer si vous êtes en test).',
+      visite: [
+        { go: () => openCtr(), sel: ['#cmdQ', '#cmdOff'], t: 'Cherchez par marque, modèle, coloris ou code-barres.' },
+        { sel: ['#cmdCat', '#cmdOff'], t: 'Le catalogue de la centrale : « + » ajoute au panier.' },
+        { sel: ['.cmd-panier', '#cmdOff'], t: 'Le panier : magasin à livrer, commentaire, total.' },
+        { sel: ['#cmdEnv', '#cmdOff'], t: 'Envoyer la commande à la centrale.' },
+        { sel: '#cmdRows', t: 'Vos commandes et leur statut : envoyée, traitée par la centrale, facturée.' },
+      ],
+      quiz: [
+        { q: 'Après l\'envoi d\'une commande, où arrive la facture de la centrale ?', r: ['Dans Achats › Livraisons, pour la réception en stock', 'Dans la caisse du jour', 'Par courrier seulement'], ok: 0, e: 'Elle se réceptionne comme toute livraison, au scan.' },
+        { q: 'Internet coupe pendant que vous remplissez le panier.', r: ['Le panier est perdu', 'Le panier est gardé ; vous l\'enverrez au retour d\'internet', 'La commande part quand même'], ok: 1, e: 'Seul l\'envoi a besoin d\'internet.' },
+      ] },
+    { id: 'r5', titre: 'Inventaire et transferts entre magasins', duree: 5,
+      objectif: 'Corriger le stock par un inventaire et envoyer des montures à un autre magasin.',
+      points: ['L\'inventaire compare le stock compté au stock théorique et corrige les écarts.', 'Filtrez par catégorie pour compter rayon par rayon.', 'Un transfert sort le stock d\'un magasin et l\'entre dans l\'autre.', 'Chaque inventaire et transfert est conservé dans l\'historique.'],
+      exercice: 'Faites l\'inventaire d\'une petite catégorie (entretien par exemple) et préparez un transfert de test.',
+      visite: [
+        { go: () => openStock('inv'), sel: '#invQ', t: 'L\'inventaire : filtrez la catégorie à compter.' },
+        { sel: '#invRows', t: 'Saisissez le nombre compté pour chaque produit ; les écarts apparaissent.' },
+        { sel: '#invOk', t: 'Valider l\'inventaire corrige le stock et garde la trace des écarts.' },
+        { go: () => openStock('tr'), sel: '#trTo', t: 'Le transfert : choisissez le magasin destinataire.' },
+        { sel: '#trP', t: 'Scannez les montures à envoyer.' },
+        { sel: '#trOk', t: 'Valider : le stock passe d\'un magasin à l\'autre.' },
+      ],
+      quiz: [
+        { q: 'Vous envoyez trois montures au magasin d\'Owendo.', r: ['Les vendre puis les racheter', 'Faire un transfert', 'Faire un inventaire'], ok: 1, e: 'Le transfert garde le stock juste dans les deux magasins.' },
+        { q: 'Le stock affiché ne correspond pas à ce qui est en vitrine.', r: ['Faire un inventaire', 'Modifier les prix', 'Attendre la fin du mois'], ok: 0, e: 'L\'inventaire corrige les écarts et les trace.' },
+      ] },
+    { id: 'r6', titre: 'Impayés clients et bordereaux d\'assurance', duree: 5,
+      objectif: 'Relancer les clients qui doivent encore de l\'argent et envoyer chaque mois les bordereaux aux assurances.',
+      points: ['Les impayés sont classés par ancienneté : moins de 30 jours, 30 à 60, plus de 60.', 'Relancez par message et notez la relance.', 'Chaque mois : un bordereau par assurance, qui regroupe ses prises en charge.', 'Suivez l\'âge de chaque bordereau et relancez l\'assurance si besoin.'],
+      exercice: 'Repérez l\'impayé le plus ancien et préparez le message de relance.',
+      visite: [
+        { go: () => openCompta('imp'), sel: '#ipKpi', t: 'Les impayés clients par ancienneté.' },
+        { sel: '#ipRows', t: 'Chaque client : message de relance, relance notée, encaissement.' },
+        { go: () => openCompta('pec'), sel: '#pcRows', t: 'Toutes les prises en charge et leur statut : à facturer, facturée, payée.' },
+        { sel: '#brNew', t: 'Le bordereau mensuel : choisissez l\'assurance et le mois, DIOPTRA regroupe les dossiers.' },
+        { sel: '#brList', t: 'Les bordereaux envoyés, leur âge et leurs relances.' },
+      ],
+      quiz: [
+        { q: 'À quoi sert le bordereau mensuel ?', r: ['À regrouper les prises en charge d\'une assurance pour le mois et les lui envoyer', 'À clôturer la caisse', 'À commander des verres'], ok: 0, e: 'L\'assurance règle ensuite sur la base de ce bordereau.' },
+        { q: 'Un client doit encore 30 000 FCFA depuis 70 jours.', r: ['L\'oublier', 'Le relancer depuis Impayés clients et noter la relance', 'Annuler la vente'], ok: 1, e: 'Les relances notées évitent d\'appeler deux fois le même client.' },
+      ] },
+    { id: 'r7', titre: 'Pointer les règlements d\'assurance', duree: 5,
+      objectif: 'Enregistrer un chèque ou un virement d\'assurance et pointer les dossiers réglés.',
+      points: ['Saisissez l\'assurance, le n° de chèque et le montant.', 'Scannez ou photographiez le bordereau papier : les dossiers sont retrouvés et pointés.', 'Ou tapez le n° de dossier, de facture ou le nom, puis Entrée.', 'Rejet ou paiement partiel : litige, au client ou abandon, au cas par cas.', 'Le compte est bon quand le total pointé égale le chèque.'],
+      exercice: 'Pointez un règlement de test pour un bordereau, avec un dossier en litige.',
+      visite: [
+        { go: () => openAss('pt'), sel: '#ptOrg', t: 'Choisissez l\'assurance qui a payé, puis saisissez le chèque.' },
+        { sel: 'label:has(#ptScanFile)', t: 'Le plus rapide : photographiez le bordereau papier, DIOPTRA pointe les dossiers.' },
+        { go: () => openAss('suivi'), sel: '#asKpi', t: 'Ce que les assurances vous doivent, dont les litiges.' },
+        { sel: '#asOrgRows', t: 'Les sommes dues par assurance, et l\'ancienneté du plus vieux dossier.' },
+        { sel: '#asLitRows', t: 'Les litiges à relancer : au client, abandon, ou levée du litige.' },
+      ],
+      quiz: [
+        { q: 'Vous recevez un chèque avec son bordereau papier.', r: ['Pointer chaque dossier, en scannant le bordereau ou en tapant les numéros', 'Encaisser le chèque dans la caisse du jour', 'Ne rien faire'], ok: 0, e: 'Le pointage met à jour chaque dossier et le reste dû par l\'assurance.' },
+        { q: 'L\'assurance refuse un dossier car le bon est expiré, et vous allez le recontester.', r: ['Le passer au client', 'Le mettre en litige avec le motif', 'L\'abandonner'], ok: 1, e: 'Le litige reste dû et apparaît dans la liste à relancer.' },
+        { q: 'Quand le pointage est-il juste ?', r: ['Quand le total pointé est égal au montant du chèque', 'Quand tous les dossiers sont cochés', 'Toujours'], ok: 0, e: 'DIOPTRA affiche « le compte est bon » ou l\'écart.' },
+      ] },
+    { id: 'r8', titre: 'Équipe, codes PIN et droits', duree: 4,
+      objectif: 'Créer les vendeurs, leur donner un code PIN, régler ce qu\'ils peuvent faire et suivre leur formation.',
+      points: ['Chaque vendeur a son propre code PIN : les ventes et encaissements portent son nom.', 'Un vendeur qui quitte l\'équipe se désactive, sans perdre l\'historique.', 'L\'onglet « Droits des vendeurs » règle ce qu\'ils peuvent faire (remises, corrections, produits…).', 'Le module Formation montre qui a validé chaque leçon.'],
+      exercice: 'Vérifiez que chaque membre de l\'équipe a son propre compte, puis regardez leur progression dans Formation.',
+      visite: [
+        { go: () => openParam('usr'), sel: '#prUsrs', t: 'Les utilisateurs du magasin, leur rôle et leur état.' },
+        { sel: '#prUsrAdd', t: 'Ajouter un vendeur : il choisira son code PIN à sa première connexion.' },
+        { go: () => openParam('drt'), sel: '#prDroits', t: 'Ce que les vendeurs ont le droit de faire. Le reste demande un responsable.' },
+        { go: () => { openForm(); }, sel: '#foEquipe', t: 'Et ici, la progression de chacun dans la formation.' },
+      ],
+      quiz: [
+        { q: 'Pourquoi chaque vendeur doit-il avoir son propre code PIN ?', r: ['Pour que chaque vente et encaissement porte le bon nom', 'Ce n\'est pas utile', 'Pour changer de magasin'], ok: 0, e: 'Les statistiques par vendeur et la caisse en dépendent.' },
+        { q: 'Un vendeur quitte le magasin.', r: ['Supprimer ses ventes', 'Désactiver son utilisateur', 'Garder son code actif'], ok: 1, e: 'Désactivé, il ne peut plus se connecter ; son historique reste.' },
+      ] },
+  ];
+  const PARCOURS = { vendeur: { nom: 'Vendeur', lecons: LECONS }, responsable: { nom: 'Responsable de magasin', lecons: LECONS_RESP } };
+  const leconDe = id => [...LECONS, ...LECONS_RESP].find(x => x.id === id);
+  // parcours principal selon le rôle ; les responsables et administrateurs voient aussi le parcours Vendeur
+  const parcoursDe = u => u.role === 'vendeur' ? 'vendeur' : 'responsable';
+  let foPc = null;
   const statutLecon = (pr) => pr?.ok ? 'fait' : pr?.visite || pr?.score != null ? 'cours' : 'afaire';
   function majTuileForm(){
-    const pr = progUser(user.id), n = LECONS.filter(l => pr[l.id]?.ok).length, next = LECONS.find(l => !pr[l.id]?.ok);
-    F('tFoN').textContent = `${n} / ${LECONS.length}`; F('tFoNext').textContent = next ? next.titre : 'Parcours terminé ✓';
+    const L = PARCOURS[parcoursDe(user)].lecons, pr = progUser(user.id), n = L.filter(l => pr[l.id]?.ok).length, next = L.find(l => !pr[l.id]?.ok);
+    F('tFoN').textContent = `${n} / ${L.length}`; F('tFoNext').textContent = next ? next.titre : 'Parcours terminé ✓';
   }
-  function openForm(){ drawForm(); go('form'); }
+  function openForm(){ if (!foPc || (user.role === 'vendeur' && foPc !== 'vendeur')) foPc = parcoursDe(user); drawForm(); go('form'); }
+  F('foTabs').addEventListener('click', e => { const b = e.target.closest('[data-fo-pc]'); if (b) { foPc = b.dataset.foPc; drawForm(); } });
   F('goForm').addEventListener('click', openForm);
   function drawForm(){
-    F('foSub').textContent = `${user.nom} · parcours Vendeur`;
+    if (user.role === 'vendeur') foPc = 'vendeur';
+    const PC = PARCOURS[foPc || parcoursDe(user)], LECONS = PC.lecons;
+    F('foTabs').hidden = user.role === 'vendeur';
+    F('foTabs').querySelectorAll('[data-fo-pc]').forEach(b => b.classList.toggle('on', b.dataset.foPc === (foPc || parcoursDe(user))));
+    F('foSub').textContent = `${user.nom} · parcours ${PC.nom}`;
+    F('foIntro').textContent = PC === PARCOURS.vendeur ? 'Huit courtes leçons pour maîtriser DIOPTRA au comptoir.' : 'Huit leçons pour faire tourner le magasin : caisse, stock, réceptions, centrale, inventaire, impayés, assurances et équipe.';
     const pr = progUser(user.id), n = LECONS.filter(l => pr[l.id]?.ok).length;
     F('foBar').style.width = (100 * n / LECONS.length) + '%'; F('foProg').textContent = `${n} leçon${n > 1 ? 's' : ''} terminée${n > 1 ? 's' : ''} sur ${LECONS.length}`;
     F('foList').innerHTML = LECONS.map((l, i) => { const p = pr[l.id], st = statutLecon(p);
@@ -6072,7 +6215,7 @@ select.inp{appearance:auto}
         <div class="fo-meta"><span>${l.duree} min</span>${st === 'fait' ? `<span class="chip">Terminée · ${p.score}/${p.total}</span>` : st === 'cours' ? `<span class="chip warn">En cours${p.score != null ? ` · quiz ${p.score}/${p.total}` : ''}</span>` : '<span class="chip blue">À faire</span>'}</div>
         <div class="fo-acts"><button class="ghost" type="button" data-fo-voir="${l.id}">Ouvrir la leçon</button><button class="save" type="button" data-fo-tour="${l.id}">Visite guidée</button><button class="ghost" type="button" data-fo-quiz="${l.id}">Quiz</button></div></div></article>`; }).join('');
     // suivi de l'équipe (responsables et administrateurs)
-    const U = PARAM.users.filter(u => u.actif && (user.role === 'admin' || !u.magasins?.length || u.magasins.includes(boutiqueCour())));
+    const U = PARAM.users.filter(u => u.actif && (PC === PARCOURS.vendeur || u.role !== 'vendeur') && (user.role === 'admin' || !u.magasins?.length || u.magasins.includes(boutiqueCour())));
     F('foEquipe').hidden = user.role === 'vendeur';
     if (user.role !== 'vendeur') F('foTeam').innerHTML = `<thead><tr><th>Utilisateur</th>${LECONS.map((l, i) => `<th title="${esc(l.titre)}" style="text-align:center">${i + 1}</th>`).join('')}<th style="text-align:right">Terminées</th></tr></thead><tbody>${
       U.map(u => { const p = progUser(u.id), n2 = LECONS.filter(l => p[l.id]?.ok).length;
@@ -6081,7 +6224,7 @@ select.inp{appearance:auto}
   F('foList').addEventListener('click', e => { const d = e.target.dataset;
     if (d.foVoir) voirLecon(d.foVoir); else if (d.foTour) lancerVisite(d.foTour); else if (d.foQuiz) lancerQuiz(d.foQuiz); });
   function voirLecon(id){
-    const l = LECONS.find(x => x.id === id);
+    const l = leconDe(id);
     F('foLecT').textContent = l.titre;
     F('foLecB').innerHTML = `<p class="sub" style="margin-top:0">${esc(l.objectif)}</p><span class="lbl">À retenir</span><ul class="fo-pts">${l.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <span class="lbl" style="margin-top:12px">Exercice pratique</span><p class="fo-ex">${esc(l.exercice)}</p><p class="muted" style="font-size:12px;margin:6px 0 0">Avant le démarrage réel, entraînez-vous sur de vrais dossiers : l'activité de test sera effacée au passage en réel.</p>`;
@@ -6093,12 +6236,14 @@ select.inp{appearance:auto}
 
   // --- Visite guidée : met en lumière les éléments des vrais écrans ; les clics sont bloqués, rien n'est enregistré
   let tour = null;
-  function lancerVisite(id){ const l = LECONS.find(x => x.id === id); tour = { l, i: 0 }; F('tourOv').hidden = false; document.body.classList.add('en-visite'); etapeVisite(); }
+  function lancerVisite(id){ const l = leconDe(id); tour = { l, i: 0 }; F('tourOv').hidden = false; document.body.classList.add('en-visite'); etapeVisite(); }
   function etapeVisite(){
     const { l, i } = tour, st = l.visite[i];
     try { st.go && st.go(); } catch(er) { console.error('visite', er); }
     setTimeout(() => {
-      const el = st.sel ? [...document.querySelectorAll(st.sel)].find(x => x.offsetParent !== null || x.getClientRects().length) : null;
+      // sel : un sélecteur ou une liste par ordre de préférence (le premier élément visible est montré)
+      const vis = x => x.offsetParent !== null || x.getClientRects().length;
+      let el = null; for (const q of [].concat(st.sel || [])) { el = [...document.querySelectorAll(q)].find(vis); if (el) break; }
       if (el) el.scrollIntoView({ block: 'center', behavior: 'instant' });
       setTimeout(() => placerVisite(el, st), 60);
     }, st.go ? 220 : 30);
@@ -6129,7 +6274,7 @@ select.inp{appearance:auto}
 
   // --- Quiz : une question à la fois, explication après chaque réponse, réussite à partir de 2/3 des bonnes réponses
   let qz = null;
-  function lancerQuiz(id){ const l = LECONS.find(x => x.id === id); qz = { l, i: 0, bons: 0, rep: null }; F('dlgQuiz').hidden = false; drawQuiz(); }
+  function lancerQuiz(id){ const l = leconDe(id); qz = { l, i: 0, bons: 0, rep: null }; F('dlgQuiz').hidden = false; drawQuiz(); }
   function drawQuiz(){
     const { l, i, rep } = qz, Q = l.quiz;
     F('qzT').textContent = `Quiz · ${l.titre}`;
