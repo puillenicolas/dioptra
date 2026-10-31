@@ -701,6 +701,23 @@ tr.pt td{color:var(--muted)}
 .ai-head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}@media (max-width:900px){.ai-head{grid-template-columns:1fr 1fr}}
 .ai-map{max-width:420px;margin:12px 0 8px}.ai-tbl input.inp{padding:6px 8px;font-size:13px;min-width:70px}
 .save.danger{background:var(--ic-rose-fg);border-color:var(--ic-rose-fg)}.save.danger:disabled{opacity:.45}.raz-card{border-color:var(--ic-rose-fg)}
+.fo-prog{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.fo-track{flex:1;min-width:180px;height:10px;border-radius:99px;background:var(--line);overflow:hidden}.fo-bar{height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+.fo-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:14px;margin-bottom:20px}
+.fo-card{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}.fo-card.fait{border-color:var(--ok)}
+.fo-n{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--ic-purple);color:var(--ic-purple-fg)}.fo-card.fait .fo-n{background:var(--ic-green);color:var(--ic-green-fg)}
+.fo-b{min-width:0;flex:1}.fo-b h3{margin:4px 0 4px;font-size:16px}.fo-b p{margin:0;font-size:13px;opacity:.8}
+.fo-meta{display:flex;gap:10px;align-items:center;margin:8px 0;font-size:12px;opacity:.9}.fo-acts{display:flex;gap:8px;flex-wrap:wrap}.fo-acts button{padding:8px 12px;font-size:13px}
+.fo-ok{color:var(--ok);font-weight:700}.fo-mid{color:var(--ic-amber-fg);font-weight:700}
+.fo-lec{padding:4px 20px 8px}.fo-pts{margin:6px 0 0;padding-left:20px;display:grid;gap:6px;font-size:14px}.fo-ex{margin:6px 0 0;padding:10px 12px;border-radius:10px;background:var(--ic-blue);font-size:14px}
+.qz-q{font-size:16px;font-weight:600;margin:0 0 12px}.qz-r{display:grid;gap:8px}.qz-r button{text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;font:inherit;cursor:pointer}
+.qz-r button:hover:not(:disabled){border-color:var(--primary)}.qz-r button.bon{border-color:var(--ok);background:var(--ic-green)}.qz-r button.faux{border-color:var(--ic-rose-fg);background:var(--ic-rose)}.qz-r button:disabled{cursor:default;opacity:1}
+.qz-e{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--ic-rose);font-size:14px}.qz-e.ok{background:var(--ic-green)}
+.qz-fin{text-align:center;padding:20px 0}.qz-fin b{font-size:40px;display:block}.qz-fin.ok b{color:var(--ok)}
+.tour-ov{position:fixed;inset:0;z-index:9000}
+.tour-spot{position:fixed;border-radius:10px;box-shadow:0 0 0 9999px rgb(0 0 0 / .55);outline:3px solid #fff;transition:all .2s;pointer-events:none}
+.tour-bub{position:fixed;background:var(--card);color:var(--ink);border-radius:12px;padding:14px 16px;box-shadow:0 12px 40px rgb(0 0 0 / .35);z-index:9001}
+.tour-bub p{margin:6px 0 12px;font-size:15px;line-height:1.45}.tour-pos{font-size:12px;font-weight:600;color:var(--primary)}.tour-acts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.tour-acts button{padding:8px 12px;font-size:13px}
+body.en-visite .dsync{z-index:8999}
 .pt-form{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1.3fr;gap:12px}@media (max-width:900px){.pt-form{grid-template-columns:1fr 1fr}}
 .pt-br{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pt-chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;color:inherit;text-align:left}
 .pt-chip span{color:var(--primary);font-weight:600;margin-left:6px}.pt-chip.on{border-color:var(--primary);background:var(--ic-blue)}
@@ -1147,6 +1164,17 @@ select.inp{appearance:auto}
       </ul>
     </section>
 
+    <section class="tile" id="tForm">
+      <button class="tile-link" id="goForm" aria-label="Ouvrir la formation">
+      <div class="ic purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5 12 4l10 4.5-10 4.5L2 8.5Z" fill="currentColor"/><path d="M6 10.5V15c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/><path d="M22 8.5V14"/></svg></div>
+      <h2>Formation</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>Mes leçons : <b id="tFoN">0 / 8</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Prochaine : <b id="tFoNext">—</b></span></li>
+      </ul>
+    </section>
+
     <section class="tile tile-wide" id="tStat">
       <button class="tile-link" id="goStat" aria-label="Ouvrir les statistiques">
       <div class="ic blue"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1582,6 +1610,31 @@ select.inp{appearance:auto}
 
 </main>
 
+<div class="overlay" id="dlgLec" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="foLecT" style="width:min(560px,100%)">
+    <header><h2 id="foLecT"></h2><button class="x" type="button" data-close-lec aria-label="Fermer">×</button></header>
+    <div class="fo-lec" id="foLecB"></div>
+    <div class="actions"><button type="button" class="ghost" data-close-lec>Fermer</button><button type="button" class="ghost" id="foLecQuiz">Quiz</button><button type="button" class="save" id="foLecTour">Lancer la visite guidée</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlgQuiz" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="qzT" style="width:min(560px,100%)">
+    <header><h2 id="qzT"></h2><button class="x" type="button" data-close-qz aria-label="Fermer">×</button></header>
+    <div class="fo-lec" id="qzB"></div>
+    <div class="actions"><button type="button" class="ghost" data-close-qz>Fermer</button><button type="button" class="save" id="qzGo">Question suivante</button></div>
+  </div>
+</div>
+
+<div class="tour-ov" id="tourOv" hidden>
+  <div class="tour-spot" id="tourSpot"></div>
+  <div class="tour-bub" id="tourBub" role="dialog" aria-live="polite">
+    <div class="tour-pos" id="tourPos"></div>
+    <p id="tourTxt"></p>
+    <div class="tour-acts"><button class="ghost" type="button" id="tourQuit">Quitter</button><span><button class="ghost" type="button" id="tourPrev">Précédent</button> <button class="save" type="button" id="tourNext">Suivant</button></span></div>
+  </div>
+</div>
+
 <div class="overlay" id="dlgBkQ" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bqqTitle" style="width:min(560px,100%)">
     <header><h2 id="bqqTitle">À quoi correspond cet avis ?</h2><button class="x" type="button" data-close-bkq aria-label="Fermer">×</button></header>
@@ -1728,6 +1781,23 @@ select.inp{appearance:auto}
       <div class="tbl-wrap"><table class="s-tbl bk-tbl"><thead><tr><th>Date</th><th>Libellé</th><th style="text-align:right">Débit</th><th style="text-align:right">Crédit</th><th>Rapprochement</th></tr></thead><tbody id="bkRows"></tbody></table></div>
       <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
     </section>
+</main>
+<main id="v-form" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="foSub"></div><h1>Formation DIOPTRA</h1></div></div>
+  <section class="blk fo-top">
+    <p class="sub" style="margin-top:0">Huit courtes leçons pour maîtriser DIOPTRA au comptoir. Pour chacune : la <b>visite guidée</b> vous montre les vrais écrans pas à pas (sans rien enregistrer), puis un <b>quiz</b> de quelques questions valide la leçon.</p>
+    <div class="fo-prog"><div class="fo-track"><div class="fo-bar" id="foBar"></div></div><span id="foProg"></span></div>
+  </section>
+  <div class="fo-list" id="foList"></div>
+  <section class="blk" id="foEquipe" hidden>
+    <div class="row-head"><h2>Suivi de l'équipe</h2></div>
+    <p class="sub">Leçons validées par chaque utilisateur (✓ validée, … commencée). Chacun suit sa formation avec son propre code PIN.</p>
+    <div class="tbl-wrap"><table class="s-tbl" id="foTeam"></table></div>
+  </section>
 </main>
 <main id="v-ctr" hidden>
   <button class="crumb" data-go="accueil">
@@ -2555,7 +2625,7 @@ select.inp{appearance:auto}
         <ul class="c-lines" id="cLines"></ul>
       </section>
 
-      <section class="blk">
+      <section class="blk" id="secPec">
         <h2>Prise en charge assurance / mutuelle</h2>
         <div class="note ok" id="pecLock" hidden></div>
         <div id="pecEdit">
@@ -2891,11 +2961,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), ctr: document.getElementById('v-ctr'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), ctr: document.getElementById('v-ctr'), form: document.getElementById('v-form'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -5839,6 +5909,248 @@ select.inp{appearance:auto}
   });
 
 
+
+  /* ================= Formation : leçons, visites guidées sur les vrais écrans, quiz, suivi de l'équipe ================= */
+  // Progression par utilisateur (code PIN), synchronisée : { [userId]: { [leçon]: { visite, score, total, ok, le } } }
+  let formation = ld0('formation', {});
+  const saveForm = () => { try { localStorage.setItem('formation', JSON.stringify(formation)); } catch(_) {} };
+  const progUser = id => formation[id] || {};
+  const setProg = (lid, d) => { const u = formation[user.id] = formation[user.id] || {}; u[lid] = { ...(u[lid] || {}), ...d, le: new Date().toISOString() }; saveForm(); };
+  // vente récente du magasin pour illustrer les écrans (affichage seulement : rien n'est enregistré pendant une visite)
+  const venteExemple = (avecReste) => { const L = toutesVentes().filter(({ v }) => v.type === 'vente' && Array.isArray(v.paiements) && Array.isArray(v.lignes)).sort((a, b) => b.v.date.localeCompare(a.v.date));
+    return (avecReste && L.find(x => x.v.solde > 0)) || L[0] || null; };
+  const clientExemple = () => clients.find(c => clientVisible(c)) || null;
+  const LECONS = [
+    { id: 'v1', titre: 'Prendre en main DIOPTRA', duree: 5,
+      objectif: 'Se repérer sur l\'accueil, choisir son magasin, changer d\'utilisateur et retrouver n\'importe quoi en quelques secondes.',
+      points: ['Chaque vendeur a son code PIN : en partant de la caisse, on verrouille, le suivant se connecte avec le sien.', 'Le magasin choisi en haut décide des clients, du stock et de la caisse affichés.', 'La recherche globale trouve un client, une monture ou un dossier : scannez l\'étiquette de la péniche et la vente s\'ouvre.', 'Sans internet, DIOPTRA continue de fonctionner : tout part au serveur dès le retour de la connexion (voyant en bas de l\'écran).'],
+      exercice: 'Changez de magasin puis revenez au vôtre, et retrouvez un client par son numéro de téléphone avec la recherche globale.',
+      visite: [
+        { go: () => go('accueil'), sel: '#hello', t: 'Voici l\'accueil. Chaque tuile ouvre un module : clients, vente rapide, caisse du jour, commandes…' },
+        { sel: '#storeBtn', t: 'Le magasin dans lequel vous travaillez. Tout ce que vous voyez (clients, stock, caisse) concerne ce magasin.' },
+        { sel: '#userBtn', t: 'Vos initiales. Cliquez ici pour changer d\'utilisateur : chaque vendeur se connecte avec son propre code PIN, ainsi chaque vente porte le bon nom.' },
+        { sel: '#q', t: 'La recherche globale : nom, téléphone, monture… ou scannez l\'étiquette de la péniche pour ouvrir directement le dossier.' },
+        { sel: '[data-go="clients"].tile-link', t: 'La tuile Client : point de départ de toute vente de lunettes.' },
+        { sel: '#ntTab', t: 'Les post-it de l\'équipe : les messages laissés par vos collègues ou le responsable.' },
+        { sel: '.dsync', t: 'Le voyant de synchronisation. Vert : tout est envoyé. S\'il indique « hors ligne », continuez à travailler normalement, rien n\'est perdu.' },
+      ],
+      quiz: [
+        { q: 'Où choisit-on le magasin dans lequel on travaille ?', r: ['Dans le menu magasin en haut de l\'écran', 'Dans les Paramètres uniquement', 'Ce n\'est pas possible, il est fixé par poste'], ok: 0, e: 'Le menu en haut de l\'écran : clients, stock et caisse suivent le magasin choisi.' },
+        { q: 'Un client revient avec ses lunettes dans la péniche. Le plus rapide pour retrouver sa vente ?', r: ['Chercher son nom dans la liste des clients', 'Scanner l\'étiquette de la péniche dans la recherche globale', 'Demander au responsable'], ok: 1, e: 'Le numéro de dossier de l\'étiquette ouvre directement la vente.' },
+        { q: 'Internet coupe pendant une vente. Que faire ?', r: ['Attendre le retour d\'internet', 'Continuer normalement : tout sera envoyé au retour de la connexion', 'Noter la vente sur papier'], ok: 1, e: 'DIOPTRA fonctionne hors ligne et synchronise ensuite.' },
+      ] },
+    { id: 'v2', titre: 'Trouver ou créer un client', duree: 5,
+      objectif: 'Retrouver un client existant, éviter les doublons, créer une fiche complète et lire son historique.',
+      points: ['Toujours chercher avant de créer : nom, prénom ou téléphone.', 'Seuls les clients de votre magasin s\'affichent.', 'Le téléphone est essentiel : il sert à prévenir le client par WhatsApp.', 'Depuis la fiche : vente de lunettes, devis, lentilles, historique et suivi des ordonnances.'],
+      exercice: 'Cherchez un client par les 4 derniers chiffres de son téléphone, puis ouvrez sa fiche et regardez ses anciennes ventes.',
+      visite: [
+        { go: () => go('clients'), sel: '#cq', t: 'Tapez quelques lettres du nom ou des chiffres du téléphone : la liste se filtre aussitôt.' },
+        { sel: '#v-clients [data-new-client]', t: 'Si le client n\'existe pas, créez-le ici : nom, prénom, sexe, date de naissance et surtout téléphone.' },
+        { sel: '#rows', t: 'La liste des clients du magasin. Un clic ouvre la fiche.' },
+        { go: () => { const c = clientExemple(); if (c) openFiche(c.id); }, sel: '#fName', t: 'La fiche client : ses coordonnées et tout son historique.' },
+        { sel: '#goVente', t: 'Nouvelle vente de lunettes pour ce client.' },
+        { sel: '#goDevis', t: 'Ou un devis, si le client veut réfléchir ou attend l\'accord de son assurance.' },
+        { sel: '#goLent', t: 'La vente de lentilles a son propre parcours.' },
+        { sel: '#histList', t: 'Les ventes et devis précédents : un clic pour revoir l\'ordonnance, les verres et les paiements.' },
+        { sel: '#editClient', t: 'Pour corriger un numéro de téléphone ou une adresse.' },
+      ],
+      quiz: [
+        { q: 'Un client se présente. Première chose à faire dans DIOPTRA ?', r: ['Créer directement une nouvelle fiche', 'Le rechercher pour vérifier qu\'il n\'existe pas déjà', 'Ouvrir la caisse du jour'], ok: 1, e: 'Chercher d\'abord évite les doublons et garde tout l\'historique au même endroit.' },
+        { q: 'Pourquoi le téléphone est-il si important sur la fiche ?', r: ['Pour l\'imprimer sur la facture', 'Pour prévenir le client par WhatsApp quand ses lunettes sont prêtes', 'Il n\'est pas important'], ok: 1, e: 'Les messages WhatsApp (devis, facture, lunettes prêtes) partent vers ce numéro.' },
+        { q: 'Un client d\'un autre magasin du groupe n\'apparaît pas dans la liste. Pourquoi ?', r: ['Chaque magasin ne voit que ses propres clients', 'Il a été supprimé', 'La recherche est en panne'], ok: 0, e: 'Les fichiers clients sont séparés par magasin.' },
+      ] },
+    { id: 'v3', titre: 'Faire une vente de lunettes ou un devis', duree: 8,
+      objectif: 'Saisir l\'ordonnance, choisir les verres et la monture, appliquer les offres et valider la vente ou créer un devis.',
+      points: ['« Que vend-on ? » : verres + monture, verres seuls (monture du client) ou monture seule.', 'L\'ordonnance : date, prescripteur, puis sphère, cylindre, axe et addition pour chaque œil.', 'La monture s\'ajoute en scannant son étiquette.', 'Le récapitulatif à droite donne le total en direct.', 'Client hésitant : « Créer un devis » au lieu de valider. Le devis pourra être transformé en vente plus tard.'],
+      exercice: 'Sur un client de test : saisissez une ordonnance, choisissez des verres, scannez une monture et créez un devis.',
+      visite: [
+        { go: () => { const c = clientExemple(); if (c) { openFiche(c.id); openVente('vente'); } }, sel: '#ctOpts', t: 'Que vend-on ? Verres + monture, verres seuls si le client garde sa monture, ou monture seule.' },
+        { sel: '#secRx', t: 'L\'ordonnance : date, prescripteur, puis les corrections de chaque œil. DIOPTRA signale les valeurs incohérentes.' },
+        { sel: '#secVerres', t: 'Les verres : marque, gamme et options (amincissement, anti-reflet, photochromique…). Le prix se calcule tout seul.' },
+        { sel: '#secMonture', t: 'La monture : scannez l\'étiquette ou cherchez-la dans le stock.' },
+        { sel: '#addExtra', t: 'Ajoutez un étui, un produit d\'entretien ou une option.' },
+        { sel: '#secOffre', t: 'Les offres du moment, par exemple la 2e paire.' },
+        { sel: '#recapTot', t: 'Le total à payer, mis à jour à chaque choix.' },
+        { sel: '#validate', t: 'Valider la vente : on passe à l\'encaissement (prise en charge et paiements).' },
+        { sel: '#validateDevis', t: 'Ou créer un devis. Il réserve la monture pendant un mois et peut être envoyé par WhatsApp.' },
+      ],
+      quiz: [
+        { q: 'Le client garde sa monture et ne change que ses verres. Que choisir dans « Que vend-on ? » ?', r: ['Verres + monture', 'Verres seuls (monture du client)', 'Monture seule'], ok: 1, e: '« Verres seuls » : aucune monture n\'est sortie du stock.' },
+        { q: 'Le client veut réfléchir ou attend l\'accord de son assurance. Que faire ?', r: ['Valider la vente quand même', 'Créer un devis', 'Ne rien enregistrer'], ok: 1, e: 'Le devis garde tout et se transforme en vente le jour où le client revient.' },
+        { q: 'Comment ajoute-t-on la monture choisie ?', r: ['En scannant son étiquette', 'En tapant son prix', 'Elle est ajoutée automatiquement'], ok: 0, e: 'Le scan évite les erreurs de prix et met le stock à jour.' },
+      ] },
+    { id: 'v4', titre: 'Encaisser et gérer les assurances', duree: 6,
+      objectif: 'Enregistrer une ou plusieurs prises en charge, encaisser en plusieurs modes et laisser un reste à payer.',
+      points: ['Un client peut avoir plusieurs assurances : ajoutez une prise en charge par assurance.', 'Saisissez le matricule et le n° de bon : ils figurent sur la facture de l\'assurance.', 'Plusieurs paiements possibles : espèces, carte, mobile money…', 'Un reste à payer est permis : il apparaît dans les impayés et s\'encaisse plus tard depuis le dossier.'],
+      exercice: 'Sur une vente de test : ajoutez deux prises en charge, un acompte en espèces et laissez un reste.',
+      visite: [
+        { go: () => { const x = venteExemple(true); if (x) { current = x.c; draft = x.v; openCaisse({ mode: 'solde' }); } }, sel: '#cLines', t: 'Le détail de la vente à encaisser.' },
+        { sel: '#secPec', t: 'Les prises en charge : assurance, matricule, n° de bon et montant. Le bouton « + » ajoute une deuxième assurance.' },
+        { sel: '#payList', t: 'Les paiements du patient : choisissez le mode et le montant. On peut combiner plusieurs modes.' },
+        { sel: '#cSolde', t: 'Ce qu\'il reste à payer. S\'il reste un solde, il sera suivi dans les impayés.' },
+        { sel: '#encaisser', t: 'Encaisser : la facture et la fiche technique sont prêtes à imprimer.' },
+      ],
+      quiz: [
+        { q: 'Le client a deux assurances pour la même paire. Comment faire ?', r: ['Choisir la plus importante seulement', 'Ajouter une prise en charge par assurance', 'Faire deux ventes'], ok: 1, e: 'Chaque assurance a sa propre facture, avec seulement son montant.' },
+        { q: 'Le client paie une partie en espèces et le reste par mobile money.', r: ['Impossible : un seul mode par vente', 'Ajouter deux paiements, un par mode', 'Tout mettre en espèces'], ok: 1, e: 'Chaque paiement garde son mode : la caisse du jour reste juste.' },
+        { q: 'Le client laisse un acompte et paiera le reste au retrait. Que se passe-t-il ?', r: ['Le reste apparaît dans les impayés et s\'encaisse plus tard depuis le dossier', 'La vente est bloquée', 'Il faut annuler et refaire la vente'], ok: 0, e: 'Le solde se règle depuis le dossier, au retrait des lunettes.' },
+      ] },
+    { id: 'v5', titre: 'Suivre un dossier après la vente', duree: 5,
+      objectif: 'Retrouver une vente, encaisser un reste, suivre la commande et prévenir le client.',
+      points: ['Le dossier regroupe ordonnance, verres, paiements et étapes de la commande.', '« Encaisser » règle le reste dû.', 'Une vente sans aucun paiement peut être remise en devis.', 'Lunettes prêtes : prévenez le client par WhatsApp depuis le dossier.'],
+      exercice: 'Ouvrez une vente avec un reste à payer, faites avancer l\'étape de la commande et préparez le message « lunettes prêtes ».',
+      visite: [
+        { go: () => { const x = venteExemple(true); if (x) { current = x.c; openDetail(x.v); } }, sel: '#detTitle', t: 'Le dossier de la vente : numéro, date, magasin et n° de dossier atelier.' },
+        { sel: '#detActs', t: 'Les actions : imprimer, encaisser le reste, modifier, remettre en devis si rien n\'a été payé…' },
+        { sel: '#detPays', t: 'Les paiements déjà reçus et les prises en charge.' },
+        { sel: '#detSteps', t: 'Les étapes de la commande : commandée, reçue, montée, prête. Chaque étape est datée.' },
+        { sel: '#detWa', t: 'Prévenir le client par WhatsApp : le message est déjà rédigé.' },
+        { sel: '#detSolde', t: 'Le reste dû par le client.' },
+      ],
+      quiz: [
+        { q: 'Une vente a été créée par erreur et rien n\'a été payé. Que faire ?', r: ['La remettre en devis', 'La laisser telle quelle', 'Créer un avoir'], ok: 0, e: '« Remettre en devis » est possible tant qu\'aucun paiement n\'a été reçu.' },
+        { q: 'Les lunettes sont montées et contrôlées. Comment prévenir le client ?', r: ['L\'appeler sans rien noter', 'Envoyer le message WhatsApp depuis le dossier', 'Attendre qu\'il passe'], ok: 1, e: 'Le message part avec le bon nom et le bon magasin, et il est tracé.' },
+      ] },
+    { id: 'v6', titre: 'Imprimer la facture, la fiche technique et l\'étiquette', duree: 4,
+      objectif: 'Imprimer les bons documents et réussir l\'étiquette de la péniche.',
+      points: ['Onglets : facture, fiche technique, factures des assurances.', 'La fiche technique : A4 pliée en deux, avec l\'étiquette de la péniche tout en bas.', 'Imprimez en taille réelle (100 %), marges « Aucune ».', 'Un n° de dossier commençant par « P- » est provisoire : il devient définitif dès que le poste est connecté.', 'Devis et facture peuvent partir par WhatsApp (récapitulatif) ou par e-mail (PDF).'],
+      exercice: 'Imprimez la fiche technique d\'une vente de test, pliez-la et glissez l\'étiquette dans une péniche.',
+      visite: [
+        { go: () => { const x = venteExemple(false); if (x) { current = x.c; openDocs(x.v); } }, sel: '#dTabs', t: 'Les documents de la vente : facture, fiche technique, factures assurance.' },
+        { sel: '#dPaper', t: 'L\'aperçu, exactement comme il sortira de l\'imprimante.' },
+        { sel: '#dPrint', t: 'Imprimer : taille réelle (100 %), marges « Aucune ».' },
+        { sel: '#dPdf', t: 'Ou télécharger le PDF.' },
+        { sel: '#dWaDoc', t: 'Envoyer un récapitulatif clair par WhatsApp.' },
+      ],
+      quiz: [
+        { q: 'L\'étiquette de la péniche sort trop petite. Que vérifier en premier ?', r: ['L\'échelle d\'impression : 100 %, marges « Aucune »', 'La marque de l\'imprimante', 'Le magasin choisi'], ok: 0, e: 'Un « ajuster à la page » réduit tout. Si besoin, le calibrage se règle au-dessus de l\'aperçu.' },
+        { q: 'Le n° de dossier commence par « P- ». Qu\'est-ce que cela veut dire ?', r: ['C\'est une erreur', 'C\'est un numéro provisoire : il deviendra définitif à la connexion', 'Le dossier est payé'], ok: 1, e: 'Hors ligne, le poste donne un numéro provisoire, remplacé par le numéro du magasin dès la connexion.' },
+      ] },
+    { id: 'v7', titre: 'La vente rapide', duree: 3,
+      objectif: 'Vendre en quelques secondes un accessoire, un produit d\'entretien ou une solaire sans ordonnance.',
+      points: ['Pour tout ce qui ne demande pas d\'ordonnance.', 'Le client est facultatif.', 'Un produit absent de la liste se vend en saisie libre.', 'Le ticket ou la facture s\'imprime aussitôt.'],
+      exercice: 'Vendez un produit d\'entretien en espèces sans client, puis un étui en saisie libre.',
+      visite: [
+        { go: () => openRapide(), sel: '#rClient', t: 'Client facultatif : utile pour retrouver l\'achat plus tard.' },
+        { sel: '#rQ', t: 'Cherchez ou scannez le produit.' },
+        { sel: '#rProds', t: 'Les produits de vente rapide : un clic les met au panier.' },
+        { sel: '#rLDes', t: 'Produit absent de la liste ? Saisissez sa désignation et son prix.' },
+        { sel: '#rCart', t: 'Le panier, avec remise possible.' },
+        { sel: '#rPay', t: 'Encaisser : le ticket est prêt à imprimer.' },
+      ],
+      quiz: [
+        { q: 'Un client achète seulement un spray nettoyant. Quel écran utiliser ?', r: ['Une vente de lunettes', 'La vente rapide', 'Un devis'], ok: 1, e: 'La vente rapide est faite pour les achats sans ordonnance.' },
+        { q: 'Le produit n\'existe pas dans la liste.', r: ['On ne peut pas le vendre', 'On le vend en saisie libre', 'On l\'ajoute à une vente de lunettes'], ok: 1, e: 'La saisie libre enregistre la désignation et le prix.' },
+      ] },
+    { id: 'v8', titre: 'Commandes en cours et messages aux clients', duree: 4,
+      objectif: 'Suivre toutes les commandes du magasin et prévenir les clients au bon moment.',
+      points: ['La tuile Commandes indique les commandes en cours et celles prêtes à retirer.', 'Chaque commande avance d\'étape en étape jusqu\'au retrait.', 'Les modèles de messages WhatsApp se modifient dans l\'onglet « Modèles ».', 'L\'onglet « Messages envoyés » garde la trace de chaque envoi.'],
+      exercice: 'Repérez les commandes prêtes à retirer et envoyez un message de rappel à un client de test.',
+      visite: [
+        { go: () => openCmd('suivi'), sel: '#cmRows', t: 'Toutes les commandes du magasin et leur étape. Les plus anciennes sont à surveiller.' },
+        { sel: '#cmTabs', t: 'Suivi, modèles de messages et historique des messages envoyés.' },
+        { go: () => openCmd('modeles'), sel: '#tplBox', t: 'Les modèles : lunettes prêtes, rappel, devis, facture… Adaptez le ton à votre magasin.' },
+      ],
+      quiz: [
+        { q: 'Où voir rapidement les lunettes prêtes à retirer ?', r: ['Sur la tuile Commandes & WhatsApp', 'Dans la caisse du jour', 'Dans les paramètres'], ok: 0, e: 'La tuile affiche « Prêtes à retirer » ; le détail est dans le module.' },
+        { q: 'Vous voulez changer le texte du message « lunettes prêtes ».', r: ['Ce n\'est pas possible', 'Onglet « Modèles » du module Commandes', 'Le réécrire à chaque fois'], ok: 1, e: 'Les modèles servent ensuite à tous les envois.' },
+      ] },
+  ];
+  const statutLecon = (pr) => pr?.ok ? 'fait' : pr?.visite || pr?.score != null ? 'cours' : 'afaire';
+  function majTuileForm(){
+    const pr = progUser(user.id), n = LECONS.filter(l => pr[l.id]?.ok).length, next = LECONS.find(l => !pr[l.id]?.ok);
+    F('tFoN').textContent = `${n} / ${LECONS.length}`; F('tFoNext').textContent = next ? next.titre : 'Parcours terminé ✓';
+  }
+  function openForm(){ drawForm(); go('form'); }
+  F('goForm').addEventListener('click', openForm);
+  function drawForm(){
+    F('foSub').textContent = `${user.nom} · parcours Vendeur`;
+    const pr = progUser(user.id), n = LECONS.filter(l => pr[l.id]?.ok).length;
+    F('foBar').style.width = (100 * n / LECONS.length) + '%'; F('foProg').textContent = `${n} leçon${n > 1 ? 's' : ''} terminée${n > 1 ? 's' : ''} sur ${LECONS.length}`;
+    F('foList').innerHTML = LECONS.map((l, i) => { const p = pr[l.id], st = statutLecon(p);
+      return `<article class="fo-card ${st}" data-lec="${l.id}"><div class="fo-n">${st === 'fait' ? '✓' : i + 1}</div><div class="fo-b"><h3>${esc(l.titre)}</h3><p>${esc(l.objectif)}</p>
+        <div class="fo-meta"><span>${l.duree} min</span>${st === 'fait' ? `<span class="chip">Terminée · ${p.score}/${p.total}</span>` : st === 'cours' ? `<span class="chip warn">En cours${p.score != null ? ` · quiz ${p.score}/${p.total}` : ''}</span>` : '<span class="chip blue">À faire</span>'}</div>
+        <div class="fo-acts"><button class="ghost" type="button" data-fo-voir="${l.id}">Ouvrir la leçon</button><button class="save" type="button" data-fo-tour="${l.id}">Visite guidée</button><button class="ghost" type="button" data-fo-quiz="${l.id}">Quiz</button></div></div></article>`; }).join('');
+    // suivi de l'équipe (responsables et administrateurs)
+    const U = PARAM.users.filter(u => u.actif && (user.role === 'admin' || !u.magasins?.length || u.magasins.includes(boutiqueCour())));
+    F('foEquipe').hidden = user.role === 'vendeur';
+    if (user.role !== 'vendeur') F('foTeam').innerHTML = `<thead><tr><th>Utilisateur</th>${LECONS.map((l, i) => `<th title="${esc(l.titre)}" style="text-align:center">${i + 1}</th>`).join('')}<th style="text-align:right">Terminées</th></tr></thead><tbody>${
+      U.map(u => { const p = progUser(u.id), n2 = LECONS.filter(l => p[l.id]?.ok).length;
+        return `<tr><td><b>${esc(u.prenom)} ${esc(u.nom)}</b><br><small class="muted">${esc(ROLES[u.role] || '')}</small></td>${LECONS.map(l => { const s = statutLecon(p[l.id]); return `<td style="text-align:center" title="${esc(l.titre)}">${s === 'fait' ? '<span class="fo-ok">✓</span>' : s === 'cours' ? '<span class="fo-mid">…</span>' : '<span class="muted">·</span>'}</td>`; }).join('')}<td style="text-align:right"><b>${n2}/${LECONS.length}</b></td></tr>`; }).join('')}</tbody>`;
+  }
+  F('foList').addEventListener('click', e => { const d = e.target.dataset;
+    if (d.foVoir) voirLecon(d.foVoir); else if (d.foTour) lancerVisite(d.foTour); else if (d.foQuiz) lancerQuiz(d.foQuiz); });
+  function voirLecon(id){
+    const l = LECONS.find(x => x.id === id);
+    F('foLecT').textContent = l.titre;
+    F('foLecB').innerHTML = `<p class="sub" style="margin-top:0">${esc(l.objectif)}</p><span class="lbl">À retenir</span><ul class="fo-pts">${l.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <span class="lbl" style="margin-top:12px">Exercice pratique</span><p class="fo-ex">${esc(l.exercice)}</p><p class="muted" style="font-size:12px;margin:6px 0 0">Avant le démarrage réel, entraînez-vous sur de vrais dossiers : l'activité de test sera effacée au passage en réel.</p>`;
+    F('foLecTour').dataset.id = id; F('foLecQuiz').dataset.id = id; F('dlgLec').hidden = false;
+  }
+  document.querySelectorAll('[data-close-lec]').forEach(b => b.addEventListener('click', () => F('dlgLec').hidden = true));
+  F('foLecTour').addEventListener('click', e => { F('dlgLec').hidden = true; lancerVisite(e.target.dataset.id); });
+  F('foLecQuiz').addEventListener('click', e => { F('dlgLec').hidden = true; lancerQuiz(e.target.dataset.id); });
+
+  // --- Visite guidée : met en lumière les éléments des vrais écrans ; les clics sont bloqués, rien n'est enregistré
+  let tour = null;
+  function lancerVisite(id){ const l = LECONS.find(x => x.id === id); tour = { l, i: 0 }; F('tourOv').hidden = false; document.body.classList.add('en-visite'); etapeVisite(); }
+  function etapeVisite(){
+    const { l, i } = tour, st = l.visite[i];
+    try { st.go && st.go(); } catch(er) { console.error('visite', er); }
+    setTimeout(() => {
+      const el = st.sel ? [...document.querySelectorAll(st.sel)].find(x => x.offsetParent !== null || x.getClientRects().length) : null;
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'instant' });
+      setTimeout(() => placerVisite(el, st), 60);
+    }, st.go ? 220 : 30);
+  }
+  function placerVisite(el, st){
+    if (el && el.matches('input[type=checkbox]')) el = el.closest('label') || el;
+    const { l, i } = tour, sp = F('tourSpot'), bu = F('tourBub'), vw = innerWidth, vh = innerHeight;
+    F('tourTxt').textContent = st.t;
+    F('tourPos').textContent = `${l.titre} · ${i + 1} / ${l.visite.length}`;
+    F('tourPrev').disabled = i === 0; F('tourNext').textContent = i === l.visite.length - 1 ? 'Terminer' : 'Suivant';
+    if (el) { const r = el.getBoundingClientRect(), m = 6, top = Math.max(4, r.top - m), left = Math.max(4, r.left - m), w = Math.min(vw - left - 4, r.width + 2 * m), h = Math.min(vh - top - 4, r.height + 2 * m);
+      Object.assign(sp.style, { display: 'block', top: top + 'px', left: left + 'px', width: w + 'px', height: h + 'px' });
+      const bw = Math.min(360, vw - 24), bh = bu.offsetHeight || 150;
+      let bt = top + h + 12; if (bt + bh > vh - 8) bt = Math.max(8, top - bh - 12); if (bt < 8 || (bt + bh > vh - 8)) bt = Math.max(8, vh - bh - 8);
+      Object.assign(bu.style, { top: bt + 'px', left: Math.min(Math.max(12, left), vw - bw - 12) + 'px', width: bw + 'px', transform: 'none' }); }
+    else { sp.style.display = 'none'; Object.assign(bu.style, { top: '50%', left: '50%', width: Math.min(380, vw - 24) + 'px', transform: 'translate(-50%,-50%)' }); }
+  }
+  function finVisite(complete){
+    const l = tour?.l; tour = null; F('tourOv').hidden = true; document.body.classList.remove('en-visite');
+    if (complete && l) setProg(l.id, { visite: true });
+    openForm(); if (complete && l) show(`Visite terminée : faites maintenant le quiz « ${l.titre} »`);
+  }
+  F('tourNext').addEventListener('click', () => { if (tour.i >= tour.l.visite.length - 1) return finVisite(true); tour.i++; etapeVisite(); });
+  F('tourPrev').addEventListener('click', () => { if (tour.i > 0) { tour.i--; etapeVisite(); } });
+  F('tourQuit').addEventListener('click', () => finVisite(false));
+  addEventListener('resize', () => { if (tour) etapeVisite(); });
+  addEventListener('keydown', e => { if (!tour) return; if (e.key === 'Escape') finVisite(false); else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); F('tourNext').click(); } else if (e.key === 'ArrowLeft') F('tourPrev').click(); }, true);
+
+  // --- Quiz : une question à la fois, explication après chaque réponse, réussite à partir de 2/3 des bonnes réponses
+  let qz = null;
+  function lancerQuiz(id){ const l = LECONS.find(x => x.id === id); qz = { l, i: 0, bons: 0, rep: null }; F('dlgQuiz').hidden = false; drawQuiz(); }
+  function drawQuiz(){
+    const { l, i, rep } = qz, Q = l.quiz;
+    F('qzT').textContent = `Quiz · ${l.titre}`;
+    if (i >= Q.length) {
+      const ok = qz.bons >= Math.ceil(Q.length * 2 / 3);
+      F('qzB').innerHTML = `<div class="qz-fin ${ok ? 'ok' : ''}"><b>${qz.bons} / ${Q.length}</b><p>${ok ? 'Leçon validée, bravo !' : 'Pas encore : relisez la leçon ou refaites la visite, puis réessayez.'}</p></div>`;
+      F('qzGo').textContent = ok ? 'Fermer' : 'Recommencer'; F('qzGo').dataset.act = ok ? 'fin' : 'again'; return;
+    }
+    const q = Q[i];
+    F('qzB').innerHTML = `<p class="muted" style="margin:0 0 6px">Question ${i + 1} sur ${Q.length}</p><p class="qz-q">${esc(q.q)}</p><div class="qz-r">${q.r.map((t, k) => `<button type="button" data-qr="${k}" class="${rep == null ? '' : k === q.ok ? 'bon' : k === rep ? 'faux' : ''}"${rep != null ? ' disabled' : ''}>${esc(t)}</button>`).join('')}</div>
+      ${rep != null ? `<p class="qz-e ${rep === q.ok ? 'ok' : ''}"><b>${rep === q.ok ? 'Exact.' : 'Pas tout à fait.'}</b> ${esc(q.e)}</p>` : ''}`;
+    F('qzGo').textContent = i === Q.length - 1 ? 'Voir mon résultat' : 'Question suivante'; F('qzGo').dataset.act = 'next'; F('qzGo').disabled = rep == null;
+  }
+  F('qzB').addEventListener('click', e => { const b = e.target.closest('[data-qr]'); if (!b || qz.rep != null) return; qz.rep = +b.dataset.qr; if (qz.rep === qz.l.quiz[qz.i].ok) qz.bons++; drawQuiz(); });
+  F('qzGo').addEventListener('click', () => { const a = F('qzGo').dataset.act;
+    if (a === 'next') { qz.i++; qz.rep = null; if (qz.i >= qz.l.quiz.length) { const Q = qz.l.quiz, ok = qz.bons >= Math.ceil(Q.length * 2 / 3), prev = progUser(user.id)[qz.l.id];
+        setProg(qz.l.id, { score: qz.bons, total: Q.length, ok: ok || !!prev?.ok }); } F('qzGo').disabled = false; drawQuiz(); }
+    else if (a === 'again') { qz = { l: qz.l, i: 0, bons: 0, rep: null }; drawQuiz(); }
+    else { F('dlgQuiz').hidden = true; drawForm(); majTuileForm(); } });
+  document.querySelectorAll('[data-close-qz]').forEach(b => b.addEventListener('click', () => { F('dlgQuiz').hidden = true; drawForm(); }));
+
   // --- Lecture du bordereau papier de l'assurance (photo ou PDF) et rapprochement automatique
   let ptNonTrouves = [];
   const motsNom = t => norm(t || '').split(/[^a-z0-9]+/).filter(w => w.length > 1);
@@ -6637,7 +6949,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
-  try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } catch(_) {}
+  try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } catch(_) {}
   try { if (sessionStorage.getItem('dioptraRemise')) { sessionStorage.removeItem('dioptraRemise'); setTimeout(() => show('Remise à zéro effectuée par l\'administrateur : les données de test ont été effacées de ce poste.'), 800); } } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
@@ -8219,7 +8531,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, cmdCentrale: () => cmdCentrale, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, cmdCentrale: () => cmdCentrale, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, formation: () => formation, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
@@ -8231,7 +8543,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); } else if (v === 'ctr') drawCmdHist(); else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } else if (v === 'form') drawForm(); else if (v === 'ctr') drawCmdHist(); else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)
