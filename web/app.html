@@ -6045,9 +6045,14 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
 
   // Code étiquette unique : lettre de catégorie + numéro séquentiel
   // Codes étiquette courts : M1, M2… pour les montures, S1, S2… pour les solaires, etc. (numéro suivant le plus grand déjà utilisé)
-  // Montures et solaires : 2 premières lettres de la marque + numéro sur 3 chiffres (Fred → FR001, FR002…, puis FR1000 au-delà de 999).
+  // Montures et solaires : préfixe tiré de la marque + numéro sur 3 chiffres (Fred → FR001, FR002…, puis FR1000 au-delà de 999).
   // Autres produits, ou monture sans marque : lettre de la catégorie + numéro (E1, A1, M1…).
-  const prefixeMarque = m => { const l = String(m || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, ''); return l ? (l + 'X').slice(0, 2) : ''; };
+  // marque en un mot : 2 premières lettres (Fred → FR) ; en plusieurs mots : initiale de chaque mot, 3 au plus (Ray-Ban → RB, Tom Ford Eyewear → TFE)
+  const prefixeMarque = m => {
+    const mots = String(m || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().split(/[^A-Z0-9]+/).map(w => w.replace(/[^A-Z]/g, '')).filter(Boolean);
+    if (!mots.length) return '';
+    return mots.length > 1 ? mots.slice(0, 3).map(w => w[0]).join('') : (mots[0] + 'X').slice(0, 2);
+  };
   function nouveauCode(cat, marque){
     const pm = ['Monture', 'Solaire'].includes(cat) ? prefixeMarque(marque) : '';
     if (pm) {
