@@ -2847,9 +2847,9 @@ select.inp{appearance:auto}
     setUser(PARAM.users.find(u => u.id === id && u.actif) || PARAM.users.find(u => u.actif && u.role === 'admin') || PARAM.users[0]); }
   // Modules de gestion : réservés aux responsables et administrateurs, sauf droit accordé aux vendeurs (Paramètres › Droits des vendeurs)
   const g = () => droit('gestion');
-  const TUILES_RESP = { goCJ: g, goStock: g, goCompta: () => g() && droit('compta'), goAchat: g, goBanque: () => g() && droit('compta'), goAss: () => g() && droit('compta'), goCtr: g, goStat: () => droit('stats') };
+  const TUILES_RESP = { goStock: g, goCompta: () => g() && droit('compta'), goAchat: g, goBanque: () => g() && droit('compta'), goAss: () => g() && droit('compta'), goCtr: g, goStat: () => droit('stats') };
   const tuileVisible = id => user.role !== 'vendeur' || !TUILES_RESP[id] || TUILES_RESP[id]();
-  const VUES_RESP = { cj: 'goCJ', stock: 'goStock', compta: 'goCompta', achat: 'goAchat', banque: 'goBanque', ass: 'goAss', ctr: 'goCtr', stat: 'goStat' };
+  const VUES_RESP = { stock: 'goStock', compta: 'goCompta', achat: 'goAchat', banque: 'goBanque', ass: 'goAss', ctr: 'goCtr', stat: 'goStat' };
   function majTuilesRole(){
     Object.keys(TUILES_RESP).forEach(id => { const t = document.getElementById(id)?.closest('.tile'); if (t) t.hidden = !tuileVisible(id); });
     // changement d'utilisateur sur un écran de gestion : un vendeur sans droit revient à l'accueil
@@ -3904,7 +3904,6 @@ select.inp{appearance:auto}
   }
 
   function openCJ(){
-    if (!tuileVisible('goCJ')) { show('Caisse du jour réservée au responsable.'); return; }
     const J = journee(), ferme = caisseFermee(), Z = zDuJour();
     F('cjSub').textContent = `${J.b} · ${new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}`;
     F('cjSt').innerHTML = ferme ? `<span class="chip warn" style="vertical-align:middle;font-size:13px">Clôturée</span>` : `<span class="chip" style="vertical-align:middle;font-size:13px">Ouverte</span>`;
@@ -4228,7 +4227,7 @@ select.inp{appearance:auto}
   }
   remplirListes();
   let PD = null, prTab = 'gen';
-  const DROITS = [['gestion', 'Accéder aux modules de gestion (caisse du jour, stock, comptabilité, achats, banque, assurances, centrale)'], ['modifVente', 'Modifier une vente déjà enregistrée'], ['corrCaisse', 'Corriger la caisse d\'une vente (paiements, prise en charge)'],
+  const DROITS = [['gestion', 'Accéder aux modules de gestion (stock, comptabilité, achats, banque, assurances, centrale)'], ['modifVente', 'Modifier une vente déjà enregistrée'], ['corrCaisse', 'Corriger la caisse d\'une vente (paiements, prise en charge)'],
     ['modifClient', 'Modifier les fiches clients'], ['produits', 'Créer et modifier les produits (prix de vente)'], ['tarifs', 'Modifier les tarifs verres, coûts et coefficients'],
     ['sorties', 'Faire des sorties d\'espèces'], ['rouvrirCaisse', 'Rouvrir la caisse après la clôture Z'], ['compta', 'Accéder à la comptabilité'], ['marges', 'Voir les prix d\'achat et les marges'], ['stats', 'Voir les statistiques'], ['remises', 'Accorder des remises sur les verres et la monture']];
   function openParam(tab = prTab){
@@ -5943,7 +5942,7 @@ select.inp{appearance:auto}
       points: ['Chaque vendeur a son code PIN : en partant de la caisse, on verrouille, le suivant se connecte avec le sien.', 'Le magasin choisi en haut décide des clients, du stock et de la caisse affichés.', 'La recherche globale trouve un client, une monture ou un dossier : scannez l\'étiquette de la péniche et la vente s\'ouvre.', 'Sans internet, DIOPTRA continue de fonctionner : tout part au serveur dès le retour de la connexion (voyant en bas de l\'écran).'],
       exercice: 'Changez de magasin puis revenez au vôtre, et retrouvez un client par son numéro de téléphone avec la recherche globale.',
       visite: [
-        { go: () => go('accueil'), sel: '#hello', t: 'Voici l\'accueil. Chaque tuile ouvre un module : clients, vente rapide, commandes, formation… Les modules de gestion n\'apparaissent qu\'aux responsables.' },
+        { go: () => go('accueil'), sel: '#hello', t: 'Voici l\'accueil. Chaque tuile ouvre un module : clients, vente rapide, caisse du jour, commandes, formation… Les modules de gestion n\'apparaissent qu\'aux responsables.' },
         { sel: '#storeBtn', t: 'Le magasin dans lequel vous travaillez. Tout ce que vous voyez (clients, stock, caisse) concerne ce magasin.' },
         { sel: '#userBtn', t: 'Vos initiales. Cliquez ici pour changer d\'utilisateur : chaque vendeur se connecte avec son propre code PIN, ainsi chaque vente porte le bon nom.' },
         { sel: '#q', t: 'La recherche globale : nom, téléphone, monture… ou scannez l\'étiquette de la péniche pour ouvrir directement le dossier.' },
