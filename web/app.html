@@ -718,6 +718,12 @@ tr.pt td{color:var(--muted)}
 .tour-bub{position:fixed;background:var(--card);color:var(--ink);border-radius:12px;padding:14px 16px;box-shadow:0 12px 40px rgb(0 0 0 / .35);z-index:9001}
 .tour-bub p{margin:6px 0 12px;font-size:15px;line-height:1.45}.tour-pos{font-size:12px;font-weight:600;color:var(--primary)}.tour-acts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.tour-acts button{padding:8px 12px;font-size:13px}
 body.en-visite .dsync{z-index:8999}
+.rh-alertes{background:var(--ic-amber);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:14px}.rh-alertes ul{margin:6px 0 0;padding-left:20px;display:grid;gap:3px}
+.rh-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.pl-grid{border-collapse:collapse;font-size:12px;min-width:100%}.pl-grid th,.pl-grid td{border:1px solid var(--line);text-align:center;padding:0;min-width:24px;height:30px}
+.pl-grid th{font-weight:600;padding:2px 0;line-height:1.1}.pl-grid th small{opacity:.6;font-weight:400}.pl-grid .pl-nom{text-align:left;padding:0 10px;white-space:nowrap;min-width:150px;position:sticky;left:0;background:var(--card);z-index:1}
+.pl-grid .dim{background:var(--line);opacity:.7}.pl-grid .auj{outline:2px solid var(--primary);outline-offset:-2px}.pl-grid td{cursor:pointer}.pl-grid td i{display:block;margin:4px 2px;height:20px;border-radius:4px}
+.pl-r{color:#e11d48;font-size:11px}.pl-leg{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;font-size:12px}.pl-leg span{display:inline-flex;align-items:center;gap:6px}.pl-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}
 .pt-form{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1.3fr;gap:12px}@media (max-width:900px){.pt-form{grid-template-columns:1fr 1fr}}
 .pt-br{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pt-chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;color:inherit;text-align:left}
 .pt-chip span{color:var(--primary);font-weight:600;margin-left:6px}.pt-chip.on{border-color:var(--primary);background:var(--ic-blue)}
@@ -1161,6 +1167,17 @@ select.inp{appearance:auto}
       <ul>
         <li><span class="item"><svg><use href="#chev"/></svg>Panier : <b id="tCtrPan">0</b></span></li>
         <li><span class="item"><svg><use href="#chev"/></svg>Commandes en attente : <b id="tCtrEnc">0</b></span></li>
+      </ul>
+    </section>
+
+    <section class="tile" id="tRH">
+      <button class="tile-link" id="goRH" aria-label="Ouvrir les ressources humaines">
+      <div class="ic rose"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="7.5" r="3.5"/><path d="M2 20c0-3.9 3.1-7 7-7s7 3.1 7 7Z"/><circle cx="17.5" cy="8.5" r="2.6" opacity=".6"/><path d="M17.5 12.5c2.7 0 4.5 2.3 4.5 5.5h-4.6c0-2-.6-3.8-1.7-5.2.6-.2 1.2-.3 1.8-.3Z" opacity=".6"/></svg></div>
+      <h2>Ressources humaines</h2>
+      </button>
+      <ul>
+        <li><span class="item"><svg><use href="#chev"/></svg>Employés : <b id="tRhN">0</b> · absents aujourd'hui : <b id="tRhAbs">0</b></span></li>
+        <li><span class="item"><svg><use href="#chev"/></svg>Demandes de congé à valider : <b id="tRhDem">0</b></span></li>
       </ul>
     </section>
 
@@ -1610,6 +1627,56 @@ select.inp{appearance:auto}
 
 </main>
 
+<div class="overlay" id="dlgEmp" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="empTitle" style="width:min(720px,100%)">
+    <header><h2 id="empTitle">Employé</h2><button class="x" type="button" data-close-emp aria-label="Fermer">×</button></header>
+    <form id="fEmp" novalidate>
+      <span class="lbl">Identité</span>
+      <div class="row3"><div><label class="lbl" for="empPrenom">Prénom *</label><input class="inp" id="empPrenom"></div><div><label class="lbl" for="empNom">Nom *</label><input class="inp" id="empNom"></div>
+        <div><label class="lbl" for="empSexe">Sexe</label><select class="inp" id="empSexe"><option value="F">Femme</option><option value="H">Homme</option></select></div></div>
+      <div class="row3"><div><label class="lbl" for="empNaissance">Date de naissance</label><input class="inp" type="date" id="empNaissance"></div><div><label class="lbl" for="empTel">Téléphone</label><input class="inp" id="empTel" inputmode="tel"></div><div><label class="lbl" for="empEmail">E-mail</label><input class="inp" type="email" id="empEmail"></div></div>
+      <label class="lbl" for="empAdresse">Adresse</label><input class="inp" id="empAdresse">
+      <span class="lbl" style="margin-top:12px">Poste et contrat</span>
+      <div class="row3"><div><label class="lbl" for="empPoste">Poste</label><input class="inp" id="empPoste" list="empPostes" placeholder="ex. Opticien vendeur"><datalist id="empPostes"><option value="Opticien"><option value="Vendeur / conseiller"><option value="Responsable de magasin"><option value="Monteur / technicien"><option value="Caissier"><option value="Agent d'entretien"></datalist></div>
+        <div><label class="lbl" for="empMagasin">Magasin</label><select class="inp" id="empMagasin"></select></div><div><label class="lbl" for="empContrat">Type de contrat</label><select class="inp" id="empContrat"></select></div></div>
+      <div class="row3"><div><label class="lbl" for="empEmbauche">Date d'embauche</label><input class="inp" type="date" id="empEmbauche"></div><div><label class="lbl" for="empFinContrat">Fin de contrat / d'essai</label><input class="inp" type="date" id="empFinContrat"></div><div><label class="lbl" for="empCnss">N° CNSS</label><input class="inp" id="empCnss"></div></div>
+      <div class="row3"><div id="empSalBox"><label class="lbl" for="empSalaire">Salaire de base (FCFA)</label><input class="inp" id="empSalaire" inputmode="numeric"></div>
+        <div><label class="lbl" for="empSoldeInit">Solde de congés de reprise (j)</label><input class="inp" id="empSoldeInit" inputmode="decimal" placeholder="0"></div><div><label class="lbl" for="empSoldeDate">À la date du</label><input class="inp" type="date" id="empSoldeDate"></div></div>
+      <div class="row3"><div><label class="lbl" for="empUserId">Utilisateur DIOPTRA (code PIN)</label><select class="inp" id="empUserId"></select></div><div><label class="lbl" for="empUrgNom">Personne à prévenir</label><input class="inp" id="empUrgNom"></div><div><label class="lbl" for="empUrgTel">Son téléphone</label><input class="inp" id="empUrgTel" inputmode="tel"></div></div>
+      <label class="lbl" for="empNote">Notes</label><textarea class="inp" id="empNote" rows="2"></textarea>
+      <div id="empHist" style="margin-top:12px"></div>
+      <div class="ml-st bad" id="empErr"></div>
+      <div class="actions"><button type="button" class="ghost" id="empSortie" hidden>Sortie des effectifs</button><button type="button" class="ghost" id="empRetour" hidden>Réintégrer</button><span style="flex:1"></span><button type="button" class="ghost" data-close-emp>Annuler</button><button type="submit" class="save">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="dlgCg" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cgTitle" style="width:min(560px,100%)">
+    <header><h2 id="cgTitle">Congé ou absence</h2><button class="x" type="button" data-close-cg aria-label="Fermer">×</button></header>
+    <form id="fCg" novalidate>
+      <div class="row2"><div><label class="lbl" for="cgEmp">Employé</label><select class="inp" id="cgEmp"></select></div><div><label class="lbl" for="cgType">Type</label><select class="inp" id="cgType"></select></div></div>
+      <div class="row2"><div><label class="lbl" for="cgDu">Du</label><input class="inp" type="date" id="cgDu"></div><div id="cgAuBox"><label class="lbl" for="cgAu">Au (inclus)</label><input class="inp" type="date" id="cgAu"></div><div id="cgMinBox" hidden><label class="lbl" for="cgMin">Retard (minutes)</label><input class="inp" id="cgMin" inputmode="numeric"></div></div>
+      <p class="muted" id="cgCalc" style="font-size:13px;margin:6px 0"></p>
+      <div class="row2"><div><label class="lbl" for="cgMotif">Motif / commentaire</label><input class="inp" id="cgMotif"></div><div><label class="lbl" for="cgStatut">Statut</label><select class="inp" id="cgStatut"><option>Validé</option><option>Demandé</option><option>Refusé</option></select></div></div>
+      <div class="ml-st bad" id="cgErr"></div>
+      <div class="actions"><button type="button" class="ghost" id="cgDel" hidden>Supprimer</button><span style="flex:1"></span><button type="button" class="ghost" data-close-cg>Annuler</button><button type="submit" class="save">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="dlgAv" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="avTitle" style="width:min(480px,100%)">
+    <header><h2 id="avTitle">Avance sur salaire</h2><button class="x" type="button" data-close-av aria-label="Fermer">×</button></header>
+    <form id="fAv" novalidate>
+      <div class="row2"><div><label class="lbl" for="avEmp">Employé</label><select class="inp" id="avEmp"></select></div><div><label class="lbl" for="avDate">Date</label><input class="inp" type="date" id="avDate"></div></div>
+      <div class="row2"><div><label class="lbl" for="avMt">Montant (FCFA)</label><input class="inp" id="avMt" inputmode="numeric"></div><div><label class="lbl" for="avMotif">Motif</label><input class="inp" id="avMotif"></div></div>
+      <div class="ml-st bad" id="avErr"></div>
+      <div class="actions"><button type="button" class="ghost" data-close-av>Annuler</button><button type="submit" class="save">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+
 <div class="overlay" id="dlgLec" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="foLecT" style="width:min(560px,100%)">
     <header><h2 id="foLecT"></h2><button class="x" type="button" data-close-lec aria-label="Fermer">×</button></header>
@@ -1781,6 +1848,50 @@ select.inp{appearance:auto}
       <div class="tbl-wrap"><table class="s-tbl bk-tbl"><thead><tr><th>Date</th><th>Libellé</th><th style="text-align:right">Débit</th><th style="text-align:right">Crédit</th><th>Rapprochement</th></tr></thead><tbody id="bkRows"></tbody></table></div>
       <p class="muted" id="bkNone" hidden>Aucune opération sur la période. Importez les avis de la banque.</p>
     </section>
+</main>
+<main id="v-rh" hidden>
+  <button class="crumb" data-go="accueil">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+    Accueil
+  </button>
+  <div class="head"><div><div class="k-lbl" id="rhSub"></div><h1>Ressources humaines</h1></div></div>
+  <div class="tabs" id="rhTabs"><button class="tab on" data-rh="eq">Équipe</button><button class="tab" data-rh="cg">Congés &amp; absences</button><button class="tab" data-rh="pl">Planning</button><button class="tab" data-rh="av" hidden>Avances sur salaire</button></div>
+
+  <div class="rh-p" data-p="eq">
+    <div class="rh-alertes" id="rhAlertes" hidden></div>
+    <section class="blk">
+      <div class="row-head"><h2>Équipe du magasin</h2><span class="bl-btns"><label class="check" style="margin:0"><input type="checkbox" id="rhSortis"> Afficher les anciens employés</label><button class="save" type="button" id="rhNew">+ Nouvel employé</button></span></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Employé</th><th>Magasin</th><th>Contrat</th><th>Embauche</th><th>Téléphone</th><th style="text-align:right">Solde congés</th><th>Aujourd'hui</th></tr></thead><tbody id="rhRows"></tbody></table></div>
+      <p class="muted" id="rhNone" hidden>Aucun employé pour l'instant : ajoutez l'équipe du magasin.</p>
+      <p class="sub" style="margin-top:12px">Congés payés acquis : <input class="inp sm" id="rhTaux" inputmode="decimal" style="width:60px"> jour(s) ouvrable(s) par mois travaillé. Le solde de chaque employé part de son solde de reprise (fiche) ou de sa date d'embauche.</p>
+    </section>
+  </div>
+
+  <div class="rh-p" data-p="cg" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Congés, absences et retards</h2><span class="bl-btns"><select class="inp sm" id="cgFiltre"><option value="">Tout</option><option value="dem">Demandes à valider</option><option value="cp">Congés payés</option><option value="abs">Absences, maladies, retards</option></select><button class="save" type="button" id="cgNew">+ Congé ou absence</button></span></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Employé</th><th>Type</th><th>Dates</th><th style="text-align:right">Jours</th><th>Motif</th><th>Statut</th></tr></thead><tbody id="cgRows"></tbody></table></div>
+      <p class="muted" id="cgNone" hidden>Rien d'enregistré.</p>
+    </section>
+  </div>
+
+  <div class="rh-p" data-p="pl" hidden>
+    <section class="blk">
+      <div class="row-head"><h2>Planning des absences · <span id="plMois"></span></h2><span class="bl-btns"><button class="ghost" type="button" id="plPrev">← Mois précédent</button><button class="ghost" type="button" id="plNext">Mois suivant →</button></span></div>
+      <p class="sub">Cliquez sur une case pour enregistrer un congé ou une absence ce jour-là.</p>
+      <div class="tbl-wrap"><table class="pl-grid" id="plGrid"></table></div>
+      <div class="pl-leg" id="plLeg"></div>
+    </section>
+  </div>
+
+  <div class="rh-p" data-p="av" hidden>
+    <div class="s-stats co-kpi" id="avKpi"></div>
+    <section class="blk">
+      <div class="row-head"><h2>Avances sur salaire</h2><button class="save" type="button" id="avNew">+ Avance</button></div>
+      <div class="tbl-wrap"><table class="s-tbl"><thead><tr><th>Date</th><th>Employé</th><th>Motif</th><th style="text-align:right">Montant</th><th></th></tr></thead><tbody id="avRows"></tbody></table></div>
+      <p class="muted" id="avNone" hidden>Aucune avance.</p>
+    </section>
+  </div>
 </main>
 <main id="v-form" hidden>
   <button class="crumb" data-go="accueil">
@@ -2847,9 +2958,9 @@ select.inp{appearance:auto}
     setUser(PARAM.users.find(u => u.id === id && u.actif) || PARAM.users.find(u => u.actif && u.role === 'admin') || PARAM.users[0]); }
   // Modules de gestion : réservés aux responsables et administrateurs, sauf droit accordé aux vendeurs (Paramètres › Droits des vendeurs)
   const g = () => droit('gestion');
-  const TUILES_RESP = { goStock: g, goCompta: () => g() && droit('compta'), goAchat: g, goBanque: () => g() && droit('compta'), goAss: () => g() && droit('compta'), goCtr: g, goStat: () => droit('stats') };
+  const TUILES_RESP = { goRH: g, goStock: g, goCompta: () => g() && droit('compta'), goAchat: g, goBanque: () => g() && droit('compta'), goAss: () => g() && droit('compta'), goCtr: g, goStat: () => droit('stats') };
   const tuileVisible = id => user.role !== 'vendeur' || !TUILES_RESP[id] || TUILES_RESP[id]();
-  const VUES_RESP = { stock: 'goStock', compta: 'goCompta', achat: 'goAchat', banque: 'goBanque', ass: 'goAss', ctr: 'goCtr', stat: 'goStat' };
+  const VUES_RESP = { rh: 'goRH', stock: 'goStock', compta: 'goCompta', achat: 'goAchat', banque: 'goBanque', ass: 'goAss', ctr: 'goCtr', stat: 'goStat' };
   function majTuilesRole(){
     Object.keys(TUILES_RESP).forEach(id => { const t = document.getElementById(id)?.closest('.tile'); if (t) t.hidden = !tuileVisible(id); });
     // changement d'utilisateur sur un écran de gestion : un vendeur sans droit revient à l'accueil
@@ -2974,11 +3085,11 @@ select.inp{appearance:auto}
   /* ================= Navigation entre écrans ================= */
   const views = { accueil: document.getElementById('v-accueil'), clients: document.getElementById('v-clients'),
                   fiche: document.getElementById('v-fiche'), vente: document.getElementById('v-vente'),
-                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), ctr: document.getElementById('v-ctr'), form: document.getElementById('v-form'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass') };
+                  caisse: document.getElementById('v-caisse'), param: document.getElementById('v-param'), cmd: document.getElementById('v-cmd'), compta: document.getElementById('v-compta'), stock: document.getElementById('v-stock'), cj: document.getElementById('v-cj'), rapide: document.getElementById('v-rapide'), lent: document.getElementById('v-lent'), suivi: document.getElementById('v-suivi'), detail: document.getElementById('v-detail'), docs: document.getElementById('v-docs'), pec: document.getElementById('v-pec'), stat: document.getElementById('v-stat'), achat: document.getElementById('v-achat'), ctr: document.getElementById('v-ctr'), form: document.getElementById('v-form'), banque: document.getElementById('v-banque'), ass: document.getElementById('v-ass'), rh: document.getElementById('v-rh') };
   function go(name){
     if (name !== 'accueil' && !views.accueil.hidden && typeof ntMarquerLu === 'function') try { ntMarquerLu(); F('tNotes').classList.remove('open'); F('ntVeil').hidden = true; } catch(_) {}
     Object.entries(views).forEach(([k, v]) => v.hidden = k !== name);
-    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } catch(_) {}
+    if (name === 'accueil' && typeof majTuileCaisse === 'function') try { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); majTuileRH(); } catch(_) {}
     window.scrollTo(0, 0);
     if (name === 'clients') { render(); cq.focus(); }
   }
@@ -4227,7 +4338,7 @@ select.inp{appearance:auto}
   }
   remplirListes();
   let PD = null, prTab = 'gen';
-  const DROITS = [['gestion', 'Accéder aux modules de gestion (stock, comptabilité, achats, banque, assurances, centrale)'], ['modifVente', 'Modifier une vente déjà enregistrée'], ['corrCaisse', 'Corriger la caisse d\'une vente (paiements, prise en charge)'],
+  const DROITS = [['gestion', 'Accéder aux modules de gestion (ressources humaines, stock, comptabilité, achats, banque, assurances, centrale)'], ['modifVente', 'Modifier une vente déjà enregistrée'], ['corrCaisse', 'Corriger la caisse d\'une vente (paiements, prise en charge)'],
     ['modifClient', 'Modifier les fiches clients'], ['produits', 'Créer et modifier les produits (prix de vente)'], ['tarifs', 'Modifier les tarifs verres, coûts et coefficients'],
     ['sorties', 'Faire des sorties d\'espèces'], ['rouvrirCaisse', 'Rouvrir la caisse après la clôture Z'], ['compta', 'Accéder à la comptabilité'], ['marges', 'Voir les prix d\'achat et les marges'], ['stats', 'Voir les statistiques'], ['remises', 'Accorder des remises sur les verres et la monture']];
   function openParam(tab = prTab){
@@ -6311,6 +6422,177 @@ select.inp{appearance:auto}
     else { F('dlgQuiz').hidden = true; drawForm(); majTuileForm(); } });
   document.querySelectorAll('[data-close-qz]').forEach(b => b.addEventListener('click', () => { F('dlgQuiz').hidden = true; drawForm(); }));
 
+
+  /* ================= RH : fiches employés, congés et absences, planning, avances sur salaire ================= */
+  let employes = ld0('employes', []), conges = ld0('conges', []), avances = ld0('avances', []), rhTab = 'eq', rhMois = dayKey().slice(0, 7), empEdit = null, cgEdit = null;
+  const saveRH = () => { try { localStorage.setItem('employes', JSON.stringify(employes)); localStorage.setItem('conges', JSON.stringify(conges)); localStorage.setItem('avances', JSON.stringify(avances)); } catch(_) {} };
+  const rhAdmin = () => user.role === 'admin';   // salaires et avances : administrateurs seulement
+  const empVisible = e => boutiqueCour() === 'Toutes les boutiques' ? user.role === 'admin' : e.magasin === boutiqueCour();
+  const nomEmp = e => e ? `${e.prenom} ${e.nom}`.trim() : '—';
+  const CONTRATS = ['CDI', 'CDD', 'Période d\'essai', 'Stage', 'Prestataire'];
+  const TYPES_ABS = { cp: ['Congé payé', '#2f5bea'], maladie: ['Maladie', '#d97706'], perm: ['Permission exceptionnelle', '#9333ea'], ss: ['Congé sans solde', '#71717a'], mat: ['Maternité / paternité', '#0f9d58'], absence: ['Absence injustifiée', '#e11d48'], retard: ['Retard', '#e11d48'] };
+  // jours décomptés : du lundi au samedi (le dimanche ne compte pas)
+  const joursOuvrables = (du, au) => { let n = 0; for (let d = new Date(du + 'T12:00'); d <= new Date(au + 'T12:00'); d.setDate(d.getDate() + 1)) if (d.getDay() !== 0) n++; return n; };
+  const tauxCP = () => +(PARAM.rh?.joursParMois ?? 2);
+  // solde de congés payés : solde de reprise + jours acquis chaque mois complet depuis la date de reprise (ou l'embauche) − congés payés validés
+  function soldeCP(e){
+    const dep = e.soldeDate || e.embauche; if (!dep) return null;
+    const a = new Date(dep + 'T12:00'), b = new Date(), mois = Math.max(0, (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth() - (b.getDate() < a.getDate() ? 1 : 0));
+    const pris = conges.filter(c => c.emp === e.id && c.type === 'cp' && c.statut === 'Validé' && c.du >= dep).reduce((s, c) => s + (c.jours || 0), 0);
+    return Math.round(((+e.soldeInit || 0) + mois * tauxCP() - pris) * 10) / 10;
+  }
+  const absentLe = (e, j) => conges.find(c => c.emp === e.id && c.type !== 'retard' && c.statut !== 'Refusé' && c.du <= j && c.au >= j);
+  const joursAvant = d => Math.round((new Date(d + 'T12:00') - new Date(dayKey() + 'T12:00')) / 864e5);
+  function alertesRH(){
+    const A = [], auj = dayKey();
+    employes.filter(e => empVisible(e) && e.actif !== false).forEach(e => {
+      if (e.finContrat) { const j = joursAvant(e.finContrat); if (j >= 0 && j <= 30) A.push([j, `${e.contrat === 'Période d\'essai' ? 'Fin de période d\'essai' : 'Fin de ' + e.contrat} de ${nomEmp(e)} le ${fmtDate(e.finContrat + 'T12:00')} (dans ${j} j)`]); else if (j < 0 && j > -60) A.push([j, `Contrat de ${nomEmp(e)} terminé depuis le ${fmtDate(e.finContrat + 'T12:00')} : à renouveler ou à clôturer`]); }
+      if (e.naissance) { const n = new Date(e.naissance + 'T12:00'), t = new Date(auj + 'T12:00'); let an = new Date(t.getFullYear(), n.getMonth(), n.getDate(), 12); if (an < t) an = new Date(t.getFullYear() + 1, n.getMonth(), n.getDate(), 12); const j = Math.round((an - t) / 864e5); if (j <= 7) A.push([j, j ? `Anniversaire de ${nomEmp(e)} dans ${j} j` : `Anniversaire de ${nomEmp(e)} aujourd'hui 🎂`]); }
+      if (e.embauche) { const em = new Date(e.embauche + 'T12:00'), t = new Date(auj + 'T12:00'); const ans = t.getFullYear() - em.getFullYear(); if (ans > 0 && em.getMonth() === t.getMonth() && em.getDate() === t.getDate()) A.push([0, `${nomEmp(e)} fête ses ${ans} an${ans > 1 ? 's' : ''} dans l'entreprise aujourd'hui`]); }
+    });
+    conges.filter(c => c.statut === 'Demandé' && employes.some(e => e.id === c.emp && empVisible(e))).forEach(c => A.push([-1, `Demande de ${TYPES_ABS[c.type][0].toLowerCase()} de ${nomEmp(employes.find(e => e.id === c.emp))} à valider (${fmtDate(c.du + 'T12:00')} → ${fmtDate(c.au + 'T12:00')})`]));
+    return A.sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  }
+  function majTuileRH(){
+    const E = employes.filter(e => empVisible(e) && e.actif !== false), auj = dayKey();
+    F('tRhN').textContent = E.length; F('tRhAbs').textContent = E.filter(e => absentLe(e, auj)).length;
+    const d = conges.filter(c => c.statut === 'Demandé' && E.some(e => e.id === c.emp)).length; F('tRhDem').innerHTML = d ? `<span class="fac-retard">${d}</span>` : '0';
+  }
+  function openRH(tab = rhTab){
+    if (!tuileVisible('goRH')) { show('Ressources humaines réservées au responsable.'); return; }
+    rhTab = tab; F('rhTabs').querySelectorAll('.tab').forEach(b => { b.classList.toggle('on', b.dataset.rh === tab); if (b.dataset.rh === 'av') b.hidden = !rhAdmin(); });
+    document.querySelectorAll('.rh-p').forEach(p => p.hidden = p.dataset.p !== tab);
+    F('rhSub').textContent = boutiqueCour();
+    ({ eq: drawEquipe, cg: drawConges, pl: drawPlanning, av: drawAvances })[tab]();
+    go('rh');
+  }
+  F('goRH').addEventListener('click', () => openRH());
+  F('rhTabs').addEventListener('click', e => { const b = e.target.closest('[data-rh]'); if (b) openRH(b.dataset.rh); });
+  // --- Équipe
+  function drawEquipe(){
+    if (document.activeElement !== F('rhTaux')) F('rhTaux').value = String(tauxCP()).replace('.', ','); F('rhTaux').disabled = !rhAdmin();
+    const al = alertesRH();
+    F('rhAlertes').hidden = !al.length; F('rhAlertes').innerHTML = `<span class="lbl">À surveiller</span><ul>${al.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    const voirS = F('rhSortis').checked, auj = dayKey();
+    const L = employes.filter(e => empVisible(e) && (voirS || e.actif !== false)).sort((a, b) => (a.actif === false) - (b.actif === false) || nomEmp(a).localeCompare(nomEmp(b)));
+    F('rhRows').innerHTML = L.map(e => { const s = soldeCP(e), ab = absentLe(e, auj);
+      return `<tr data-emp="${esc(e.id)}" class="${e.actif === false ? 'pt' : ''}"><td><b>${esc(nomEmp(e))}</b><br><small class="muted">${esc(e.poste || '—')}</small></td><td>${esc((e.magasin || '').replace(/^Magasin /, ''))}</td>
+        <td>${esc(e.contrat || '—')}${e.finContrat ? `<br><small class="muted">fin ${fmtDate(e.finContrat + 'T12:00')}</small>` : ''}</td><td>${e.embauche ? fmtDate(e.embauche + 'T12:00') : '—'}</td><td>${esc(fmtTel(digits(e.tel || '')))}</td>
+        <td style="text-align:right">${s == null ? '—' : `<b>${String(s).replace('.', ',')}</b> j`}</td>
+        <td>${e.actif === false ? `<span class="chip" style="background:var(--line);color:inherit">Sorti${e.sortie ? ' le ' + fmtDate(e.sortie + 'T12:00') : ''}</span>` : ab ? `<span class="chip warn">${esc(TYPES_ABS[ab.type][0])}</span>` : '<span class="chip">Présent</span>'}</td></tr>`; }).join('');
+    F('rhNone').hidden = L.length > 0;
+  }
+  F('rhSortis').addEventListener('change', drawEquipe);
+  F('rhRows').addEventListener('click', e => { const tr = e.target.closest('[data-emp]'); if (tr) ouvrirEmp(employes.find(x => x.id === tr.dataset.emp)); });
+  F('rhNew').addEventListener('click', () => ouvrirEmp(null));
+  const EMP_F = ['prenom', 'nom', 'sexe', 'naissance', 'tel', 'email', 'adresse', 'poste', 'magasin', 'contrat', 'embauche', 'finContrat', 'cnss', 'salaire', 'urgNom', 'urgTel', 'userId', 'soldeInit', 'soldeDate', 'note'];
+  function ouvrirEmp(e){
+    empEdit = e || null; F('empErr').textContent = '';
+    F('empTitle').textContent = e ? nomEmp(e) : 'Nouvel employé';
+    F('empMagasin').innerHTML = magasinsVisibles().map(b => `<option>${esc(b)}</option>`).join('');
+    F('empContrat').innerHTML = CONTRATS.map(c => `<option>${esc(c)}</option>`).join('');
+    F('empUserId').innerHTML = `<option value="">— Aucun —</option>` + PARAM.users.filter(u => u.actif).map(u => `<option value="${esc(u.id)}">${esc(nomUser(u))} (${esc(ROLES[u.role])})</option>`).join('');
+    EMP_F.forEach(k => { const el = F('emp' + k[0].toUpperCase() + k.slice(1)); if (el) el.value = e?.[k] ?? ''; });
+    if (!e) { F('empMagasin').value = boutiqueCour() !== 'Toutes les boutiques' ? boutiqueCour() : (magasinsVisibles()[0] || ''); F('empContrat').value = 'CDI'; F('empEmbauche').value = dayKey(); F('empSexe').value = 'F'; }
+    F('empSalBox').hidden = !rhAdmin();
+    F('empSortie').hidden = !e || e.actif === false; F('empRetour').hidden = !(e && e.actif === false);
+    // historique de l'employé : absences et avances
+    const H = e ? conges.filter(c => c.emp === e.id).sort((a, b) => b.du.localeCompare(a.du)) : [];
+    F('empHist').innerHTML = e ? `<span class="lbl">Congés et absences</span><ul class="c-lines">${H.slice(0, 12).map(c => `<li><span>${esc(TYPES_ABS[c.type][0])} · ${fmtDate(c.du + 'T12:00')}${c.au !== c.du ? ' → ' + fmtDate(c.au + 'T12:00') : ''}${c.motif ? ' · ' + esc(c.motif) : ''}</span><span>${c.type === 'retard' ? '' : c.jours + ' j · '}${esc(c.statut)}</span></li>`).join('') || '<li class="muted">Aucun.</li>'}</ul>`
+      + (rhAdmin() ? `<span class="lbl" style="margin-top:10px">Avances sur salaire</span><ul class="c-lines">${avances.filter(a => a.emp === e.id).map(a => `<li><span>${fmtDate(a.date + 'T12:00')}${a.motif ? ' · ' + esc(a.motif) : ''}</span><span>${money(a.montant)}${a.rembourse ? ' · remboursée' : ''}</span></li>`).join('') || '<li class="muted">Aucune.</li>'}</ul>` : '') : '';
+    F('dlgEmp').hidden = false; F('empPrenom').focus();
+  }
+  document.querySelectorAll('[data-close-emp]').forEach(b => b.addEventListener('click', () => F('dlgEmp').hidden = true));
+  F('fEmp').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const d = {}; EMP_F.forEach(k => { const el = F('emp' + k[0].toUpperCase() + k.slice(1)); if (el) d[k] = el.value.trim(); });
+    if (!rhAdmin()) delete d.salaire;
+    if (!d.prenom || !d.nom) { F('empErr').textContent = 'Indiquez le prénom et le nom.'; return; }
+    if (['CDD', 'Période d\'essai', 'Stage'].includes(d.contrat) && !d.finContrat) { F('empErr').textContent = `Indiquez la date de fin pour un contrat « ${d.contrat} ».`; return; }
+    d.salaire = d.salaire ? intOf(d.salaire) : (empEdit?.salaire || ''); d.soldeInit = d.soldeInit === '' ? '' : dec(d.soldeInit);
+    if (empEdit) Object.assign(empEdit, d, { majLe: new Date().toISOString(), majPar: user.nom });
+    else employes.push({ id: 'emp' + Date.now().toString(36), ...d, actif: true, creeLe: new Date().toISOString(), creePar: user.nom });
+    saveRH(); F('dlgEmp').hidden = true; drawEquipe(); majTuileRH(); show(empEdit ? 'Fiche mise à jour' : 'Employé ajouté');
+  });
+  F('empSortie').addEventListener('click', () => { const dt = prompt('Date de sortie (AAAA-MM-JJ) :', dayKey()); if (!dt || !/^\d{4}-\d{2}-\d{2}$/.test(dt)) return;
+    empEdit.actif = false; empEdit.sortie = dt; saveRH(); F('dlgEmp').hidden = true; drawEquipe(); majTuileRH(); show(`${nomEmp(empEdit)} est indiqué comme sorti des effectifs`); });
+  F('empRetour').addEventListener('click', () => { empEdit.actif = true; delete empEdit.sortie; saveRH(); F('dlgEmp').hidden = true; drawEquipe(); majTuileRH(); show('Employé réintégré'); });
+  // --- Congés et absences
+  function drawConges(){
+    const fl = F('cgFiltre').value, E = employes.filter(empVisible), ids = new Set(E.map(e => e.id));
+    const L = conges.filter(c => ids.has(c.emp) && (!fl || (fl === 'dem' ? c.statut === 'Demandé' : fl === 'cp' ? c.type === 'cp' : fl === 'abs' ? ['absence', 'retard', 'maladie'].includes(c.type) : true))).sort((a, b) => (a.statut === 'Demandé' ? 0 : 1) - (b.statut === 'Demandé' ? 0 : 1) || b.du.localeCompare(a.du));
+    F('cgRows').innerHTML = L.map(c => { const e = employes.find(x => x.id === c.emp);
+      return `<tr data-cg="${esc(c.id)}"><td><b>${esc(nomEmp(e))}</b></td><td><span class="rh-dot" style="background:${TYPES_ABS[c.type][1]}"></span>${esc(TYPES_ABS[c.type][0])}</td>
+        <td>${fmtDate(c.du + 'T12:00')}${c.au !== c.du ? ' → ' + fmtDate(c.au + 'T12:00') : ''}${c.type === 'retard' && c.minutes ? ` · ${c.minutes} min` : ''}</td><td style="text-align:right">${c.type === 'retard' ? '—' : c.jours + ' j'}</td><td>${esc(c.motif || '')}</td>
+        <td>${c.statut === 'Demandé' ? `<button class="act" type="button" data-cg-ok="${esc(c.id)}">Valider</button> <button class="act ghost-act" type="button" data-cg-no="${esc(c.id)}">Refuser</button>` : `<span class="chip ${c.statut === 'Refusé' ? 'warn' : ''}">${esc(c.statut)}</span>${c.validePar ? `<br><small class="muted">${esc(c.validePar)}</small>` : ''}`}</td></tr>`; }).join('');
+    F('cgNone').hidden = L.length > 0;
+  }
+  F('cgFiltre').addEventListener('change', drawConges);
+  F('cgRows').addEventListener('click', e => { const d = e.target.dataset, c = conges.find(x => x.id === (d.cgOk || d.cgNo || e.target.closest('[data-cg]')?.dataset.cg)); if (!c) return;
+    if (d.cgOk || d.cgNo) { c.statut = d.cgOk ? 'Validé' : 'Refusé'; c.validePar = user.nom; c.valideLe = new Date().toISOString(); saveRH(); drawConges(); majTuileRH(); show(d.cgOk ? 'Congé validé' : 'Demande refusée'); return; }
+    ouvrirCg(c); });
+  F('cgNew').addEventListener('click', () => ouvrirCg(null));
+  function ouvrirCg(c){
+    cgEdit = c || null; F('cgErr').textContent = '';
+    F('cgTitle').textContent = c ? 'Congé / absence' : 'Nouveau congé ou absence';
+    F('cgEmp').innerHTML = employes.filter(e => empVisible(e) && e.actif !== false || (c && e.id === c.emp)).map(e => `<option value="${esc(e.id)}">${esc(nomEmp(e))}</option>`).join('');
+    F('cgType').innerHTML = Object.entries(TYPES_ABS).map(([k, [l]]) => `<option value="${k}">${esc(l)}</option>`).join('');
+    F('cgEmp').value = c?.emp || F('cgEmp').value; F('cgType').value = c?.type || 'cp'; F('cgDu').value = c?.du || dayKey(); F('cgAu').value = c?.au || dayKey(); F('cgMotif').value = c?.motif || ''; F('cgMin').value = c?.minutes || '';
+    F('cgStatut').value = c?.statut || 'Validé'; F('cgDel').hidden = !c; cgInfo(); F('dlgCg').hidden = false;
+  }
+  function cgInfo(){
+    const t = F('cgType').value, du = F('cgDu').value, au = F('cgAu').value || du, e = employes.find(x => x.id === F('cgEmp').value);
+    F('cgAuBox').hidden = t === 'retard'; F('cgMinBox').hidden = t !== 'retard';
+    const n = du && au >= du ? joursOuvrables(du, au) : 0, s = e ? soldeCP(e) : null;
+    F('cgCalc').textContent = t === 'retard' ? '' : `${n} jour${n > 1 ? 's' : ''} décompté${n > 1 ? 's' : ''} (lundi au samedi)` + (t === 'cp' && s != null ? ` · solde de congés de ${nomEmp(e)} : ${String(s).replace('.', ',')} j${!cgEdit && s - n < 0 ? ' · solde insuffisant' : ''}` : '');
+  }
+  ['cgType', 'cgDu', 'cgAu', 'cgEmp'].forEach(id => F(id).addEventListener('change', cgInfo));
+  document.querySelectorAll('[data-close-cg]').forEach(b => b.addEventListener('click', () => F('dlgCg').hidden = true));
+  F('fCg').addEventListener('submit', ev => {
+    ev.preventDefault(); const t = F('cgType').value, du = F('cgDu').value, au = t === 'retard' ? du : F('cgAu').value;
+    if (!F('cgEmp').value) { F('cgErr').textContent = 'Ajoutez d\'abord l\'employé dans l\'onglet Équipe.'; return; }
+    if (!du || !au || au < du) { F('cgErr').textContent = 'Vérifiez les dates.'; return; }
+    const d = { emp: F('cgEmp').value, type: t, du, au, jours: t === 'retard' ? 0 : joursOuvrables(du, au), motif: F('cgMotif').value.trim(), minutes: t === 'retard' ? intOf(F('cgMin').value) : null, statut: F('cgStatut').value };
+    if (d.statut !== 'Demandé') { d.validePar = cgEdit?.validePar || user.nom; d.valideLe = cgEdit?.valideLe || new Date().toISOString(); }
+    if (cgEdit) Object.assign(cgEdit, d); else conges.push({ id: 'cg' + Date.now().toString(36), ...d, creeLe: new Date().toISOString(), creePar: user.nom });
+    saveRH(); F('dlgCg').hidden = true; if (rhTab === 'pl') drawPlanning(); else drawConges(); majTuileRH(); show('Enregistré');
+  });
+  F('cgDel').addEventListener('click', () => { if (!cgEdit || !confirm('Supprimer ce congé / cette absence ?')) return; conges = conges.filter(c => c !== cgEdit); saveRH(); F('dlgCg').hidden = true; drawConges(); majTuileRH(); });
+  // --- Planning du mois : qui est absent, jour par jour
+  function drawPlanning(){
+    const [y, m] = rhMois.split('-').map(Number), nb = new Date(y, m, 0).getDate(), auj = dayKey();
+    F('plMois').textContent = new Date(y, m - 1, 15).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const E = employes.filter(e => empVisible(e) && (e.actif !== false || (e.sortie || '') >= rhMois + '-01')).sort((a, b) => nomEmp(a).localeCompare(nomEmp(b)));
+    const jours = Array.from({ length: nb }, (_, i) => { const d = new Date(y, m - 1, i + 1, 12); return { k: `${rhMois}-${String(i + 1).padStart(2, '0')}`, n: i + 1, dim: d.getDay() === 0, l: 'DLMMJVS'[d.getDay()] }; });
+    F('plGrid').innerHTML = `<thead><tr><th class="pl-nom">Employé</th>${jours.map(j => `<th class="${j.dim ? 'dim' : ''}${j.k === auj ? ' auj' : ''}"><small>${j.l}</small><br>${j.n}</th>`).join('')}</tr></thead><tbody>${
+      E.map(e => `<tr><td class="pl-nom">${esc(nomEmp(e))}</td>${jours.map(j => { const c = absentLe(e, j.k), r = conges.find(x => x.emp === e.id && x.type === 'retard' && x.du === j.k);
+        return `<td class="${j.dim ? 'dim' : ''}${j.k === auj ? ' auj' : ''}" data-pl="${esc(e.id)}|${j.k}" ${c ? `title="${esc(TYPES_ABS[c.type][0] + (c.statut === 'Demandé' ? ' (demandé)' : ''))}"` : r ? 'title="Retard"' : ''}>${c ? `<i style="background:${TYPES_ABS[c.type][1]};opacity:${c.statut === 'Demandé' ? .45 : 1}"></i>` : r ? '<b class="pl-r">R</b>' : ''}</td>`; }).join('')}</tr>`).join('')
+      || `<tr><td class="muted" colspan="${nb + 1}">Ajoutez les employés dans l'onglet Équipe.</td></tr>`}</tbody>`;
+    F('plLeg').innerHTML = Object.entries(TYPES_ABS).filter(([k]) => k !== 'retard').map(([, [l, c]]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('') + '<span><b class="pl-r">R</b>Retard</span><span><i style="background:#2f5bea;opacity:.45"></i>Demande en attente</span>';
+  }
+  F('plPrev').addEventListener('click', () => { const [y, m] = rhMois.split('-').map(Number); const d = new Date(y, m - 2, 15); rhMois = d.toISOString().slice(0, 7); drawPlanning(); });
+  F('plNext').addEventListener('click', () => { const [y, m] = rhMois.split('-').map(Number); const d = new Date(y, m, 15); rhMois = d.toISOString().slice(0, 7); drawPlanning(); });
+  F('plGrid').addEventListener('click', e => { const td = e.target.closest('[data-pl]'); if (!td) return; const [id, j] = td.dataset.pl.split('|'), emp = employes.find(x => x.id === id);
+    const c = absentLe(emp, j); if (c) { ouvrirCg(c); return; } ouvrirCg(null); F('cgEmp').value = id; F('cgDu').value = j; F('cgAu').value = j; cgInfo(); });
+  // --- Avances sur salaire (administrateurs)
+  function drawAvances(){
+    const E = employes.filter(empVisible), ids = new Set(E.map(e => e.id)), L = avances.filter(a => ids.has(a.emp)).sort((a, b) => b.date.localeCompare(a.date));
+    const enCours = L.filter(a => !a.rembourse);
+    F('avKpi').innerHTML = kpi('Avances en cours', money(enCours.reduce((s, a) => s + a.montant, 0)), `${enCours.length} avance(s) à retenir sur salaire`, 'main')
+      + kpi('Ce mois-ci', money(L.filter(a => a.date.slice(0, 7) === dayKey().slice(0, 7)).reduce((s, a) => s + a.montant, 0)));
+    F('avRows').innerHTML = L.map(a => `<tr><td>${fmtDate(a.date + 'T12:00')}</td><td><b>${esc(nomEmp(employes.find(e => e.id === a.emp)))}</b></td><td>${esc(a.motif || '')}</td><td style="text-align:right"><b>${money(a.montant)}</b></td>
+      <td>${a.rembourse ? `<span class="chip">Retenue le ${fmtDate(a.rembourse + 'T12:00')}</span>` : `<button class="act ghost-act" type="button" data-av-ok="${esc(a.id)}">Retenue sur salaire</button>`}</td></tr>`).join('');
+    F('avNone').hidden = L.length > 0;
+  }
+  F('avRows').addEventListener('click', e => { const id = e.target.dataset.avOk; if (!id) return; const a = avances.find(x => x.id === id); a.rembourse = dayKey(); saveRH(); drawAvances(); show('Avance marquée comme retenue sur salaire'); });
+  F('avNew').addEventListener('click', () => { F('avEmp').innerHTML = employes.filter(e => empVisible(e) && e.actif !== false).map(e => `<option value="${esc(e.id)}">${esc(nomEmp(e))}</option>`).join(''); F('avDate').value = dayKey(); F('avMt').value = ''; F('avMotif').value = ''; F('avErr').textContent = ''; F('dlgAv').hidden = false; });
+  document.querySelectorAll('[data-close-av]').forEach(b => b.addEventListener('click', () => F('dlgAv').hidden = true));
+  F('fAv').addEventListener('submit', ev => { ev.preventDefault(); const mt = intOf(F('avMt').value);
+    if (!F('avEmp').value || !mt) { F('avErr').textContent = 'Choisissez l\'employé et le montant.'; return; }
+    avances.push({ id: 'av' + Date.now().toString(36), emp: F('avEmp').value, date: F('avDate').value || dayKey(), montant: mt, motif: F('avMotif').value.trim(), par: user.nom }); saveRH(); F('dlgAv').hidden = true; drawAvances(); show('Avance enregistrée'); });
+  // réglage : jours de congés acquis par mois
+  F('rhTaux').addEventListener('change', () => { const v = dec(F('rhTaux').value); if (!(v >= 0 && v <= 5)) return; PARAM.rh = { ...(PARAM.rh || {}), joursParMois: v }; saveParam(); drawEquipe(); show('Taux d\'acquisition des congés enregistré'); });
+
   // --- Lecture du bordereau papier de l'assurance (photo ou PDF) et rapprochement automatique
   let ptNonTrouves = [];
   const motsNom = t => norm(t || '').split(/[^a-z0-9]+/).filter(w => w.length > 1);
@@ -7112,7 +7394,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     (f.paiements = f.paiements || []).push({ date: F('regDate').value || dayKey(), montant: mt, mode: F('regMode').value, ref: F('regRef').value.trim(), par: user.nom });
     saveAch(); F('dlgReg').hidden = true; drawFac(); majTuileAchat(); show(resteFac(f) <= 0.005 ? `Facture ${f.numero} soldée` : 'Règlement enregistré');
   });
-  try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } catch(_) {}
+  try { majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); majTuileRH(); } catch(_) {}
   try { if (sessionStorage.getItem('dioptraRemise')) { sessionStorage.removeItem('dioptraRemise'); setTimeout(() => show('Remise à zéro effectuée par l\'administrateur : les données de test ont été effacées de ce poste.'), 800); } } catch(_) {}
 
   // --- Import d'un bon de livraison (lecture par Claude)
@@ -8694,7 +8976,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
     // objets vivants de l'application, mis à jour sur place quand d'autres postes envoient des modifications
     live: { clients: () => clients, ventesRapides: () => ventesRapides, produits: () => produits, mouvements: () => mouvements, clotures: () => clotures,
       mvtsStock: () => mvtsStock, receptions: () => receptions, transferts: () => transferts, inventaires: () => inventaires, bordereaux: () => bordereaux,
-      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, cmdCentrale: () => cmdCentrale, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, formation: () => formation, pointages: () => pointages, paire2Mag: () => paire2Mag,
+      verresAchat: () => verresAchat, waLog: () => waLog, notes: () => notes, livraisons: () => livraisons, facturesFourn: () => facturesFourn, cmdCentrale: () => cmdCentrale, comptesBq: () => comptesBq, opsBq: () => opsBq, reglAss: () => reglAss, formation: () => formation, employes: () => employes, conges: () => conges, avances: () => avances, pointages: () => pointages, paire2Mag: () => paire2Mag,
       parametres: () => PARAM, paramsAchat: () => PA, tplWa: () => TPL },
     // après réception : recalculs et rafraîchissement de l'écran affiché si c'est une liste
     apres(colls){
@@ -8706,7 +8988,7 @@ ${text ? 'Texte du document :\n' + text.slice(0, 60000) : 'Le document est fourn
       }
       if (colls.has('optVerres') || colls.has('tarifs')) { appliquerTarifs(); buildOpts(); }
       const v = vueActive();
-      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); } else if (v === 'form') drawForm(); else if (v === 'ctr') drawCmdHist(); else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
+      try { if (v === 'accueil') { majTuileCaisse(); majTuileCmd(); majTuileStat(); drawNotes(); majTuileAchat(); majTuileBanque(); majTuileAss(); majTuileCtr(); majTuileForm(); majTuileRH(); } else if (v === 'form') drawForm(); else if (v === 'rh' && F('dlgEmp').hidden && F('dlgCg').hidden) openRH(); else if (v === 'ctr') drawCmdHist(); else if (v === 'ass' && asTab !== 'pt') openAss(); else if (v === 'banque' && F('dlgBkQ').hidden) drawBQ(); else if (v === 'achat' && F('livRec').hidden) openAchat(); else if (v === 'clients') render(); } catch(_) {}
       return !!REOUVRIR[v] && !['accueil', 'clients'].includes(v);
     },
     // actualise l'écran affiché (bouton « Actualiser » de l'indicateur de synchronisation)
